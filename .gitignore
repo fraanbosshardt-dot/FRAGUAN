@@ -38,4 +38,5 @@ next-env.d.ts
 /work/
 /audit-report.local.json
 !.env.example
-`n*.tsbuildinfo
+*.tsbuildinfo
+
