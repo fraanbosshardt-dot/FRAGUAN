@@ -82,7 +82,7 @@ export async function GET(
       requirePermission(a, 'pos');
       return reply(
         await rows(
-          'SELECT v.id,v.productId,p.name,p.category,p.brand,p.image,v.sku,v.barcode,v.color,v.size,v.price,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE p.active=1 ORDER BY p.rowid,v.rowid',
+          'SELECT v.id,v.productId,p.name,p.category,p.brand,v.sku,v.barcode,v.color,v.size,v.price,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE p.active=1 ORDER BY p.rowid,v.rowid',
         ),
       );
     }

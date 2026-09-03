@@ -2,16 +2,16 @@ import { db, id, now, one, statement, auditStatement } from '@/db/queries';
 import { identity, AppError } from './auth';
 import { env } from 'cloudflare:workers';
 const collection = [
-  ['Camisa Oxford', 'Camisas', 59900, 'photo-1598033129183-c4f50c736f10'],
-  ['Remera Essential', 'Remeras', 29900, 'photo-1521572163474-6864f9cf17ab'],
-  ['Jean Slim Fit', 'Jeans', 74900, 'photo-1542272604-787c3835535d'],
-  ['Camisa de lino', 'Camisas', 69900, 'photo-1602810318383-e386cc2a3ccf'],
-  ['Buzo Half Zip', 'Buzos', 64900, 'photo-1556821840-3a63f95609a7'],
-  ['Pantalón Chino', 'Pantalones', 64900, 'photo-1473966968600-fa801b869a1a'],
-  ['Remera Pima', 'Remeras', 34900, 'photo-1521572163474-6864f9cf17ab'],
-  ['Campera Urban', 'Camperas', 119900, 'photo-1551028719-00167b16eac5'],
-  ['Chomba Classic', 'Chombas', 44900, 'photo-1625910513413-5fc45e8d82e5'],
-  ['Jean Straight', 'Jeans', 79900, 'photo-1542272604-787c3835535d'],
+  ['Camisa Oxford', 'Camisas', 59900],
+  ['Remera Essential', 'Remeras', 29900],
+  ['Jean Slim Fit', 'Jeans', 74900],
+  ['Camisa de lino', 'Camisas', 69900],
+  ['Buzo Half Zip', 'Buzos', 64900],
+  ['Pantalón Chino', 'Pantalones', 64900],
+  ['Remera Pima', 'Remeras', 34900],
+  ['Campera Urban', 'Camperas', 119900],
+  ['Chomba Classic', 'Chombas', 44900],
+  ['Jean Straight', 'Jeans', 79900],
 ] as const;
 export async function setup(demo: boolean) {
   const u = await identity();
@@ -101,7 +101,7 @@ export async function setup(demo: boolean) {
           productId,
           name,
           p[1],
-          `https://images.unsplash.com/${p[3]}?auto=format&fit=crop&w=600&q=80`,
+          '',
           'sup-demo',
         ),
       );

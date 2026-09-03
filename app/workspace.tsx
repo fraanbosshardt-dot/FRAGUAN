@@ -454,26 +454,20 @@ export default function Workspace() {
                   setSize('');
                 }}
               >
-                <div className="product-image">
-                  {p.image ? (
-                    <img src={p.image} alt={p.name} loading="lazy" />
-                  ) : (
-                    <ShoppingBag
-                      className="image-placeholder"
-                      size={52}
-                      strokeWidth={1}
-                    />
-                  )}
-                  <span className="product-add">
-                    <Plus size={18} />
-                  </span>
-                  {p.variants.every((v: Row) => v.stock === 0) && (
-                    <span className="stock-tag">Sin stock</span>
-                  )}
+                <div className="product-text-header">
+                  <span>{p.brand}</span>
+                  <Plus size={17} />
                 </div>
                 <div className="product-copy">
                   <span className="eyebrow">{p.category}</span>
                   <h3>{p.name}</h3>
+                  <p className="product-availability">
+                    {p.variants.reduce((n: number, v: Row) => n + v.stock, 0)}{' '}
+                    unidades disponibles ·{' '}
+                    {[...new Set(p.variants.map((v: Row) => v.color))].join(
+                      ' / ',
+                    )}
+                  </p>
                   <div className="product-meta">
                     <strong>{money(p.price)}</strong>
                     <span>

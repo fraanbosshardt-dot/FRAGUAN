@@ -1,3 +1,5 @@
+> Actualización: consultar primero [ESTADO-FRAGUAN.md](ESTADO-FRAGUAN.md). El trabajo está pausado; no usar fotos; base definitiva, Google Login y Vercel se conectarán al final.
+
 # Estado de implementación — versión inicial
 
 ## Disponible
@@ -43,3 +45,4 @@ Pruebas de integración contra el servidor local para permisos, listas de campos
 No se realizó QA visual automatizado con navegador. La herramienta opcional WebMCP para preparar una búsqueda tiene detección de soporte; no se verificó en un contexto WebMCP disponible.
 
 Las imágenes de productos son ilustrativas de Unsplash y se cargan externamente; no representan fotografías verificadas de mercadería real de FRAGUAN.
+

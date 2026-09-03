@@ -57,7 +57,6 @@ const allowed = [
   'name',
   'category',
   'brand',
-  'image',
   'sku',
   'barcode',
   'color',
