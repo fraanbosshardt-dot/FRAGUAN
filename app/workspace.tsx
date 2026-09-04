@@ -17,6 +17,8 @@ import {
   LogOut,
   Sun,
   Moon,
+  RotateCcw,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,14 +58,20 @@ export default function Workspace() {
     [split, setSplit] = useState(false),
     [splitAmount, setSplitAmount] = useState(''),
     [secondMethod, setSecondMethod] = useState('debit'),
-    [offer, setOffer] = useState(''),
+    [offerIds, setOfferIds] = useState<string[]>([]),
+    [couponCode, setCouponCode] = useState(''),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [receipt, setReceipt] = useState<Row | null>(null),
     [recent, setRecent] = useState<Row[]>([]),
     [quote, setQuote] = useState<Row | null>(null),
     [dark, setDark] = useState(false),
-    [reference, setReference] = useState('');
+    [reference, setReference] = useState(''),
+    [creditBalance, setCreditBalance] = useState(0),
+    [refundReason, setRefundReason] = useState(''),
+    [refundToken, setRefundToken] = useState(''),
+    [refundMethod, setRefundMethod] = useState('original'),
+    [refundItems, setRefundItems] = useState<Record<string, number>>({});
   const searchRef = useRef<HTMLInputElement>(null),
     requestKey = useRef('');
   const refresh = async () => {
@@ -93,6 +101,18 @@ export default function Workspace() {
     );
     return () => clearTimeout(t);
   }, [customerQuery, modal]);
+  useEffect(() => {
+    if (!customer?.id) {
+      setCreditBalance(0);
+      if (method === 'store_credit') setMethod('cash');
+      return;
+    }
+    api<{ balance: number }>(
+      'customer-credit-balance?customerId=' + encodeURIComponent(customer.id),
+    )
+      .then((result) => setCreditBalance(result.balance))
+      .catch(() => setCreditBalance(0));
+  }, [customer?.id]);
   const groups = useMemo(() => {
     const map = new Map<string, Row>();
     for (const v of catalog) {
@@ -111,8 +131,12 @@ export default function Workspace() {
       ),
   );
   const subtotal = cart.reduce((n, i) => n + i.price * i.quantity, 0),
-    promotion = offers.find((o) => o.id === offer),
-    discount = promotion ? Math.floor((subtotal * promotion.percent) / 100) : 0,
+    promotion =
+      offerIds.length === 1 ? offers.find((o) => o.id === offerIds[0]) : null,
+    discount =
+      promotion && (!promotion.kind || promotion.kind === 'percentage')
+        ? Math.floor((subtotal * promotion.percent) / 100)
+        : 0,
     base = subtotal - discount;
   const firstBase = split
     ? (() => {
@@ -213,11 +237,13 @@ export default function Workspace() {
     ).catch(() => {});
     return () => lifecycle.abort();
   }, []);
-  function paymentInput() {
+  function paymentInput(baseOverride?: number) {
+    const payableBase = baseOverride ?? base;
+    const firstPaymentBase = split ? firstBase : payableBase;
     const payments = [
       {
         methodId: method,
-        baseMinor: firstBase,
+        baseMinor: firstPaymentBase,
         receivedMinor: method === 'cash' ? minor(received) : undefined,
         reference,
       },
@@ -225,14 +251,16 @@ export default function Workspace() {
     if (split)
       payments.push({
         methodId: secondMethod,
-        baseMinor: base - firstBase,
+        baseMinor: payableBase - firstPaymentBase,
         receivedMinor: secondMethod === 'cash' ? minor(received) : undefined,
         reference,
       });
     return {
       items: cart.map((x) => ({ variantId: x.id, quantity: x.quantity })),
       customerId: customer?.id ?? null,
-      promotionId: offer || null,
+      promotionId: null,
+      promotionIds: offerIds,
+      couponCode: couponCode.trim() || undefined,
       payments,
     };
   }
@@ -240,7 +268,18 @@ export default function Workspace() {
     setBusy(true);
     setError('');
     try {
-      const q = await api('quote', paymentInput());
+      const pricing = await api('pricing', {
+        items: cart.map((item) => ({
+          variantId: item.id,
+          quantity: item.quantity,
+        })),
+        customerId: customer?.id ?? null,
+        promotionId: null,
+        promotionIds: offerIds,
+        couponCode: couponCode.trim() || undefined,
+        methodIds: split ? [method, secondMethod] : [method],
+      });
+      const q = await api('quote', paymentInput(pricing.base));
       setQuote(q);
     } catch (e: any) {
       setError(e.message);
@@ -254,14 +293,15 @@ export default function Workspace() {
     try {
       requestKey.current ||= crypto.randomUUID();
       const result = await api('sales', {
-        ...paymentInput(),
+        ...paymentInput(quote?.base),
         idempotencyKey: requestKey.current,
       });
       setReceipt(result);
       setModal('receipt');
       setCart([]);
       setCustomer(null);
-      setOffer('');
+      setOfferIds([]);
+      setCouponCode('');
       setQuote(null);
       requestKey.current = '';
       await refresh();
@@ -278,6 +318,43 @@ export default function Workspace() {
       setModal('recent');
     } catch (e: any) {
       setError(e.message);
+    }
+  }
+  function openAuthorizedRefund() {
+    if (!receipt) return;
+    setRefundReason('');
+    setRefundToken('');
+    setRefundMethod('original');
+    setRefundItems({});
+    setError('');
+    setModal('refund');
+  }
+  async function submitAuthorizedRefund() {
+    if (!receipt) return;
+    setBusy(true);
+    setError('');
+    try {
+      const items = receipt.items
+        .map((item: Row) => ({
+          saleItemId: item.id,
+          quantity: refundItems[item.id] ?? 0,
+        }))
+        .filter((item: Row) => item.quantity > 0);
+      await api('refunds', {
+        saleId: receipt.id,
+        reason: refundReason,
+        method: refundMethod,
+        ...(items.length ? { items } : {}),
+        ...(refundToken ? { authorizationToken: refundToken.trim() } : {}),
+      });
+      setReceipt(await api('sales?id=' + receipt.id));
+      await refresh();
+      setModal('receipt');
+      setError('');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
     }
   }
   async function initialize(demo: boolean) {
@@ -711,6 +788,7 @@ export default function Workspace() {
                 payment: 'Cobrar venta',
                 receipt: 'Venta completada',
                 recent: 'Ventas recientes',
+                refund: 'Cambio o devolución autorizada',
               } as Row
             )[modal] ?? 'FRAGUAN'}
           </DialogTitle>
@@ -719,7 +797,9 @@ export default function Workspace() {
               ? 'Elegí cómo paga el cliente.'
               : modal === 'recent'
                 ? 'Consultá un ticket para una operación autorizada.'
-                : 'FRAGUAN · Punto de venta'}
+                : modal === 'refund'
+                  ? 'Ingresá la autorización del responsable y las prendas que vuelven al stock.'
+                  : 'FRAGUAN · Punto de venta'}
           </DialogDescription>
           {error && (
             <p className="notice" role="alert">
@@ -819,6 +899,12 @@ export default function Workspace() {
               {quote ? (
                 <>
                   <div className="review-lines">
+                    {quote.appliedDiscounts?.map((promotion: Row) => (
+                      <p key={promotion.promotionId}>
+                        {promotion.name}
+                        <strong>−{money(promotion.amount)}</strong>
+                      </p>
+                    ))}
                     {quote.payments.map((p: Row, i: number) => (
                       <p key={i}>
                         {p.name}
@@ -855,18 +941,23 @@ export default function Workspace() {
               ) : (
                 <>
                   <div className="payment-methods">
-                    {methods.map((m) => (
-                      <Button
-                        key={m.id}
-                        variant={method === m.id ? 'default' : 'outline'}
-                        onClick={() => {
-                          setMethod(m.id);
-                          setOffer('');
-                        }}
-                      >
-                        {m.name}
-                      </Button>
-                    ))}
+                    {methods
+                      .filter((m) => m.id !== 'store_credit' || customer)
+                      .map((m) => (
+                        <Button
+                          key={m.id}
+                          variant={method === m.id ? 'default' : 'outline'}
+                          onClick={() => {
+                            setMethod(m.id);
+                            setOfferIds([]);
+                          }}
+                        >
+                          {m.name}
+                          {m.id === 'store_credit' && creditBalance > 0
+                            ? ` · ${money(creditBalance)}`
+                            : ''}
+                        </Button>
+                      ))}
                   </div>
                   {selectedMethod?.installments > 1 && (
                     <p className="variant-info">
@@ -874,30 +965,45 @@ export default function Workspace() {
                       {money(surcharge(firstBase, selectedMethod))}
                     </p>
                   )}
+                  <label>Promociones autorizadas</label>
+                  <div className="promotion-options">
+                    {offers.map((promotion) => {
+                      const selectedPromotion = offerIds.includes(promotion.id);
+                      return (
+                        <Button
+                          key={promotion.id}
+                          type="button"
+                          variant={selectedPromotion ? 'default' : 'outline'}
+                          onClick={() =>
+                            setOfferIds(
+                              selectedPromotion
+                                ? offerIds.filter((id) => id !== promotion.id)
+                                : [...offerIds, promotion.id],
+                            )
+                          }
+                        >
+                          {promotion.name}
+                        </Button>
+                      );
+                    })}
+                    {!offers.length && (
+                      <p className="quiet">No hay promociones vigentes.</p>
+                    )}
+                  </div>
                   <label>
-                    Promoción autorizada
-                    <select
-                      value={offer}
-                      onChange={(e) => setOffer(e.target.value)}
-                    >
-                      <option value="">Sin descuento</option>
-                      {offers
-                        .filter(
-                          (o) =>
-                            !o.methodId || (!split && o.methodId === method),
-                        )
-                        .map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.name} · {o.percent}%
-                          </option>
-                        ))}
-                    </select>
+                    Cupón (opcional)
+                    <Input
+                      value={couponCode}
+                      onChange={(event) => setCouponCode(event.target.value)}
+                      placeholder="Ingresar código"
+                      maxLength={50}
+                    />
                   </label>
                   <Button
                     variant="ghost"
                     onClick={() => {
                       setSplit(!split);
-                      setOffer('');
+                      setOfferIds([]);
                     }}
                   >
                     {split ? 'Usar un solo medio' : 'Dividir pago'}
@@ -1019,7 +1125,99 @@ export default function Workspace() {
               >
                 <Printer /> Imprimir ticket
               </Button>
+              {['confirmed', 'partially_refunded'].includes(receipt.status) && (
+                <Button
+                  className="no-print"
+                  variant="outline"
+                  onClick={openAuthorizedRefund}
+                >
+                  <RotateCcw /> Cambio o devolución autorizada
+                </Button>
+              )}
             </>
+          )}
+          {modal === 'refund' && receipt && (
+            <div className="quick-form">
+              <p className="quiet">
+                Indicá las cantidades. Si todas quedan en cero se devolverá todo
+                lo pendiente del ticket.
+              </p>
+              {receipt.items.map((item: Row) => {
+                const available = item.quantity - item.refunded;
+                return (
+                  <label key={item.id}>
+                    {item.name} · {item.color} · {item.size} · máximo{' '}
+                    {available}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={available}
+                      disabled={!available}
+                      value={refundItems[item.id] ?? 0}
+                      onChange={(event) =>
+                        setRefundItems({
+                          ...refundItems,
+                          [item.id]: Number(event.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                );
+              })}
+              <label>
+                Resolución
+                <select
+                  value={refundMethod}
+                  onChange={(event) => setRefundMethod(event.target.value)}
+                >
+                  <option value="original">
+                    Reintegrar por el medio original
+                  </option>
+                  {receipt.customerName && (
+                    <option value="credit">Emitir saldo a favor</option>
+                  )}
+                </select>
+              </label>
+              <label>
+                Motivo
+                <Input
+                  value={refundReason}
+                  onChange={(event) => setRefundReason(event.target.value)}
+                  placeholder="Ej. Cambio de talle autorizado"
+                  minLength={5}
+                />
+              </label>
+              {['VENDEDOR', 'CAJA'].includes(session?.user?.role) && (
+                <label>
+                  Código de autorización del responsable
+                  <Input
+                    value={refundToken}
+                    onChange={(event) => setRefundToken(event.target.value)}
+                    placeholder="Código válido por 10 minutos"
+                  />
+                </label>
+              )}
+              <Button
+                className="activate"
+                disabled={
+                  busy ||
+                  refundReason.trim().length < 5 ||
+                  (['VENDEDOR', 'CAJA'].includes(session?.user?.role) &&
+                    !refundToken.trim())
+                }
+                onClick={submitAuthorizedRefund}
+              >
+                {busy ? 'Registrando…' : 'Registrar devolución'}
+                <ShieldCheck />
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => setModal('receipt')}
+              >
+                Volver al ticket
+              </Button>
+            </div>
           )}
           {modal === 'recent' && (
             <div className="recent-list">
@@ -1040,7 +1238,11 @@ export default function Workspace() {
                       #{String(s.ticket).padStart(6, '0')}
                       <small>
                         {date(s.createdAt)} ·{' '}
-                        {s.status === 'refunded' ? 'Devuelta' : 'Completada'}
+                        {s.status === 'refunded'
+                          ? 'Devuelta'
+                          : s.status === 'partially_refunded'
+                            ? 'Devuelta parcialmente'
+                            : 'Completada'}
                       </small>
                     </span>
                     <strong>{money(s.total)}</strong>

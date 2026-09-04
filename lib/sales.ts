@@ -10,6 +10,11 @@ import {
 import { Actor, AppError, can } from './auth';
 import { saleInput, quoteInput } from './validation';
 import { z } from 'zod';
+import {
+  evaluateCommercialRules,
+  type CommercialPromotion,
+} from './commercial-rules';
+import { calculateLoyaltyLevel } from './customer-intelligence';
 type Variant = {
   id: string;
   name: string;
@@ -18,6 +23,8 @@ type Variant = {
   price: number;
   cost: number;
   stock: number;
+  category: string;
+  brand: string;
 };
 type Method = {
   id: string;
@@ -27,7 +34,91 @@ type Method = {
   days: number;
   installments: number;
 };
-export async function quote(raw: unknown) {
+type PromotionRow = {
+  id: string;
+  name: string;
+  percent: number;
+  methodId: string | null;
+  startsAt: string;
+  endsAt: string;
+  active: number;
+  ruleJson: string;
+};
+function nextDate(date: string) {
+  const value = new Date(`${date}T12:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() + 1);
+  return value.toISOString().slice(0, 10);
+}
+function commercialPromotion(row: PromotionRow): CommercialPromotion {
+  let stored: Record<string, any> = {};
+  if (row.ruleJson) {
+    try {
+      stored = JSON.parse(row.ruleJson);
+    } catch {
+      throw new AppError(409, `La promoción “${row.name}” debe revisarse.`);
+    }
+  }
+  const conditions = {
+    ...(stored.conditions ?? {}),
+    ...(row.methodId ? { paymentMethodIds: [row.methodId] } : {}),
+    schedule: {
+      ...(stored.conditions?.schedule ?? {}),
+      startsAt: `${row.startsAt}T00:00:00-03:00`,
+      endsAt: `${nextDate(row.endsAt)}T00:00:00-03:00`,
+      timeZoneOffsetMinutes: -180,
+    },
+  };
+  const legacy = !row.ruleJson
+    ? { kind: 'percentage', percentBps: row.percent * 100 }
+    : {};
+  return {
+    id: row.id,
+    name: row.name,
+    authorized: true,
+    active: row.active === 1,
+    ...legacy,
+    ...stored,
+    conditions,
+  } as CommercialPromotion;
+}
+async function customerCommercialContext(customerId: string | null) {
+  if (!customerId) return null;
+  const cutoff = new Date(Date.now() - 365 * 86400000).toISOString();
+  const customer = await one<{
+    birthday: string | null;
+    points: number;
+    createdAt: string;
+    purchases: number;
+    spent: number;
+  }>(
+    `SELECT c.birthday,c.points,c.createdAt,
+      COUNT(CASE WHEN s.id IS NOT NULL THEN 1 END) AS purchases,
+      COALESCE(SUM(CASE WHEN s.id IS NOT NULL THEN s.total-COALESCE(r.refunded,0) ELSE 0 END),0) AS spent
+     FROM customers c
+     LEFT JOIN sales s ON s.customerId=c.id AND s.status IN ('confirmed','partially_refunded') AND s.createdAt>=?
+     LEFT JOIN (SELECT saleId,SUM(amount) AS refunded FROM refunds GROUP BY saleId) r ON r.saleId=s.id
+     WHERE c.id=? GROUP BY c.id`,
+    cutoff,
+    customerId,
+  );
+  if (!customer) throw new AppError(400, 'Cliente inválido.');
+  return {
+    level: calculateLoyaltyLevel({
+      createdAt: customer.createdAt,
+      firstPurchaseAt: null,
+      lastPurchaseAt: null,
+      purchaseCount: customer.purchases,
+      lifetimeSpendMinor: customer.spent,
+      purchasesInSegmentWindow: customer.purchases,
+      spendInSegmentWindowMinor: customer.spent,
+      purchasesInLoyaltyWindow: customer.purchases,
+      spendInLoyaltyWindowMinor: customer.spent,
+      points: customer.points,
+    }),
+    birthDate: customer.birthday ?? undefined,
+  };
+}
+export async function quote(raw: unknown, pricingOnly = false): Promise<any> {
   const data = quoteInput.parse(raw);
   const unique = new Set(data.items.map((x) => x.variantId));
   if (unique.size !== data.items.length)
@@ -36,7 +127,7 @@ export async function quote(raw: unknown) {
   let subtotal = 0;
   for (const line of data.items) {
     const v = await one<Variant>(
-      'SELECT v.id,p.name,v.color,v.size,v.price,v.cost,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE v.id=? AND p.active=1',
+      'SELECT v.id,p.name,p.category,p.brand,v.color,v.size,v.price,v.cost,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE v.id=? AND p.active=1',
       line.variantId,
     );
     if (!v || v.stock < line.quantity)
@@ -44,35 +135,97 @@ export async function quote(raw: unknown) {
     items.push({ ...v, quantity: line.quantity });
     subtotal += v.price * line.quantity;
   }
-  let discount = 0;
-  if (data.promotionId) {
-    const p = await one<{ percent: number; methodId: string | null }>(
-      'SELECT percent,methodId FROM promotions WHERE id=? AND active=1 AND startsAt<=? AND endsAt>=?',
-      data.promotionId,
-      now().slice(0, 10),
-      now().slice(0, 10),
+  const requestedPromotionIds = [
+    ...(data.promotionId ? [data.promotionId] : []),
+    ...(data.promotionIds ?? []),
+  ].filter((value, index, values) => values.indexOf(value) === index);
+  const activePromotionRows = await rows<PromotionRow>(
+    'SELECT id,name,percent,methodId,startsAt,endsAt,active,ruleJson FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?',
+    now().slice(0, 10),
+    now().slice(0, 10),
+  );
+  const allPromotions = activePromotionRows.map(commercialPromotion);
+  const normalizedCoupon = data.couponCode?.trim().toLocaleLowerCase('es-AR');
+  const promotions = allPromotions.filter((promotion) => {
+    if (requestedPromotionIds.includes(promotion.id)) return true;
+    const coupons = promotion.conditions?.couponCodes;
+    return Boolean(
+      normalizedCoupon &&
+      coupons?.some(
+        (coupon) => coupon.toLocaleLowerCase('es-AR') === normalizedCoupon,
+      ),
     );
-    if (
-      !p ||
-      (p.methodId && data.payments.some((x) => x.methodId !== p.methodId))
+  });
+  if (
+    requestedPromotionIds.some(
+      (promotionId) =>
+        !promotions.some((promotion) => promotion.id === promotionId),
     )
-      throw new AppError(
-        403,
-        'La promoción no está autorizada para este pago.',
-      );
-    discount = Math.floor((subtotal * p.percent) / 100);
-  }
+  )
+    throw new AppError(403, 'Una promoción no está autorizada o está vencida.');
+  const commercialResult = evaluateCommercialRules({
+    items: items.map((item) => ({
+      id: item.id,
+      category: item.category,
+      brand: item.brand,
+      unitPriceCents: item.price,
+      quantity: item.quantity,
+    })),
+    promotions,
+    context: {
+      evaluatedAt: now(),
+      timeZoneOffsetMinutes: -180,
+      paymentMethodIds: data.payments.map((payment) => payment.methodId),
+      couponCode: data.couponCode || undefined,
+      customer: await customerCommercialContext(data.customerId),
+    },
+  });
+  const appliedPromotionIds = new Set(
+    commercialResult.appliedDiscounts.map((discount) => discount.promotionId),
+  );
+  if (
+    requestedPromotionIds.some(
+      (promotionId) => !appliedPromotionIds.has(promotionId),
+    )
+  )
+    throw new AppError(
+      403,
+      'Una promoción no corresponde a los productos, cliente, horario o pago elegidos.',
+    );
+  if (data.couponCode && !commercialResult.appliedDiscounts.length)
+    throw new AppError(403, 'El cupón no es válido para esta venta.');
+  const discount = commercialResult.discountTotalCents;
   const base = subtotal - discount;
+  if (pricingOnly)
+    return {
+      subtotal,
+      discount,
+      base,
+      appliedDiscounts: commercialResult.appliedDiscounts,
+    };
   if (data.payments.reduce((n, p) => n + p.baseMinor, 0) !== base)
     throw new AppError(
       400,
       'La suma de los pagos debe cubrir el total de la venta.',
     );
-  if (
-    data.customerId &&
-    !(await one('SELECT id FROM customers WHERE id=?', data.customerId))
-  )
-    throw new AppError(400, 'Cliente inválido.');
+  if (data.payments.some((payment) => payment.methodId === 'store_credit')) {
+    if (!data.customerId)
+      throw new AppError(400, 'Seleccioná un cliente para usar saldo a favor.');
+    const requestedCredit = data.payments
+      .filter((payment) => payment.methodId === 'store_credit')
+      .reduce((sum, payment) => sum + payment.baseMinor, 0);
+    const availableCredit = Number(
+      (
+        await one<{ balance: number }>(
+          "SELECT COALESCE(SUM(balance),0) AS balance FROM customer_credits WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>=?)",
+          data.customerId,
+          now(),
+        )
+      )?.balance ?? 0,
+    );
+    if (requestedCredit > availableCredit)
+      throw new AppError(409, 'El cliente no tiene saldo a favor suficiente.');
+  }
   const payments = [];
   for (const p of data.payments) {
     const m = await one<Method>(
@@ -98,14 +251,67 @@ export async function quote(raw: unknown) {
   const total = payments.reduce((n, p) => n + p.amount, 0);
   if (!Number.isSafeInteger(total))
     throw new AppError(400, 'Importe fuera de rango.');
-  return { data, items, payments, subtotal, discount, total };
+  return {
+    data,
+    items,
+    payments,
+    subtotal,
+    discount,
+    total,
+    appliedDiscounts: commercialResult.appliedDiscounts,
+  };
+}
+const pricingInput = z
+  .object({
+    items: saleInput.shape.items,
+    customerId: saleInput.shape.customerId,
+    promotionId: saleInput.shape.promotionId,
+    promotionIds: saleInput.shape.promotionIds,
+    couponCode: saleInput.shape.couponCode,
+    methodIds: z.array(z.string().trim().min(1).max(200)).min(1).max(4),
+  })
+  .strict();
+export async function priceCart(raw: unknown) {
+  const data = pricingInput.parse(raw);
+  const result = await quote(
+    {
+      items: data.items,
+      customerId: data.customerId,
+      promotionId: data.promotionId,
+      promotionIds: data.promotionIds,
+      couponCode: data.couponCode,
+      payments: data.methodIds.map((methodId) => ({
+        methodId,
+        baseMinor: 1,
+      })),
+    },
+    true,
+  );
+  return {
+    subtotal: result.subtotal,
+    discount: result.discount,
+    base: result.base,
+    appliedDiscounts: result.appliedDiscounts.map((discount: any) => ({
+      promotionId: discount.promotionId,
+      name: discount.promotionName,
+      kind: discount.kind,
+      amount: discount.amountCents,
+    })),
+  };
 }
 export function publicQuote(q: Awaited<ReturnType<typeof quote>>) {
   return {
     subtotal: q.subtotal,
     discount: q.discount,
+    base: q.subtotal - q.discount,
     total: q.total,
-    payments: q.payments.map((p) => ({
+    appliedDiscounts: q.appliedDiscounts.map((discount: any) => ({
+      promotionId: discount.promotionId,
+      name: discount.promotionName,
+      kind: discount.kind,
+      amount: discount.amountCents,
+    })),
+    payments: q.payments.map((p: any) => ({
       methodId: p.id,
       name: p.name,
       amount: p.amount,
@@ -189,14 +395,15 @@ export async function confirmSale(a: Actor, raw: unknown) {
     date = now();
   const commands = [
     statement(
-      'INSERT INTO sales(id,ticket,sellerId,customerId,subtotal,discount,total,promotionId,idempotencyKey,requestHash,createdAt) VALUES (?,(SELECT COALESCE(MAX(ticket),0)+1 FROM sales),?,?,?,?,?,?,?,?,?)',
+      'INSERT INTO sales(id,ticket,sellerId,customerId,subtotal,discount,total,promotionId,couponCode,idempotencyKey,requestHash,createdAt) VALUES (?,(SELECT COALESCE(MAX(ticket),0)+1 FROM sales),?,?,?,?,?,?,?,?,?,?)',
       saleId,
       a.id,
       data.customerId,
       q.subtotal,
       q.discount,
       q.total,
-      data.promotionId,
+      q.appliedDiscounts[0]?.promotionId ?? null,
+      data.couponCode ?? '',
       idempotencyKey,
       hash,
       date,
@@ -217,6 +424,19 @@ export async function confirmSale(a: Actor, raw: unknown) {
         item.cost,
       ),
     );
+  for (const discount of q.appliedDiscounts)
+    commands.push(
+      statement(
+        'INSERT INTO sale_discounts(id,saleId,promotionId,name,kind,amount,createdAt) VALUES (?,?,?,?,?,?,?)',
+        id(),
+        saleId,
+        discount.promotionId,
+        discount.promotionName,
+        discount.kind,
+        discount.amountCents,
+        date,
+      ),
+    );
   for (const payment of q.payments) {
     commands.push(
       statement(
@@ -231,19 +451,46 @@ export async function confirmSale(a: Actor, raw: unknown) {
         payment.reference,
       ),
     );
-    commands.push(
-      statement(
-        'INSERT INTO cash_movements(id,sessionId,kind,amount,methodId,reference,actorId,createdAt) VALUES (?,?,?,?,?,?,?,?)',
-        id(),
-        session.id,
-        'Venta',
-        payment.amount,
-        payment.id,
-        saleId,
-        a.id,
+    if (payment.id !== 'store_credit')
+      commands.push(
+        statement(
+          'INSERT INTO cash_movements(id,sessionId,kind,amount,methodId,reference,actorId,createdAt) VALUES (?,?,?,?,?,?,?,?)',
+          id(),
+          session.id,
+          'Venta',
+          payment.amount,
+          payment.id,
+          saleId,
+          a.id,
+          date,
+        ),
+      );
+    else {
+      let pending = payment.amount;
+      const credits = await rows<{ id: string; balance: number }>(
+        "SELECT id,balance FROM customer_credits WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>=?) ORDER BY createdAt,id",
+        data.customerId,
         date,
-      ),
-    );
+      );
+      for (const credit of credits) {
+        const used = Math.min(pending, credit.balance);
+        if (used > 0)
+          commands.push(
+            statement(
+              'INSERT INTO credit_usages(id,creditId,saleId,amount,createdAt) VALUES (?,?,?,?,?)',
+              id(),
+              credit.id,
+              saleId,
+              used,
+              date,
+            ),
+          );
+        pending -= used;
+        if (!pending) break;
+      }
+      if (pending)
+        throw new AppError(409, 'El saldo a favor cambió. Revisá el cobro.');
+    }
   }
   if (data.customerId) {
     const points = Math.floor(q.total / 100000);

@@ -24,12 +24,37 @@ import {
   quote,
   publicQuote,
   saleDetail,
-  refundSale,
+  priceCart,
 } from '@/lib/sales';
+import { createRefundAuthorization, refundPartial } from '@/lib/returns';
 import { adminWrite, adminAction, dashboard } from '@/lib/admin';
 import { z } from 'zod';
 import { configureMethod, addVariant } from '@/lib/configuration';
+import { getCashFlow } from '@/lib/cashflow';
+import {
+  getCustomerInsights,
+  getCustomerIntelligence,
+} from '@/lib/customer-intelligence';
+import { getStockReplenishment } from '@/lib/stock-replenishment';
+import { readFinancialCalendarFromD1 } from '@/lib/financial-calendar';
+import {
+  createPurchaseOrder,
+  getPurchaseOrder,
+  receivePurchaseOrder,
+  transitionPurchaseOrder,
+} from '@/lib/purchase-operations';
 export const dynamic = 'force-dynamic';
+function promotionRule(value: unknown) {
+  if (typeof value !== 'string' || !value) return {} as Record<string, any>;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, any>)
+      : {};
+  } catch {
+    return {} as Record<string, any>;
+  }
+}
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ resource: string }> },
@@ -59,11 +84,14 @@ export async function GET(
           'dashboard',
           'products',
           'stock',
+          'replenishment',
           'customers',
           'sales',
           'suppliers',
           'purchases',
           'cash',
+          'cash-flow',
+          'financial-calendar',
           'expenses',
           'payables',
           'withdrawals',
@@ -71,6 +99,8 @@ export async function GET(
           'reports',
           'inventory',
           'insights',
+          'customer-intelligence',
+          'customer-credits',
           'users',
           'audit',
           'settings',
@@ -96,12 +126,20 @@ export async function GET(
     }
     if (resource === 'offers') {
       requirePermission(a, 'pos');
+      const offers = await rows<Record<string, any>>(
+        'SELECT id,name,percent,methodId,ruleJson FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?',
+        now().slice(0, 10),
+        now().slice(0, 10),
+      );
       return reply(
-        await rows(
-          'SELECT id,name,percent,methodId FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?',
-          now().slice(0, 10),
-          now().slice(0, 10),
-        ),
+        offers.map(({ ruleJson, ...offer }) => {
+          const rule = promotionRule(ruleJson);
+          return {
+            ...offer,
+            kind: rule.kind ?? 'percentage',
+            exclusive: Boolean(rule.exclusive),
+          };
+        }),
       );
     }
     if (resource === 'customers') {
@@ -124,6 +162,31 @@ export async function GET(
           `%${q}%`,
         ),
       );
+    }
+    if (resource === 'customer-credits') {
+      requirePermission(a, 'customer-credits');
+      const customerId = url.searchParams.get('customerId');
+      return reply(
+        await rows(
+          `SELECT cc.id,cc.customerId,c.name AS customerName,c.surname AS customerSurname,
+            cc.originalSaleId,cc.amount,cc.balance,cc.status,cc.expiresAt,cc.createdAt
+           FROM customer_credits cc JOIN customers c ON c.id=cc.customerId
+           WHERE (? IS NULL OR cc.customerId=?) ORDER BY cc.createdAt DESC LIMIT 250`,
+          customerId,
+          customerId,
+        ),
+      );
+    }
+    if (resource === 'customer-credit-balance') {
+      requirePermission(a, 'pos');
+      const customerId = url.searchParams.get('customerId')?.slice(0, 128);
+      if (!customerId) throw new AppError(400, 'Cliente inválido.');
+      const credit = await one<{ balance: number }>(
+        "SELECT COALESCE(SUM(balance),0) AS balance FROM customer_credits WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>=?)",
+        customerId,
+        now(),
+      );
+      return reply({ balance: Number(credit?.balance ?? 0) });
     }
     if (resource === 'sales') {
       if (!can(a, 'sales') && !can(a, 'own-sales'))
@@ -154,6 +217,25 @@ export async function GET(
         ),
       );
     }
+    if (resource === 'cash-flow') {
+      requirePermission(a, 'reports');
+      return reply(await getCashFlow());
+    }
+    if (resource === 'customer-intelligence') {
+      const customerId = url.searchParams.get('id');
+      return reply(
+        customerId
+          ? await getCustomerIntelligence(a, customerId)
+          : await getCustomerInsights(a),
+      );
+    }
+    if (resource === 'replenishment')
+      return reply(await getStockReplenishment(a));
+    if (resource === 'financial-calendar') {
+      requirePermission(a, 'cash-flow');
+      const horizonDays = Number(url.searchParams.get('days') ?? 60);
+      return reply(await readFinancialCalendarFromD1({}, { horizonDays }));
+    }
     requirePermission(a, resource);
     if (['dashboard', 'reports', 'insights'].includes(resource))
       return reply(await dashboard());
@@ -169,12 +251,21 @@ export async function GET(
           'SELECT id,name,phone,email,terms FROM suppliers WHERE active=1',
         ),
       );
-    if (resource === 'purchases')
+    if (resource === 'purchases') {
+      if (url.searchParams.has('id'))
+        return reply(await getPurchaseOrder(a, url.searchParams.get('id')!));
       return reply(
         await rows(
-          'SELECT p.id,s.name AS supplier,p.total,p.status,p.createdAt,p.dueAt FROM purchases p JOIN suppliers s ON s.id=p.supplierId ORDER BY p.createdAt DESC',
+          `SELECT p.id,s.name AS supplier,p.total,p.subtotal,p.discount,p.tax,p.shipping,
+                  p.status,p.createdAt,p.dueAt,p.paymentMethod,p.supplierReference,
+                  COUNT(pi.id) AS lines,COALESCE(SUM(pi.quantity),0) AS units,
+                  COALESCE(SUM(pi.received),0) AS receivedUnits
+             FROM purchases p JOIN suppliers s ON s.id=p.supplierId
+             LEFT JOIN purchase_items pi ON pi.purchaseId=p.id
+            GROUP BY p.id ORDER BY p.createdAt DESC`,
         ),
       );
+    }
     if (resource === 'expenses')
       return reply(
         await rows(
@@ -190,15 +281,41 @@ export async function GET(
     if (resource === 'payables')
       return reply(
         await rows(
-          'SELECT p.id,p.description,p.amount,p.dueAt,p.kind,p.status,s.name AS supplier FROM payables p LEFT JOIN suppliers s ON s.id=p.supplierId ORDER BY p.dueAt',
+          'SELECT p.id,p.description,p.amount,p.dueAt,p.kind,p.status,p.purchaseId,s.name AS supplier FROM payables p LEFT JOIN suppliers s ON s.id=p.supplierId ORDER BY p.dueAt',
         ),
       );
-    if (resource === 'promotions')
+    if (resource === 'promotions') {
+      const promotions = await rows<Record<string, any>>(
+        'SELECT id,name,percent,methodId,startsAt,endsAt,active,ruleJson FROM promotions ORDER BY startsAt DESC',
+      );
       return reply(
-        await rows(
-          'SELECT id,name,percent,methodId,startsAt,endsAt,active FROM promotions ORDER BY startsAt DESC',
-        ),
+        promotions.map(({ ruleJson, ...promotion }) => {
+          const rule = promotionRule(ruleJson);
+          return {
+            ...promotion,
+            kind: rule.kind ?? 'percentage',
+            amount: rule.amountCents ?? 0,
+            percent:
+              rule.percentBps === undefined
+                ? promotion.percent
+                : rule.percentBps / 100,
+            scope:
+              [
+                ...(rule.scope?.categories ?? []),
+                ...(rule.scope?.brands ?? []),
+              ].join(', ') || 'Toda la tienda',
+            condition: rule.conditions?.couponCodes?.length
+              ? 'Cupón'
+              : rule.conditions?.birthday
+                ? 'Cumpleaños'
+                : rule.conditions?.customerLevels?.join(', ') ||
+                  (promotion.methodId ? 'Medio de pago' : 'Sin condición'),
+            priority: rule.priority ?? 0,
+            exclusive: Boolean(rule.exclusive),
+          };
+        }),
       );
+    }
     if (resource === 'users')
       return reply(await rows('SELECT id,name,email,role,active FROM users'));
     if (resource === 'audit')
@@ -282,14 +399,25 @@ export async function POST(
       requirePermission(a, 'pos');
       return reply(publicQuote(await quote(body)));
     }
+    if (resource === 'pricing') {
+      requirePermission(a, 'pos');
+      return reply(await priceCart(body));
+    }
     if (resource === 'sales') {
       requirePermission(a, 'pos');
       return reply(await confirmSale(a, body), 201);
     }
+    if (resource === 'purchases')
+      return reply(await createPurchaseOrder(a, body), 201);
+    if (resource === 'purchase-transitions')
+      return reply(await transitionPurchaseOrder(a, body));
+    if (resource === 'purchase-receipts')
+      return reply(await receivePurchaseOrder(a, body));
     if (resource === 'refunds') {
-      requirePermission(a, 'refunds');
-      return reply(await refundSale(a, body));
+      return reply(await refundPartial(a, body));
     }
+    if (resource === 'refund-authorizations')
+      return reply(await createRefundAuthorization(a, body), 201);
     if (resource === 'actions') return reply(await adminAction(a, body));
     if (resource === 'configure-method')
       return reply(await configureMethod(a, body));

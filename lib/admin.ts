@@ -188,15 +188,54 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
     const x = v.promotionInput.parse(raw);
     if (x.endsAt < x.startsAt)
       throw new AppError(400, 'Revisá la vigencia de la promoción.');
+    const scope = {
+      ...(x.category ? { categories: [x.category] } : {}),
+      ...(x.brand ? { brands: [x.brand] } : {}),
+    };
+    const schedule = {
+      ...(x.daysOfWeek?.length ? { daysOfWeek: x.daysOfWeek } : {}),
+      ...(x.dailyStart && x.dailyEnd
+        ? { dailyStart: x.dailyStart, dailyEnd: x.dailyEnd }
+        : {}),
+      timeZoneOffsetMinutes: -180,
+    };
+    const conditions = {
+      ...(x.couponCode ? { couponCodes: [x.couponCode] } : {}),
+      ...(x.customerLevel ? { customerLevels: [x.customerLevel] } : {}),
+      ...(x.birthday
+        ? {
+            birthday: {
+              daysBefore: x.birthdayDays,
+              daysAfter: x.birthdayDays,
+            },
+          }
+        : {}),
+      ...(Object.keys(schedule).length > 1 ? { schedule } : {}),
+    };
+    const rule = {
+      kind: x.kind,
+      priority: x.priority,
+      exclusive: x.exclusive,
+      ...(x.kind === 'percentage' || x.kind === 'second_unit_percentage'
+        ? { percentBps: x.percent! * 100 }
+        : {}),
+      ...(x.kind === 'fixed_amount' ? { amountCents: x.amount! } : {}),
+      ...(x.kind === 'two_for_one' || x.kind === 'second_unit_percentage'
+        ? { groupBy: x.groupBy }
+        : {}),
+      ...(Object.keys(scope).length ? { scope } : {}),
+      ...(Object.keys(conditions).length ? { conditions } : {}),
+    };
     commands = [
       statement(
-        'INSERT INTO promotions(id,name,percent,methodId,startsAt,endsAt) VALUES (?,?,?,?,?,?)',
+        'INSERT INTO promotions(id,name,percent,methodId,startsAt,endsAt,ruleJson) VALUES (?,?,?,?,?,?,?)',
         key,
         x.name,
-        x.percent,
+        Math.min(x.percent ?? 1, 90),
         x.methodId,
         x.startsAt,
         x.endsAt,
+        JSON.stringify(rule),
       ),
     ];
   } else if (resource === 'users') {

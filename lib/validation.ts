@@ -17,6 +17,8 @@ export const saleInput = z
       .max(100),
     customerId: text.nullable(),
     promotionId: text.nullable(),
+    promotionIds: z.array(text).max(10).optional(),
+    couponCode: z.string().trim().max(50).optional(),
     payments: z
       .array(
         z
@@ -113,12 +115,70 @@ export const purchaseInput = z
 export const promotionInput = z
   .object({
     name: text,
-    percent: z.number().int().min(1).max(90),
+    kind: z
+      .enum([
+        'percentage',
+        'fixed_amount',
+        'two_for_one',
+        'second_unit_percentage',
+      ])
+      .default('percentage'),
+    percent: z.number().int().min(1).max(100).optional(),
+    amount: positiveMoney.optional(),
     methodId: text.nullable(),
     startsAt: z.iso.date(),
     endsAt: z.iso.date(),
+    category: text.nullable().optional(),
+    brand: text.nullable().optional(),
+    couponCode: z.string().trim().min(3).max(50).nullable().optional(),
+    customerLevel: z
+      .enum(['FRAGUAN', 'Silver', 'Gold', 'Black'])
+      .nullable()
+      .optional(),
+    birthday: z.boolean().default(false),
+    birthdayDays: z.number().int().min(0).max(30).default(0),
+    daysOfWeek: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+    dailyStart: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .nullable()
+      .optional(),
+    dailyEnd: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .nullable()
+      .optional(),
+    priority: z.number().int().min(-1000).max(1000).default(0),
+    exclusive: z.boolean().default(false),
+    groupBy: z.enum(['line', 'cart']).default('line'),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      ['percentage', 'second_unit_percentage'].includes(value.kind) &&
+      value.percent === undefined
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['percent'],
+        message: 'Ingresá el porcentaje.',
+      });
+    if (value.kind === 'fixed_amount' && value.amount === undefined)
+      context.addIssue({
+        code: 'custom',
+        path: ['amount'],
+        message: 'Ingresá el importe fijo.',
+      });
+    if (
+      (value.dailyStart && !value.dailyEnd) ||
+      (!value.dailyStart && value.dailyEnd)
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['dailyEnd'],
+        message: 'Completá el horario desde y hasta.',
+      });
+  });
 export const userInput = z
   .object({
     email: z.email(),

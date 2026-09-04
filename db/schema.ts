@@ -100,6 +100,7 @@ export const promotions = table(
     startsAt: text().notNull(),
     endsAt: text().notNull(),
     active: integer().notNull().default(1),
+    ruleJson: text().notNull().default(''),
   },
   (t) => [check('promotion_percent', sql`${t.percent} BETWEEN 1 AND 90`)],
 );
@@ -119,11 +120,33 @@ export const sales = table(
     status: text().notNull().default('confirmed'),
     idempotencyKey: text().notNull().unique(),
     requestHash: text().notNull(),
+    couponCode: text().notNull().default(''),
     createdAt: text().notNull(),
   },
   (t) => [
     index('sales_seller_date').on(t.sellerId, t.createdAt),
     index('sales_date').on(t.createdAt),
+  ],
+);
+export const saleDiscounts = table(
+  'sale_discounts',
+  {
+    id: text().primaryKey(),
+    saleId: text()
+      .notNull()
+      .references(() => sales.id),
+    promotionId: text()
+      .notNull()
+      .references(() => promotions.id),
+    name: text().notNull(),
+    kind: text().notNull(),
+    amount: integer().notNull(),
+    createdAt: text().notNull(),
+  },
+  (t) => [
+    uniqueIndex('sale_discount_once').on(t.saleId, t.promotionId),
+    index('sale_discounts_promotion').on(t.promotionId, t.createdAt),
+    check('sale_discount_positive', sql`${t.amount} > 0`),
   ],
 );
 export const saleItems = table(
@@ -226,8 +249,21 @@ export const purchases = table('purchases', {
     .notNull()
     .references(() => suppliers.id),
   status: text().notNull().default('draft'),
+  subtotal: integer().notNull().default(0),
+  discount: integer().notNull().default(0),
+  tax: integer().notNull().default(0),
+  shipping: integer().notNull().default(0),
   total: integer().notNull(),
+  paymentMethod: text().notNull().default('cuenta_corriente'),
+  supplierReference: text().notNull().default(''),
+  notes: text().notNull().default(''),
+  idempotencyKey: text().unique(),
+  requestHash: text(),
   createdAt: text().notNull(),
+  updatedAt: text(),
+  sentAt: text(),
+  confirmedAt: text(),
+  receivedAt: text(),
   dueAt: text().notNull(),
   actorId: text().notNull(),
 });
@@ -241,8 +277,52 @@ export const purchaseItems = table('purchase_items', {
     .references(() => variants.id),
   quantity: integer().notNull(),
   cost: integer().notNull(),
+  discount: integer().notNull().default(0),
   received: integer().notNull().default(0),
 });
+export const purchaseReceipts = table(
+  'purchase_receipts',
+  {
+    id: text().primaryKey(),
+    purchaseId: text()
+      .notNull()
+      .references(() => purchases.id),
+    actorId: text()
+      .notNull()
+      .references(() => users.id),
+    subtotal: integer().notNull(),
+    notes: text().notNull().default(''),
+    idempotencyKey: text().notNull().unique(),
+    requestHash: text().notNull(),
+    createdAt: text().notNull(),
+  },
+  (t) => [
+    index('purchase_receipts_purchase_date').on(t.purchaseId, t.createdAt),
+  ],
+);
+export const purchaseReceiptItems = table(
+  'purchase_receipt_items',
+  {
+    id: text().primaryKey(),
+    receiptId: text()
+      .notNull()
+      .references(() => purchaseReceipts.id),
+    purchaseItemId: text()
+      .notNull()
+      .references(() => purchaseItems.id),
+    variantId: text()
+      .notNull()
+      .references(() => variants.id),
+    quantity: integer().notNull(),
+    unitCost: integer().notNull(),
+    beforeStock: integer().notNull(),
+    afterStock: integer().notNull(),
+  },
+  (t) => [
+    index('purchase_receipt_items_receipt').on(t.receiptId),
+    index('purchase_receipt_items_order_line').on(t.purchaseItemId),
+  ],
+);
 export const payables = table('payables', {
   id: text().primaryKey(),
   description: text().notNull(),
@@ -252,6 +332,7 @@ export const payables = table('payables', {
   kind: text().notNull(),
   status: text().notNull().default('pending'),
   reference: text().notNull().default(''),
+  purchaseId: text().references(() => purchases.id),
 });
 export const withdrawals = table('withdrawals', {
   id: text().primaryKey(),
@@ -272,10 +353,70 @@ export const refunds = table(
     amount: integer().notNull(),
     reason: text().notNull(),
     actorId: text().notNull(),
+    method: text().notNull().default('original'),
+    creditIssued: integer().notNull().default(0),
+    authorizationId: text(),
     createdAt: text().notNull(),
   },
-  (t) => [uniqueIndex('one_full_refund').on(t.saleId)],
+  (t) => [uniqueIndex('refund_authorization_once').on(t.authorizationId)],
 );
+export const refundItems = table('refund_items', {
+  id: text().primaryKey(),
+  refundId: text()
+    .notNull()
+    .references(() => refunds.id),
+  saleItemId: text()
+    .notNull()
+    .references(() => saleItems.id),
+  variantId: text()
+    .notNull()
+    .references(() => variants.id),
+  quantity: integer().notNull(),
+  amount: integer().notNull(),
+});
+export const customerCredits = table('customer_credits', {
+  id: text().primaryKey(),
+  customerId: text()
+    .notNull()
+    .references(() => customers.id),
+  originalSaleId: text()
+    .notNull()
+    .references(() => sales.id),
+  refundId: text()
+    .notNull()
+    .references(() => refunds.id),
+  amount: integer().notNull(),
+  balance: integer().notNull(),
+  status: text().notNull().default('active'),
+  expiresAt: text(),
+  createdAt: text().notNull(),
+});
+export const creditUsages = table('credit_usages', {
+  id: text().primaryKey(),
+  creditId: text()
+    .notNull()
+    .references(() => customerCredits.id),
+  saleId: text()
+    .notNull()
+    .references(() => sales.id),
+  amount: integer().notNull(),
+  createdAt: text().notNull(),
+});
+export const managerAuthorizations = table('manager_authorizations', {
+  id: text().primaryKey(),
+  tokenHash: text().notNull().unique(),
+  action: text().notNull(),
+  saleId: text()
+    .notNull()
+    .references(() => sales.id),
+  maxAmount: integer().notNull(),
+  authorizedBy: text()
+    .notNull()
+    .references(() => users.id),
+  expiresAt: text().notNull(),
+  usedAt: text(),
+  createdAt: text().notNull(),
+});
 export const inventoryCounts = table('inventory_counts', {
   id: text().primaryKey(),
   status: text().notNull().default('draft'),
