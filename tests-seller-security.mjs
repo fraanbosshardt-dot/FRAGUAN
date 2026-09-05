@@ -407,6 +407,7 @@ try {
     'reports',
     'insights',
     'customer-intelligence',
+    'customer-cashback',
     'customer-credits',
     'inventory',
     'users',

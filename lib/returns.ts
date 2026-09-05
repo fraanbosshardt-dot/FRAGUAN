@@ -9,6 +9,7 @@ import {
   statement,
 } from '@/db/queries';
 import { Actor, AppError, can } from './auth';
+import { readCustomerIntelligenceConfig } from './customer-intelligence';
 
 const refundRequest = z
   .object({
@@ -394,6 +395,7 @@ export async function refundPartial(actor: Actor, raw: unknown) {
       } else if (payment.methodId === 'cashback') {
         if (!sale.customerId)
           throw new AppError(409, 'La venta con cashback no tiene cliente.');
+        const config = await readCustomerIntelligenceConfig();
         commands.push(
           statement(
             'INSERT INTO customer_cashback(id,customerId,saleId,amount,balance,expiresAt,createdAt,refundId) VALUES (?,?,?,?,?,?,?,?)',
@@ -402,7 +404,10 @@ export async function refundPartial(actor: Actor, raw: unknown) {
             sale.id,
             payment.amount,
             payment.amount,
-            new Date(Date.now() + 365 * 86400000).toISOString(),
+            new Date(
+              Date.parse(createdAt) +
+                config.loyalty.cashbackExpiryDays * 86400000,
+            ).toISOString(),
             createdAt,
             refundId,
           ),
@@ -462,30 +467,31 @@ export async function refundPartial(actor: Actor, raw: unknown) {
           createdAt,
         ),
       );
-    const cashback = await one<{ earned: number; balance: number }>(
-      'SELECT COALESCE(SUM(amount),0) AS earned,COALESCE(SUM(balance),0) AS balance FROM customer_cashback WHERE customerId=? AND saleId=? AND refundId IS NULL',
+    const rewards = await rows<{ id: string; amount: number }>(
+      "SELECT id,amount FROM customer_cashback WHERE customerId=? AND saleId=? AND refundId IS NULL AND status='active' AND balance>0",
       sale.customerId,
       sale.id,
     );
-    const cashbackTarget = allAfter
-      ? Number(cashback?.earned ?? 0)
-      : Math.floor(
-          (Number(cashback?.earned ?? 0) * (previous + amount)) / sale.total,
-        );
-    const cashbackReverse = Math.min(
-      Number(cashback?.balance ?? 0),
-      Math.max(0, cashbackTarget),
-    );
-    if (cashbackReverse)
-      commands.push(
-        statement(
-          "UPDATE customer_cashback SET balance=MAX(0,balance-?),status=CASE WHEN balance-?=0 THEN 'used' ELSE 'active' END WHERE customerId=? AND saleId=? AND status='active'",
-          cashbackReverse,
-          cashbackReverse,
-          sale.customerId,
-          sale.id,
-        ),
+    for (const reward of rewards) {
+      // Reverse only this refund's increment; prior partial refunds already
+      // removed their share. Restored payment balances are never earned rewards.
+      const previousTarget = Math.floor(
+        (reward.amount * previous) / sale.total,
       );
+      const target = allAfter
+        ? reward.amount
+        : Math.floor((reward.amount * (previous + amount)) / sale.total);
+      const reverse = Math.max(0, target - previousTarget);
+      if (reverse)
+        commands.push(
+          statement(
+            "UPDATE customer_cashback SET balance=MAX(0,balance-?),status=CASE WHEN balance<=? THEN 'used' ELSE 'active' END WHERE id=? AND refundId IS NULL AND status='active'",
+            reverse,
+            reverse,
+            reward.id,
+          ),
+        );
+    }
   }
   commands.push(
     auditStatement(actor.id, 'Devolución parcial', refundId, null, {

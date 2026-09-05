@@ -28,7 +28,7 @@
 | Flujo de fondos | Implementado y probado | Entradas/salidas históricas, proyección de cobros y obligaciones con saldo acumulado por día. |
 | Calendario financiero | Implementado y probado | Gastos recurrentes, obligaciones en cuotas, materialización idempotente, pausa/reactivación y disparo de cuentas pagables. |
 | Clientes e inteligencia | Implementado y probado | Segmentos, niveles FRAGUAN/Silver/Gold/Black, métricas, historial, top clientes y configuración de umbrales. |
-| Club FRAGUAN | Cashback implementado y probado | Tasas y vencimiento configurables por nivel, acumulación automática por venta, uso como medio de pago, reversión en devoluciones y beneficios descriptivos. |
+| Club FRAGUAN | Cashback implementado y probado | Tasas y vencimiento configurables por nivel, acumulación por venta, uso como medio de pago y reversión proporcional en devoluciones sucesivas. Perfil administrativo con saldo vigente, acreditaciones, ticket, origen, vencimiento y beneficios descriptivos. |
 | Reposición | Implementada y probada | Recomendaciones por stock mínimo/ideal, ventas netas, cobertura, proveedor y prioridad. |
 | Reportes | Implementados y probados | Ventas, líneas, productos, categorías, marcas, proveedores, medios, vendedores, costos, rentabilidad y devoluciones con filtros. |
 | Dashboard | Implementado y probado | Ventas confirmadas/parcialmente devueltas, neto, unidades retenidas, costo prorrateado, comisiones, medios de pago y comparaciones Argentina. |
@@ -40,6 +40,15 @@
 Pasaron las pruebas unitarias y de integración de reglas comerciales, stock, calendario financiero, planificación, reporting, dashboard, CSV, Club FRAGUAN y seguridad del vendedor. También pasaron `tests-master-data.mjs` y `tests-cashback.mjs`, que cubren CRUD de datos maestros, archivo/reactivación, edición de variante sin stock directo, importación CSV, aislamiento del vendedor, acumulación y reversión de cashback. `npx tsc --noEmit` pasa después de los cambios actuales.
 
 La base usada es una D1 local de demostración bajo `app/.wrangler/`. El script de aplicación manual de migraciones deja el journal de Drizzle sin reconciliar; antes de conectar una base definitiva habrá que generar/aplicar el historial de forma única y verificable.
+
+### Último bloque: cashback y perfil del cliente
+
+- Corregida la segunda y posteriores devoluciones parciales: se descuenta únicamente el incremento proporcional de cada devolución.
+- El reintegro de un pago con cashback se conserva separado de la recompensa generada por esa compra. Su nueva vigencia respeta los días configurados en el Club.
+- Perfil de cliente con saldo a favor, cashback vigente y últimas 250 acreditaciones, diferenciando compra y reintegro. Los vencidos se identifican como tales y no suman al saldo disponible.
+- `tests-cashback-regressions.mjs`: seis escenarios con servicios reales y todas las migraciones sobre SQLite desechable. Incluye devoluciones sucesivas, pago mixto, vencimiento, consumo, reintentos, saldo no negativo y reintegro íntegro en cashback con caja cerrada. No altera la base de demostración.
+- TypeScript y compilación de producción verificados. La validación visual final sigue pendiente.
+- Regla actual: si la recompensa original ya se gastó, la devolución revierte hasta el saldo remanente de esa recompensa; no crea deuda automática. Debe definirse antes de producción cómo recuperar cashback gastado y si los pagos con cashback deben generar nuevas recompensas.
 
 ## Pendientes de negocio
 

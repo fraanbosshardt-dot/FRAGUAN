@@ -217,10 +217,14 @@ export async function GET(
       return reply(
         await rows(
           `SELECT cb.id,cb.customerId,c.name AS customerName,c.surname AS customerSurname,
-            cb.saleId,cb.amount,cb.balance,cb.status,cb.expiresAt,cb.createdAt
+            cb.saleId,s.ticket,cb.refundId,cb.amount,cb.balance,
+            CASE WHEN cb.status='active' AND cb.expiresAt IS NOT NULL AND cb.expiresAt<?
+              THEN 'expired' ELSE cb.status END AS status,cb.expiresAt,cb.createdAt
            FROM customer_cashback cb JOIN customers c ON c.id=cb.customerId
+           JOIN sales s ON s.id=cb.saleId
            WHERE (? IS NULL OR cb.customerId=?)
-           ORDER BY cb.createdAt DESC LIMIT 250`,
+           ORDER BY cb.createdAt DESC,cb.rowid DESC LIMIT 250`,
+          now(),
           customerId,
           customerId,
         ),

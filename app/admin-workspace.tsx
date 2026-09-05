@@ -371,7 +371,13 @@ export default function Admin({ section }: { section: string }) {
   async function customerProfile(customerId: string) {
     setError('');
     try {
-      setSelected(await api('customer-intelligence?id=' + customerId));
+      const encodedId = encodeURIComponent(customerId);
+      const [profile, balances, cashback] = await Promise.all([
+        api('customer-intelligence?id=' + encodedId),
+        api('customer-credit-balance?customerId=' + encodedId),
+        api('customer-cashback?customerId=' + encodedId),
+      ]);
+      setSelected({ ...profile, balances, cashback });
       setModal('customer-profile');
     } catch (e: any) {
       setError(e.message);
@@ -2678,6 +2684,91 @@ export default function Admin({ section }: { section: string }) {
                   {selected.metrics?.notes || 'Sin observaciones'}
                 </span>
               </div>
+              <h3>Club FRAGUAN</h3>
+              <div className="metric-grid profile-metrics">
+                <Metric
+                  title="Cashback disponible"
+                  value={money(selected.balances?.cashbackBalance)}
+                  detail="Saldo vigente para próximas compras"
+                />
+                <Metric
+                  title="Saldo a favor"
+                  value={money(selected.balances?.balance)}
+                  detail="Crédito vigente por devoluciones"
+                />
+                <Metric
+                  title="Cashback del nivel"
+                  value={`${(selected.config?.loyalty?.cashbackBps?.[selected.metrics?.loyaltyLevel] ?? 0) / 100}%`}
+                  detail={`Vigencia: ${selected.config?.loyalty?.cashbackExpiryDays ?? 365} días`}
+                />
+              </div>
+              {!!selected.config?.loyalty?.benefits?.[
+                selected.metrics?.loyaltyLevel
+              ]?.length && (
+                <ul>
+                  {selected.config.loyalty.benefits[
+                    selected.metrics.loyaltyLevel
+                  ].map((benefit: string, index: number) => (
+                    <li key={`${index}-${benefit}`}>{benefit}</li>
+                  ))}
+                </ul>
+              )}
+              <h3>Acreditaciones de cashback</h3>
+              {!!selected.cashback?.length ? (
+                <div className="data-table profile-history">
+                  <table>
+                    <caption className="quiet">
+                      Últimas 250 acreditaciones. El saldo disponible incluye
+                      todas las vigentes.
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th>Fecha / ticket</th>
+                        <th>Origen</th>
+                        <th>Acreditado</th>
+                        <th>Saldo</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selected.cashback.map((reward: Row) => (
+                        <tr key={reward.id}>
+                          <td>
+                            {date(reward.createdAt)}
+                            <small>#{reward.ticket}</small>
+                          </td>
+                          <td>
+                            {reward.refundId
+                              ? 'Reintegro por devolución'
+                              : 'Compra'}
+                          </td>
+                          <td>{money(reward.amount)}</td>
+                          <td>{money(reward.balance)}</td>
+                          <td>
+                            {reward.expiresAt
+                              ? date(reward.expiresAt)
+                              : 'Sin vencimiento'}
+                          </td>
+                          <td>
+                            {(
+                              {
+                                active: 'Disponible',
+                                used: 'Sin saldo',
+                                expired: 'Vencido',
+                              } as Record<string, string>
+                            )[reward.status] ?? reward.status}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="quiet">
+                  Este cliente todavía no tiene acreditaciones de cashback.
+                </p>
+              )}
               <h3>Historial de compras</h3>
               <div className="data-table profile-history">
                 <table>
