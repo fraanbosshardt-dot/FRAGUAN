@@ -310,6 +310,33 @@ export default function Admin({ section }: { section: string }) {
       setError(e.message);
     }
   }
+  function openLoyaltyConfig() {
+    const config = data?.config;
+    const threshold = (level: 'Silver' | 'Gold' | 'Black') =>
+      config?.loyalty?.thresholds?.[level] ?? {
+        minSpendMinor: 0,
+        minPurchases: 0,
+        minPoints: 0,
+      };
+    const silver = threshold('Silver');
+    const gold = threshold('Gold');
+    const black = threshold('Black');
+    setForm({
+      loyaltyWindowDays: config?.loyalty?.evaluationWindowDays ?? 365,
+      silverSpend: Number(silver.minSpendMinor ?? 0) / 100,
+      silverPurchases: silver.minPurchases ?? 0,
+      silverPoints: silver.minPoints ?? 0,
+      goldSpend: Number(gold.minSpendMinor ?? 0) / 100,
+      goldPurchases: gold.minPurchases ?? 0,
+      goldPoints: gold.minPoints ?? 0,
+      blackSpend: Number(black.minSpendMinor ?? 0) / 100,
+      blackPurchases: black.minPurchases ?? 0,
+      blackPoints: black.minPoints ?? 0,
+    });
+    setSelected(null);
+    setError('');
+    setModal('loyalty-config');
+  }
   async function mutate(resource: string, payload: unknown) {
     setBusy(true);
     setError('');
@@ -531,6 +558,31 @@ export default function Admin({ section }: { section: string }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     try {
+      if (modal === 'loyalty-config') {
+        await mutate('customer-intelligence-config', {
+          loyalty: {
+            evaluationWindowDays: Number(form.loyaltyWindowDays),
+            thresholds: {
+              Silver: {
+                minSpendMinor: minor(String(form.silverSpend)),
+                minPurchases: Number(form.silverPurchases),
+                minPoints: Number(form.silverPoints),
+              },
+              Gold: {
+                minSpendMinor: minor(String(form.goldSpend)),
+                minPurchases: Number(form.goldPurchases),
+                minPoints: Number(form.goldPoints),
+              },
+              Black: {
+                minSpendMinor: minor(String(form.blackSpend)),
+                minPurchases: Number(form.blackPurchases),
+                minPoints: Number(form.blackPoints),
+              },
+            },
+          },
+        });
+        return;
+      }
       if (modal === 'product-import') {
         if (!form.importPreview)
           throw new Error('Validá el archivo antes de importarlo.');
@@ -857,6 +909,7 @@ export default function Admin({ section }: { section: string }) {
       'edit-customer': 'Editar cliente',
       'edit-supplier': 'Editar proveedor',
       labels: 'Imprimir etiquetas',
+      'loyalty-config': 'Configurar Club FRAGUAN',
       'master-active': selected?.active
         ? 'Archivar registro'
         : 'Reactivar registro',
@@ -886,6 +939,8 @@ export default function Admin({ section }: { section: string }) {
         'Mantené el contacto y las condiciones comerciales del proveedor.',
       labels:
         'Generá etiquetas de texto con precio, talle, color, SKU y código de barras.',
+      'loyalty-config':
+        'Los cambios se aplican a la clasificación de clientes y a las promociones por nivel.',
       'master-active':
         'El archivo es reversible y conserva ventas, movimientos e historial.',
       'recurring-expense':
@@ -985,6 +1040,11 @@ export default function Admin({ section }: { section: string }) {
                   onClick={() => openForm('product-import')}
                 >
                   <Download size={15} /> Importar CSV
+                </Button>
+              )}
+              {section === 'customer-intelligence' && (
+                <Button variant="outline" onClick={openLoyaltyConfig}>
+                  <SlidersHorizontal size={15} /> Configurar Club
                 </Button>
               )}
               {![
@@ -2598,6 +2658,48 @@ export default function Admin({ section }: { section: string }) {
             </div>
           ) : (
             <form className="quick-form" onSubmit={submit}>
+              {modal === 'loyalty-config' && (
+                <>
+                  <p>
+                    Definí las condiciones acumuladas en la ventana del Club.
+                    Los niveles superiores deben mantener requisitos iguales o
+                    mayores.
+                  </p>
+                  {field('loyaltyWindowDays', 'Ventana de evaluación (días)', {
+                    type: 'number',
+                  })}
+                  <h3>Silver</h3>
+                  {field('silverSpend', 'Gasto mínimo (pesos)', {
+                    type: 'number',
+                  })}
+                  {field('silverPurchases', 'Compras mínimas', {
+                    type: 'number',
+                  })}
+                  {field('silverPoints', 'Puntos mínimos', {
+                    type: 'number',
+                  })}
+                  <h3>Gold</h3>
+                  {field('goldSpend', 'Gasto mínimo (pesos)', {
+                    type: 'number',
+                  })}
+                  {field('goldPurchases', 'Compras mínimas', {
+                    type: 'number',
+                  })}
+                  {field('goldPoints', 'Puntos mínimos', {
+                    type: 'number',
+                  })}
+                  <h3>Black</h3>
+                  {field('blackSpend', 'Gasto mínimo (pesos)', {
+                    type: 'number',
+                  })}
+                  {field('blackPurchases', 'Compras mínimas', {
+                    type: 'number',
+                  })}
+                  {field('blackPoints', 'Puntos mínimos', {
+                    type: 'number',
+                  })}
+                </>
+              )}
               {modal === 'product-import' && (
                 <>
                   <div className="import-actions">

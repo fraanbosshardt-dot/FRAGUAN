@@ -488,6 +488,81 @@ export function resolveCustomerIntelligenceConfig(
   return config;
 }
 
+function configInput(value: unknown): CustomerIntelligenceConfigInput {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('La configuración del Club debe ser un objeto.');
+  }
+  return value as CustomerIntelligenceConfigInput;
+}
+
+/** Loads the persisted Club FRAGUAN rules, falling back to safe defaults. */
+export async function readCustomerIntelligenceConfig() {
+  const { one } = await import('@/db/queries');
+  const row = await one<{ value: string }>(
+    'SELECT value FROM settings WHERE key=?',
+    'customerIntelligence',
+  );
+  if (!row?.value) return resolveCustomerIntelligenceConfig();
+  try {
+    return resolveCustomerIntelligenceConfig(JSON.parse(row.value));
+  } catch {
+    throw new Error('La configuración del Club debe revisarse.');
+  }
+}
+
+/** Persists configurable level conditions while preserving omitted settings. */
+export async function saveCustomerIntelligenceConfig(
+  actor: Actor,
+  raw: unknown,
+) {
+  await requireCustomerIntelligenceAccess(actor);
+  const input = configInput(raw);
+  const current = await readCustomerIntelligenceConfig();
+  const config = resolveCustomerIntelligenceConfig({
+    segmentation: {
+      ...current.segmentation,
+      ...input.segmentation,
+    },
+    loyalty: {
+      evaluationWindowDays:
+        input.loyalty?.evaluationWindowDays ??
+        current.loyalty.evaluationWindowDays,
+      thresholds: {
+        Silver: {
+          ...current.loyalty.thresholds.Silver,
+          ...input.loyalty?.thresholds?.Silver,
+        },
+        Gold: {
+          ...current.loyalty.thresholds.Gold,
+          ...input.loyalty?.thresholds?.Gold,
+        },
+        Black: {
+          ...current.loyalty.thresholds.Black,
+          ...input.loyalty?.thresholds?.Black,
+        },
+      },
+    },
+    historyLimit: input.historyLimit ?? current.historyLimit,
+    topCustomerLimit: input.topCustomerLimit ?? current.topCustomerLimit,
+  });
+  const { auditStatement, db, statement } = await import('@/db/queries');
+  await db().batch([
+    statement(
+      'INSERT INTO settings(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+      'customerIntelligence',
+      JSON.stringify(config),
+    ),
+    auditStatement(
+      actor.id,
+      'Configurar Club FRAGUAN',
+      'customerIntelligence',
+      current,
+      config,
+    ),
+  ]);
+  return config;
+}
+
 function resolvedAsOf(value?: Date | string | number) {
   const milliseconds = dateMilliseconds('asOf', value ?? new Date());
   return { milliseconds, iso: new Date(milliseconds).toISOString() };

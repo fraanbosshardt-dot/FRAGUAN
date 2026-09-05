@@ -34,6 +34,8 @@ import { getCashFlow } from '@/lib/cashflow';
 import {
   getCustomerInsights,
   getCustomerIntelligence,
+  readCustomerIntelligenceConfig,
+  saveCustomerIntelligenceConfig,
 } from '@/lib/customer-intelligence';
 import { getStockReplenishment } from '@/lib/stock-replenishment';
 import {
@@ -236,11 +238,16 @@ export async function GET(
     }
     if (resource === 'customer-intelligence') {
       const customerId = url.searchParams.get('id');
+      const config = await readCustomerIntelligenceConfig();
       return reply(
         customerId
-          ? await getCustomerIntelligence(a, customerId)
-          : await getCustomerInsights(a),
+          ? await getCustomerIntelligence(a, customerId, { config })
+          : await getCustomerInsights(a, { config }),
       );
+    }
+    if (resource === 'customer-intelligence-config') {
+      requirePermission(a, 'customer-intelligence');
+      return reply(await readCustomerIntelligenceConfig());
     }
     if (resource === 'replenishment')
       return reply(await getStockReplenishment(a));
@@ -470,6 +477,8 @@ export async function POST(
       return reply(await setMasterRecordActive(a, body));
     if (resource === 'product-import')
       return reply(await importProducts(a, body));
+    if (resource === 'customer-intelligence-config')
+      return reply(await saveCustomerIntelligenceConfig(a, body));
     if (resource === 'refunds') {
       return reply(await refundPartial(a, body));
     }

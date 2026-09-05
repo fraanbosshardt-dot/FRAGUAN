@@ -14,7 +14,10 @@ import {
   evaluateCommercialRules,
   type CommercialPromotion,
 } from './commercial-rules';
-import { calculateLoyaltyLevel } from './customer-intelligence';
+import {
+  calculateLoyaltyLevel,
+  readCustomerIntelligenceConfig,
+} from './customer-intelligence';
 type Variant = {
   id: string;
   name: string;
@@ -102,19 +105,23 @@ async function customerCommercialContext(customerId: string | null) {
     customerId,
   );
   if (!customer) throw new AppError(400, 'Cliente inválido.');
+  const config = await readCustomerIntelligenceConfig();
   return {
-    level: calculateLoyaltyLevel({
-      createdAt: customer.createdAt,
-      firstPurchaseAt: null,
-      lastPurchaseAt: null,
-      purchaseCount: customer.purchases,
-      lifetimeSpendMinor: customer.spent,
-      purchasesInSegmentWindow: customer.purchases,
-      spendInSegmentWindowMinor: customer.spent,
-      purchasesInLoyaltyWindow: customer.purchases,
-      spendInLoyaltyWindowMinor: customer.spent,
-      points: customer.points,
-    }),
+    level: calculateLoyaltyLevel(
+      {
+        createdAt: customer.createdAt,
+        firstPurchaseAt: null,
+        lastPurchaseAt: null,
+        purchaseCount: customer.purchases,
+        lifetimeSpendMinor: customer.spent,
+        purchasesInSegmentWindow: customer.purchases,
+        spendInSegmentWindowMinor: customer.spent,
+        purchasesInLoyaltyWindow: customer.purchases,
+        spendInLoyaltyWindowMinor: customer.spent,
+        points: customer.points,
+      },
+      config,
+    ),
     birthDate: customer.birthday ?? undefined,
   };
 }
