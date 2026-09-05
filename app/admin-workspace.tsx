@@ -2626,6 +2626,24 @@ export default function Admin({ section }: { section: string }) {
                   }
                 />
               </div>
+              <div className="profile-contact">
+                <span>
+                  <strong>WhatsApp</strong>
+                  {selected.metrics?.whatsapp || 'Sin cargar'}
+                </span>
+                <span>
+                  <strong>Localidad</strong>
+                  {selected.metrics?.locality || 'Sin cargar'}
+                </span>
+                <span>
+                  <strong>Talles habituales</strong>
+                  {selected.metrics?.usualSizes || 'Sin cargar'}
+                </span>
+                <span>
+                  <strong>Observaciones</strong>
+                  {selected.metrics?.notes || 'Sin observaciones'}
+                </span>
+              </div>
               <h3>Historial de compras</h3>
               <div className="data-table profile-history">
                 <table>

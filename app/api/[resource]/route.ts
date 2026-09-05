@@ -237,6 +237,7 @@ export async function GET(
       return reply(await getCashFlow());
     }
     if (resource === 'customer-intelligence') {
+      requirePermission(a, 'customer-intelligence');
       const customerId = url.searchParams.get('id');
       const config = await readCustomerIntelligenceConfig();
       return reply(

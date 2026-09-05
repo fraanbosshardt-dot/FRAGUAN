@@ -126,6 +126,10 @@ export interface CustomerMetrics extends CustomerActivitySnapshot {
   surname: string;
   phone: string;
   email: string;
+  whatsapp: string;
+  locality: string;
+  usualSizes: string;
+  notes: string;
   birthday: string | null;
   customerAgeDays: number;
   daysSinceLastPurchase: number | null;
@@ -227,6 +231,10 @@ interface CustomerActivityRow {
   surname: string;
   phone: string;
   email: string;
+  whatsapp: string;
+  locality: string;
+  usualSizes: string;
+  notes: string;
   birthday: string | null;
   points: NumericDatabaseValue;
   createdAt: string;
@@ -270,6 +278,10 @@ const CUSTOMER_ACTIVITY_SELECT = `
     c.surname,
     c.phone,
     c.email,
+    c.whatsapp,
+    c.locality,
+    c.usualSizes,
+    c.notes,
     c.birthday,
     c.points,
     c.createdAt,
@@ -309,6 +321,10 @@ const CUSTOMER_ACTIVITY_GROUP = `
     c.surname,
     c.phone,
     c.email,
+    c.whatsapp,
+    c.locality,
+    c.usualSizes,
+    c.notes,
     c.birthday,
     c.points,
     c.createdAt
@@ -720,6 +736,10 @@ function metricsFromRow(
     surname: row.surname,
     phone: row.phone,
     email: row.email,
+    whatsapp: row.whatsapp,
+    locality: row.locality,
+    usualSizes: row.usualSizes,
+    notes: row.notes,
     birthday: row.birthday,
     ...activity,
     customerAgeDays: elapsedDays(activity.createdAt, asOfMilliseconds),
