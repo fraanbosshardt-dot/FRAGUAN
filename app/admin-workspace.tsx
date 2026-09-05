@@ -44,6 +44,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { api, money, minor, date, useSession, Row } from '@/lib/client';
+import { buildProductCsvTemplate, parseProductCsv } from '@/lib/product-csv';
 const navigation = [
   ['dashboard', 'Vista general', LayoutDashboard],
   ['products', 'Productos', Package],
@@ -71,12 +72,15 @@ const navigation = [
 const columns: Record<string, [string, string, string?][]> = {
   products: [
     ['name', 'Producto'],
+    ['internalCode', 'Código'],
     ['sku', 'SKU'],
     ['color', 'Color'],
     ['size', 'Talle'],
     ['price', 'Precio', 'money'],
     ['cost', 'Costo', 'money'],
     ['stock', 'Stock'],
+    ['ideal', 'Ideal'],
+    ['active', 'Activo'],
   ],
   stock: [
     ['name', 'Producto'],
@@ -98,15 +102,20 @@ const columns: Record<string, [string, string, string?][]> = {
     ['name', 'Nombre'],
     ['surname', 'Apellido'],
     ['phone', 'Teléfono'],
+    ['email', 'Email'],
     ['purchases', 'Compras'],
     ['spent', 'Total comprado', 'money'],
     ['points', 'Puntos'],
+    ['active', 'Activo'],
   ],
   suppliers: [
     ['name', 'Proveedor'],
+    ['contact', 'Contacto'],
     ['phone', 'Teléfono'],
     ['email', 'Email'],
     ['terms', 'Condiciones'],
+    ['purchased', 'Comprado', 'money'],
+    ['active', 'Activo'],
   ],
   purchases: [
     ['supplier', 'Proveedor'],
@@ -226,16 +235,63 @@ export default function Admin({ section }: { section: string }) {
     [aux, setAux] = useState<Row>({ variants: [], suppliers: [] }),
     [form, setForm] = useState<Row>({}),
     [success, setSuccess] = useState(''),
-    [authorization, setAuthorization] = useState<Row | null>(null);
+    [authorization, setAuthorization] = useState<Row | null>(null),
+    [reportFrom, setReportFrom] = useState(
+      () =>
+        `${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date()).slice(0, 7)}-01`,
+    ),
+    [reportTo, setReportTo] = useState(() =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+      }).format(new Date()),
+    ),
+    [financialPlans, setFinancialPlans] = useState<Row>({
+      recurring: [],
+      obligations: [],
+    });
   const title = navigation.find((n) => n[0] === section)?.[1] ?? 'FRAGUAN';
   const load = async () => {
-    setData(await api(section));
+    if (section === 'financial-calendar') {
+      const [calendar, plans] = await Promise.all([
+        api('financial-calendar'),
+        api('financial-plans'),
+      ]);
+      setData(calendar);
+      setFinancialPlans(plans);
+      return;
+    }
+    setData(
+      await api(
+        section === 'reports'
+          ? `reports?from=${reportFrom}&to=${reportTo}`
+          : ['products', 'suppliers'].includes(section)
+            ? `${section}?includeArchived=1`
+            : section,
+      ),
+    );
   };
   useEffect(() => {
     load().catch((e) => setError(e.message));
   }, [section]);
   async function openForm(type = 'create', row: Row | null = null) {
-    setForm({});
+    setForm(
+      row && type.startsWith('edit-')
+        ? {
+            ...row,
+            ...(type === 'edit-variant'
+              ? {
+                  price: Number(row.price ?? 0) / 100,
+                  cost: Number(row.cost ?? 0) / 100,
+                }
+              : {}),
+            ...(type === 'edit-supplier'
+              ? { discountPercent: Number(row.discountBps ?? 0) / 100 }
+              : {}),
+          }
+        : type === 'labels'
+          ? { labelCount: 1 }
+          : {},
+    );
     setSelected(row);
     setError('');
     setModal(type);
@@ -243,7 +299,11 @@ export default function Admin({ section }: { section: string }) {
       const next: Row = { variants: [], suppliers: [] };
       if (['purchases', 'inventory', 'stock'].includes(section))
         next.variants = await api('products');
-      if (['purchases', 'payables'].includes(section))
+      if (
+        ['products', 'purchases', 'payables', 'financial-calendar'].includes(
+          section,
+        )
+      )
         next.suppliers = await api('suppliers');
       setAux(next);
     } catch (e: any) {
@@ -332,6 +392,13 @@ export default function Admin({ section }: { section: string }) {
   const filtered = list.filter((r) =>
     Object.values(r).join(' ').toLowerCase().includes(search.toLowerCase()),
   );
+  function reportComparison(key: string) {
+    const value = data?.comparison?.[key];
+    if (!value) return 'Sin período comparable';
+    if (value.changeBps == null) return 'Sin base en el período anterior';
+    const sign = value.changeBps > 0 ? '+' : '';
+    return `${sign}${(value.changeBps / 100).toFixed(1)}% vs. período anterior`;
+  }
   function exportCsv() {
     const cols = columns[section] ?? [
       ['name', 'Nombre'],
@@ -358,6 +425,45 @@ export default function Admin({ section }: { section: string }) {
     a.download = `fraguan-${section}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+  async function downloadProductTemplate() {
+    try {
+      const template = await api('product-import-template');
+      const url = URL.createObjectURL(
+        new Blob(
+          [buildProductCsvTemplate(template.columns, template.example)],
+          { type: 'text/csv;charset=utf-8' },
+        ),
+      );
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'fraguan-plantilla-productos.csv';
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
+  async function previewProductImport() {
+    if (!form.importRows?.length) {
+      setError('Seleccioná un archivo CSV antes de validarlo.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const preview = await api('product-import', {
+        rows: form.importRows,
+        mode: form.mode || 'create_only',
+        stockMode: form.stockMode || 'ignore',
+        dryRun: true,
+      });
+      setForm({ ...form, importPreview: preview });
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
   }
   function field(
     name: string,
@@ -425,6 +531,119 @@ export default function Admin({ section }: { section: string }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     try {
+      if (modal === 'product-import') {
+        if (!form.importPreview)
+          throw new Error('Validá el archivo antes de importarlo.');
+        await mutate('product-import', {
+          rows: form.importRows,
+          mode: form.mode || 'create_only',
+          stockMode: form.stockMode || 'ignore',
+          dryRun: false,
+        });
+        return;
+      }
+      if (modal === 'edit-product') {
+        await mutate('update-product', {
+          id: selected?.productId,
+          name: form.name,
+          internalCode: form.internalCode || '',
+          category: form.category,
+          subcategory: form.subcategory || '',
+          brand: form.brand || 'FRAGUAN',
+          season: form.season || '',
+          collection: form.collection || '',
+          location: form.location || '',
+          supplierId: form.supplierId || null,
+        });
+        return;
+      }
+      if (modal === 'edit-variant') {
+        await mutate('update-variant', {
+          id: selected?.id,
+          sku: form.sku,
+          barcode: form.barcode,
+          color: form.color,
+          size: form.size,
+          price: minor(form.price),
+          cost: minor(form.cost),
+          minimum: Number(form.minimum || 0),
+          ideal: Number(form.ideal || 0),
+          entryAt: form.entryAt || '',
+        });
+        return;
+      }
+      if (modal === 'edit-customer') {
+        await mutate('update-customer', {
+          id: selected?.id,
+          name: form.name,
+          surname: form.surname,
+          phone: form.phone,
+          whatsapp: form.whatsapp || '',
+          email: form.email || '',
+          birthday: form.birthday || null,
+          locality: form.locality || '',
+          usualSizes: form.usualSizes || '',
+          notes: form.notes || '',
+        });
+        return;
+      }
+      if (modal === 'edit-supplier') {
+        await mutate('update-supplier', {
+          id: selected?.id,
+          name: form.name,
+          company: form.company || '',
+          contact: form.contact || '',
+          phone: form.phone || '',
+          whatsapp: form.whatsapp || '',
+          email: form.email || '',
+          brands: form.brands || '',
+          terms: form.terms || '',
+          discountBps: Math.round(Number(form.discountPercent || 0) * 100),
+          paymentDays: Number(form.paymentDays || 0),
+          notes: form.notes || '',
+        });
+        return;
+      }
+      if (modal === 'master-active') {
+        await mutate('set-master-active', {
+          entity: selected?.entity,
+          id: selected?.targetId,
+          active: !selected?.active,
+        });
+        return;
+      }
+      if (modal === 'recurring-expense') {
+        const today = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Argentina/Buenos_Aires',
+        }).format(new Date());
+        await mutate('recurring-expenses', {
+          description: form.description,
+          category: form.category || 'Servicios',
+          amount: minor(form.amount),
+          frequency: form.frequency || 'monthly',
+          interval: Number(form.interval || 1),
+          startsOn: form.startsOn || today,
+          endsOn: form.endsOn || null,
+          supplierId: form.supplierId || null,
+          methodId: form.methodId || null,
+        });
+        return;
+      }
+      if (modal === 'installment-obligation') {
+        const today = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Argentina/Buenos_Aires',
+        }).format(new Date());
+        await mutate('installment-obligations', {
+          description: form.description,
+          supplierId: form.supplierId || null,
+          total: minor(form.total),
+          installmentCount: Number(form.installmentCount || 3),
+          firstDueOn: form.firstDueOn || today,
+          intervalMonths: Number(form.intervalMonths || 1),
+          kind: form.kind || 'Cuota',
+        });
+        return;
+      }
       if (modal === 'method') {
         await mutate('configure-method', {
           id: selected?.id,
@@ -451,6 +670,8 @@ export default function Admin({ section }: { section: string }) {
           cost: minor(form.cost),
           stock: Number(form.stock),
           minimum: Number(form.minimum || 3),
+          ideal: Number(form.ideal || 6),
+          entryAt: form.entryAt || '',
         });
         return;
       }
@@ -499,8 +720,14 @@ export default function Admin({ section }: { section: string }) {
       if (section === 'products')
         payload = {
           name: form.name,
+          internalCode: form.internalCode || '',
           category: form.category,
+          subcategory: form.subcategory || '',
           brand: form.brand || 'FRAGUAN',
+          season: form.season || '',
+          collection: form.collection || '',
+          location: form.location || '',
+          supplierId: form.supplierId || null,
           color: form.color,
           size: form.size,
           sku: form.sku,
@@ -509,6 +736,8 @@ export default function Admin({ section }: { section: string }) {
           cost: minor(form.cost),
           stock: Number(form.stock),
           minimum: Number(form.minimum ?? 3),
+          ideal: Number(form.ideal ?? 6),
+          entryAt: form.entryAt || '',
         };
       if (section === 'stock')
         payload = {
@@ -521,9 +750,16 @@ export default function Admin({ section }: { section: string }) {
       if (section === 'suppliers')
         payload = {
           name: form.name,
+          company: form.company || '',
+          contact: form.contact || '',
           phone: form.phone || '',
+          whatsapp: form.whatsapp || '',
           email: form.email || '',
+          brands: form.brands || '',
           terms: form.terms || '',
+          discountBps: Math.round(Number(form.discountPercent || 0) * 100),
+          paymentDays: Number(form.paymentDays || 0),
+          notes: form.notes || '',
         };
       if (section === 'expenses')
         payload = {
@@ -613,6 +849,61 @@ export default function Admin({ section }: { section: string }) {
     setError('');
     setModal('action');
   }
+  function currentModalTitle() {
+    const titles: Record<string, string> = {
+      'product-import': 'Importar productos y variantes',
+      'edit-product': 'Editar producto',
+      'edit-variant': 'Editar variante',
+      'edit-customer': 'Editar cliente',
+      'edit-supplier': 'Editar proveedor',
+      labels: 'Imprimir etiquetas',
+      'master-active': selected?.active
+        ? 'Archivar registro'
+        : 'Reactivar registro',
+      'recurring-expense': 'Nuevo gasto recurrente',
+      'installment-obligation': 'Nueva obligación en cuotas',
+      sale: 'Detalle de venta',
+      refund: 'Cambio o devolución',
+      'customer-profile': 'Perfil del cliente',
+      'purchase-detail': 'Orden de compra',
+      'purchase-receipt': 'Recibir mercadería',
+    };
+    return modal === 'create'
+      ? `Agregar · ${title}`
+      : (titles[modal] ?? 'Confirmar operación');
+  }
+  function currentModalDescription() {
+    const descriptions: Record<string, string> = {
+      'product-import':
+        'Validá el archivo antes de aplicarlo. El stock siempre se ajusta mediante movimientos trazables.',
+      'edit-product':
+        'Actualizá la ficha general compartida por todas sus variantes.',
+      'edit-variant':
+        'Actualizá identificación, precio, costo y objetivos. El stock se modifica desde su módulo específico.',
+      'edit-customer':
+        'Completá los datos útiles para atención, fidelización y seguimiento.',
+      'edit-supplier':
+        'Mantené el contacto y las condiciones comerciales del proveedor.',
+      labels:
+        'Generá etiquetas de texto con precio, talle, color, SKU y código de barras.',
+      'master-active':
+        'El archivo es reversible y conserva ventas, movimientos e historial.',
+      'recurring-expense':
+        'Definí la frecuencia una sola vez. El sistema generará cuentas a pagar identificables y evitará duplicados.',
+      'installment-obligation':
+        'El importe se dividirá exactamente entre las cuotas y cada vencimiento quedará registrado por separado.',
+      refund:
+        'Esta operación reintegra el stock, revierte el cobro registrado y descuenta los puntos. Ejecutá el reintegro en el medio de pago correspondiente.',
+      'customer-profile':
+        'Segmentación, nivel e historial calculados con la actividad registrada.',
+      'purchase-detail': 'Líneas, costos, estado y recepciones de la orden.',
+      'purchase-receipt':
+        'Registrá únicamente las unidades que llegaron. El resto quedará pendiente.',
+    };
+    return (
+      descriptions[modal] ?? 'Los cambios quedarán registrados con tu usuario.'
+    );
+  }
   return (
     <div className="admin-shell">
       <aside className="sidebar">
@@ -688,6 +979,14 @@ export default function Admin({ section }: { section: string }) {
                   <Download size={15} /> Exportar CSV
                 </Button>
               )}
+              {section === 'products' && (
+                <Button
+                  variant="outline"
+                  onClick={() => openForm('product-import')}
+                >
+                  <Download size={15} /> Importar CSV
+                </Button>
+              )}
               {![
                 'dashboard',
                 'reports',
@@ -723,7 +1022,7 @@ export default function Admin({ section }: { section: string }) {
               {success}
             </p>
           )}
-          {['dashboard', 'reports', 'insights'].includes(section) && data && (
+          {['dashboard', 'insights'].includes(section) && data && (
             <>
               <div className="metric-grid">
                 <Metric
@@ -917,6 +1216,262 @@ export default function Admin({ section }: { section: string }) {
                     </section>
                   </div>
                 </>
+              )}
+            </>
+          )}
+          {section === 'reports' && data && (
+            <>
+              <section className="panel report-filters">
+                <div>
+                  <p className="eyebrow">PERÍODO DEL REPORTE</p>
+                  <strong>
+                    {date(data.period?.from)} al {date(data.period?.to)}
+                  </strong>
+                  <small>
+                    Comparado con {date(data.previousPeriod?.from)} al{' '}
+                    {date(data.previousPeriod?.to)}
+                  </small>
+                </div>
+                <label>
+                  Desde
+                  <Input
+                    type="date"
+                    value={reportFrom}
+                    max={reportTo}
+                    onChange={(event) => setReportFrom(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Hasta
+                  <Input
+                    type="date"
+                    value={reportTo}
+                    min={reportFrom}
+                    onChange={(event) => setReportTo(event.target.value)}
+                  />
+                </label>
+                <Button
+                  onClick={() => load().catch((e) => setError(e.message))}
+                >
+                  Aplicar período
+                </Button>
+              </section>
+              <div className="metric-grid">
+                <Metric
+                  title="Venta neta"
+                  value={money(data.current?.revenueMinor)}
+                  detail={reportComparison('revenueMinor')}
+                />
+                <Metric
+                  title="Ganancia comercial"
+                  value={money(data.current?.grossProfitMinor)}
+                  detail={reportComparison('grossProfitMinor')}
+                />
+                <Metric
+                  title="Margen comercial"
+                  value={`${((data.current?.marginBps ?? 0) / 100).toFixed(1)}%`}
+                  detail={`Anterior: ${((data.previous?.marginBps ?? 0) / 100).toFixed(1)}%`}
+                />
+                <Metric
+                  title="Ticket promedio"
+                  value={money(data.current?.averageTicketMinor)}
+                  detail={reportComparison('averageTicketMinor')}
+                />
+                <Metric
+                  title="Tickets"
+                  value={String(data.current?.tickets ?? 0)}
+                  detail={reportComparison('tickets')}
+                />
+                <Metric
+                  title="Unidades netas"
+                  value={String(data.current?.units ?? 0)}
+                  detail={reportComparison('units')}
+                />
+                <Metric
+                  title="Clientes nuevos"
+                  value={String(data.current?.newCustomers ?? 0)}
+                  detail={reportComparison('newCustomers')}
+                />
+                <Metric
+                  title="Clientes recurrentes"
+                  value={String(data.current?.repeatCustomers ?? 0)}
+                  detail={reportComparison('repeatCustomers')}
+                />
+              </div>
+              <div className="dashboard-panels">
+                <section className="panel chart-panel">
+                  <div className="panel-heading">
+                    <h2>Evolución del período</h2>
+                    <span>Venta neta por día</span>
+                  </div>
+                  {data.trend?.length ? (
+                    <ChartContainer
+                      config={{
+                        revenueMinor: {
+                          label: 'Venta neta',
+                          color: '#60764c',
+                        },
+                      }}
+                      className="sales-chart"
+                    >
+                      <AreaChart data={data.trend}>
+                        <defs>
+                          <linearGradient
+                            id="reportGradient"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor="#78935e"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor="#78935e"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid vertical={false} strokeDasharray="4 5" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(value) => value.slice(5)}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          tickFormatter={(value) =>
+                            `${Math.round(value / 100000)}k`
+                          }
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <Tooltip
+                          formatter={(value: any) => money(Number(value))}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="revenueMinor"
+                          stroke="#60764c"
+                          strokeWidth={2}
+                          fill="url(#reportGradient)"
+                        />
+                      </AreaChart>
+                    </ChartContainer>
+                  ) : (
+                    <div className="chart-empty">
+                      <ShoppingBag size={28} />
+                      <h3>Sin ventas en este período</h3>
+                      <p>Elegí otro rango o registrá nuevas operaciones.</p>
+                    </div>
+                  )}
+                </section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Categorías</h2>
+                    <span>Venta neta asignada</span>
+                  </div>
+                  {data.breakdowns?.categories?.slice(0, 8).map((item: Row) => (
+                    <div className="rank-row" key={item.name}>
+                      <strong>{item.name}</strong>
+                      <span>
+                        {item.units} u. · {money(item.revenueMinor)}
+                      </span>
+                    </div>
+                  ))}
+                </section>
+              </div>
+              <div className="dashboard-panels">
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Medios de pago</h2>
+                    <span>Importe y comisión netos</span>
+                  </div>
+                  {data.breakdowns?.paymentMethods?.map((item: Row) => (
+                    <div className="rank-row" key={item.id}>
+                      <strong>{item.name}</strong>
+                      <span>
+                        {money(item.revenueMinor)} · comisión{' '}
+                        {money(item.commissionMinor)}
+                      </span>
+                    </div>
+                  ))}
+                </section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Vendedores</h2>
+                    <span>Venta neta</span>
+                  </div>
+                  {data.breakdowns?.sellers?.map((item: Row) => (
+                    <div className="rank-row" key={item.id}>
+                      <strong>{item.name}</strong>
+                      <span>
+                        {item.tickets} tickets · {money(item.revenueMinor)}
+                      </span>
+                    </div>
+                  ))}
+                </section>
+              </div>
+              <section className="panel table-panel">
+                <div className="panel-heading">
+                  <h2>Rentabilidad por producto</h2>
+                  <span>Hasta 100 productos</span>
+                </div>
+                <div className="data-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>Unidades</th>
+                        <th>Venta neta</th>
+                        <th>Costo</th>
+                        <th>Comisión</th>
+                        <th>Resultado comercial</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.breakdowns?.products?.map((item: Row) => (
+                        <tr key={item.id}>
+                          <td>{item.name}</td>
+                          <td>{item.units}</td>
+                          <td>{money(item.revenueMinor)}</td>
+                          <td>{money(item.costMinor)}</td>
+                          <td>{money(item.commissionMinor)}</td>
+                          <td>
+                            {money(
+                              item.revenueMinor -
+                                item.costMinor -
+                                item.commissionMinor,
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              {!!data.productsWithoutSales?.length && (
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Productos sin ventas</h2>
+                    <span>
+                      {data.productsWithoutSales.length} en el período
+                    </span>
+                  </div>
+                  <div className="stagnant-products">
+                    {data.productsWithoutSales.slice(0, 20).map((item: Row) => (
+                      <span key={item.id}>
+                        {item.name} · {item.category}
+                        {item.lastSaleAt
+                          ? ` · última ${date(item.lastSaleAt)}`
+                          : ' · sin venta histórica'}
+                      </span>
+                    ))}
+                  </div>
+                </section>
               )}
             </>
           )}
@@ -1246,6 +1801,29 @@ export default function Admin({ section }: { section: string }) {
           )}
           {section === 'financial-calendar' && data && (
             <>
+              <div className="cash-actions financial-actions">
+                <Button onClick={() => openForm('recurring-expense')}>
+                  <Plus size={15} /> Gasto recurrente
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => openForm('installment-obligation')}
+                >
+                  <Plus size={15} /> Obligación en cuotas
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const through = new Date();
+                    through.setDate(through.getDate() + 365);
+                    mutate('materialize-financial', {
+                      throughOn: through.toISOString().slice(0, 10),
+                    });
+                  }}
+                >
+                  <RefreshCw size={15} /> Generar próximos vencimientos
+                </Button>
+              </div>
               <div className="metric-grid">
                 {[
                   ['overdue', 'Vencido'],
@@ -1306,6 +1884,62 @@ export default function Admin({ section }: { section: string }) {
                   )}
                 </div>
               </section>
+              <div className="dashboard-panels">
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Gastos recurrentes</h2>
+                    <span>{financialPlans.recurring?.length ?? 0} reglas</span>
+                  </div>
+                  {financialPlans.recurring?.map((plan: Row) => (
+                    <div className="rank-row" key={plan.id}>
+                      <div>
+                        <strong>{plan.description}</strong>
+                        <small>
+                          {plan.frequency === 'monthly' ? 'Mensual' : 'Semanal'}{' '}
+                          · cada {plan.interval} período(s)
+                        </small>
+                      </div>
+                      <span>{money(plan.amount)}</span>
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          mutate('toggle-recurring', { id: plan.id })
+                        }
+                      >
+                        {plan.active ? 'Pausar' : 'Activar'}
+                      </Button>
+                    </div>
+                  ))}
+                  {!financialPlans.recurring?.length && (
+                    <p className="quiet">
+                      No hay gastos recurrentes configurados.
+                    </p>
+                  )}
+                </section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Planes en cuotas</h2>
+                    <span>
+                      {financialPlans.obligations?.length ?? 0} planes
+                    </span>
+                  </div>
+                  {financialPlans.obligations?.map((plan: Row) => (
+                    <div className="rank-row" key={plan.id}>
+                      <div>
+                        <strong>{plan.description}</strong>
+                        <small>
+                          {plan.paidInstallments}/{plan.installmentCount} cuotas
+                          pagadas
+                        </small>
+                      </div>
+                      <span>{money(plan.total)}</span>
+                    </div>
+                  ))}
+                  {!financialPlans.obligations?.length && (
+                    <p className="quiet">No hay obligaciones en cuotas.</p>
+                  )}
+                </section>
+              </div>
             </>
           )}
           {section === 'payables' && data && (
@@ -1457,26 +2091,74 @@ export default function Admin({ section }: { section: string }) {
                             </>
                           )}
                           {section === 'customers' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() => customerProfile(String(r.id))}
-                            >
-                              Perfil
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                onClick={() => customerProfile(String(r.id))}
+                              >
+                                Perfil
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => openForm('edit-customer', r)}
+                              >
+                                Editar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() =>
+                                  openForm('master-active', {
+                                    ...r,
+                                    entity: 'customer',
+                                    targetId: r.id,
+                                  })
+                                }
+                              >
+                                {r.active ? 'Archivar' : 'Reactivar'}
+                              </Button>
+                            </>
                           )}
                           {section === 'products' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() => {
-                                setSelected(r);
-                                setForm({});
-                                setModal('variant');
-                              }}
-                            >
-                              Variante
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                disabled={!r.active}
+                                onClick={() => {
+                                  setSelected(r);
+                                  setForm({});
+                                  setModal('variant');
+                                }}
+                              >
+                                + Variante
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => openForm('edit-product', r)}
+                              >
+                                Producto
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => openForm('edit-variant', r)}
+                              >
+                                Editar variante
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() =>
+                                  openForm('master-active', {
+                                    ...r,
+                                    entity: 'product',
+                                    targetId: r.productId,
+                                  })
+                                }
+                              >
+                                {r.active ? 'Archivar' : 'Reactivar'}
+                              </Button>
+                            </>
                           )}
                           {section === 'products' &&
+                            r.active &&
                             session?.user?.role !== 'STOCK' && (
                               <Button
                                 variant="ghost"
@@ -1485,6 +2167,14 @@ export default function Admin({ section }: { section: string }) {
                                 Precio
                               </Button>
                             )}
+                          {section === 'products' && r.active && (
+                            <Button
+                              variant="ghost"
+                              onClick={() => openForm('labels', r)}
+                            >
+                              <Printer size={14} /> Etiquetas
+                            </Button>
+                          )}
                           {section === 'stock' && (
                             <Button
                               variant="ghost"
@@ -1492,6 +2182,28 @@ export default function Admin({ section }: { section: string }) {
                             >
                               Ajustar
                             </Button>
+                          )}
+                          {section === 'suppliers' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                onClick={() => openForm('edit-supplier', r)}
+                              >
+                                Editar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() =>
+                                  openForm('master-active', {
+                                    ...r,
+                                    entity: 'supplier',
+                                    targetId: r.id,
+                                  })
+                                }
+                              >
+                                {r.active ? 'Archivar' : 'Reactivar'}
+                              </Button>
+                            </>
                           )}
                           {section === 'purchases' && (
                             <Button
@@ -1618,38 +2330,52 @@ export default function Admin({ section }: { section: string }) {
         }}
       >
         <DialogContent className="fraguan-modal admin-modal">
-          <DialogTitle>
-            {modal === 'create'
-              ? `Agregar · ${title}`
-              : modal === 'sale'
-                ? 'Detalle de venta'
-                : modal === 'refund'
-                  ? 'Cambio o devolución'
-                  : modal === 'customer-profile'
-                    ? 'Perfil del cliente'
-                    : modal === 'purchase-detail'
-                      ? 'Orden de compra'
-                      : modal === 'purchase-receipt'
-                        ? 'Recibir mercadería'
-                        : 'Confirmar operación'}
-          </DialogTitle>
-          <DialogDescription>
-            {modal === 'refund'
-              ? 'Esta operación reintegra el stock, revierte el cobro registrado y descuenta los puntos. Ejecutá el reintegro en el medio de pago correspondiente.'
-              : modal === 'customer-profile'
-                ? 'Segmentación, nivel e historial calculados con la actividad registrada.'
-                : modal === 'purchase-detail'
-                  ? 'Líneas, costos, estado y recepciones de la orden.'
-                  : modal === 'purchase-receipt'
-                    ? 'Registrá únicamente las unidades que llegaron. El resto quedará pendiente.'
-                    : 'Los cambios quedarán registrados con tu usuario.'}
-          </DialogDescription>
+          <DialogTitle>{currentModalTitle()}</DialogTitle>
+          <DialogDescription>{currentModalDescription()}</DialogDescription>
           {error && (
             <p className="notice" role="alert">
               {error}
             </p>
           )}
-          {modal === 'sale' && selected ? (
+          {modal === 'labels' && selected ? (
+            <div className="quick-form">
+              <div className="no-print">
+                {field('labelCount', 'Cantidad de etiquetas', {
+                  type: 'number',
+                  value: 1,
+                })}
+                <p className="quiet">
+                  Se imprime una etiqueta por unidad. El máximo de esta tanda es
+                  100.
+                </p>
+                <Button type="button" onClick={() => window.print()}>
+                  <Printer /> Imprimir etiquetas
+                </Button>
+              </div>
+              <div
+                className="print-labels"
+                aria-label="Vista previa de etiquetas"
+              >
+                {Array.from({
+                  length: Math.min(
+                    100,
+                    Math.max(1, Number(form.labelCount ?? 1) || 1),
+                  ),
+                }).map((_, index) => (
+                  <article className="print-label" key={index}>
+                    <strong>FRAGUAN</strong>
+                    <span>{selected.name}</span>
+                    <span>
+                      {selected.color} · {selected.size}
+                    </span>
+                    <b>{money(selected.price)}</b>
+                    <small>SKU {selected.sku}</small>
+                    <small className="label-barcode">{selected.barcode}</small>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : modal === 'sale' && selected ? (
             <>
               <div className="receipt">
                 <h2>FRAGUAN</h2>
@@ -1872,6 +2598,187 @@ export default function Admin({ section }: { section: string }) {
             </div>
           ) : (
             <form className="quick-form" onSubmit={submit}>
+              {modal === 'product-import' && (
+                <>
+                  <div className="import-actions">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={downloadProductTemplate}
+                    >
+                      <Download size={15} /> Descargar plantilla
+                    </Button>
+                    <small>
+                      CSV con separador punto y coma. No admite columnas de
+                      fotos.
+                    </small>
+                  </div>
+                  <label>
+                    Archivo CSV
+                    <Input
+                      type="file"
+                      accept=".csv,text/csv"
+                      required
+                      onChange={async (event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const importRows = parseProductCsv(await file.text());
+                          setError('');
+                          setForm({
+                            ...form,
+                            importRows,
+                            importPreview: null,
+                            importFileName: file.name,
+                          });
+                        } catch (e: any) {
+                          setForm({
+                            ...form,
+                            importRows: [],
+                            importPreview: null,
+                          });
+                          setError(e.message);
+                        }
+                      }}
+                    />
+                  </label>
+                  {field('mode', 'Tratamiento de coincidencias', {
+                    choices: [
+                      ['create_only', 'Solo altas nuevas'],
+                      ['upsert', 'Crear y actualizar existentes'],
+                    ],
+                    value: 'create_only',
+                  })}
+                  {field('stockMode', 'Stock del archivo', {
+                    choices: [
+                      ['ignore', 'No modificar stock'],
+                      ['set', 'Ajustar al stock informado'],
+                    ],
+                    value: 'ignore',
+                  })}
+                  {form.importRows?.length > 0 && (
+                    <p>
+                      <strong>{form.importFileName}</strong> ·{' '}
+                      {form.importRows.length} variantes leídas.
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy || !form.importRows?.length}
+                    onClick={previewProductImport}
+                  >
+                    <Check size={15} /> Validar archivo
+                  </Button>
+                  {form.importPreview?.summary && (
+                    <div className="import-preview">
+                      <strong>Archivo válido</strong>
+                      <span>
+                        {form.importPreview.summary.newProducts} productos
+                        nuevos · {form.importPreview.summary.newVariants}{' '}
+                        variantes nuevas
+                      </span>
+                      <span>
+                        {form.importPreview.summary.updatedProducts} productos y{' '}
+                        {form.importPreview.summary.updatedVariants} variantes a
+                        actualizar
+                      </span>
+                      <span>
+                        {form.importPreview.summary.stockAdjustments} ajustes de
+                        stock trazables
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+              {modal === 'edit-product' && (
+                <>
+                  {field('name', 'Nombre')}
+                  {field('internalCode', 'Código interno', { optional: true })}
+                  {field('category', 'Categoría')}
+                  {field('subcategory', 'Subcategoría', { optional: true })}
+                  {field('brand', 'Marca')}
+                  {field('season', 'Temporada', { optional: true })}
+                  {field('collection', 'Colección', { optional: true })}
+                  {field('location', 'Ubicación en el local', {
+                    optional: true,
+                  })}
+                  {field('supplierId', 'Proveedor', {
+                    choices: supplierChoices,
+                    optional: true,
+                  })}
+                </>
+              )}
+              {modal === 'edit-variant' && (
+                <>
+                  <p>
+                    {selected?.name} · stock actual: {selected?.stock}
+                  </p>
+                  {field('color', 'Color')}
+                  {field('size', 'Talle')}
+                  {field('sku', 'SKU')}
+                  {field('barcode', 'Código de barras')}
+                  {field('price', 'Precio (pesos)', { type: 'number' })}
+                  {field('cost', 'Costo (pesos)', { type: 'number' })}
+                  {field('minimum', 'Stock mínimo', { type: 'number' })}
+                  {field('ideal', 'Stock ideal', { type: 'number' })}
+                  {field('entryAt', 'Fecha de ingreso', {
+                    type: 'date',
+                    optional: true,
+                  })}
+                </>
+              )}
+              {modal === 'edit-customer' && (
+                <>
+                  {field('name', 'Nombre')}
+                  {field('surname', 'Apellido')}
+                  {field('phone', 'Teléfono')}
+                  {field('whatsapp', 'WhatsApp', { optional: true })}
+                  {field('email', 'Email', { type: 'email', optional: true })}
+                  {field('birthday', 'Cumpleaños', {
+                    type: 'date',
+                    optional: true,
+                  })}
+                  {field('locality', 'Localidad', { optional: true })}
+                  {field('usualSizes', 'Talles habituales', { optional: true })}
+                  {field('notes', 'Observaciones', { optional: true })}
+                </>
+              )}
+              {modal === 'edit-supplier' && (
+                <>
+                  {field('name', 'Nombre comercial')}
+                  {field('company', 'Empresa / razón social', {
+                    optional: true,
+                  })}
+                  {field('contact', 'Persona de contacto', { optional: true })}
+                  {field('phone', 'Teléfono', { optional: true })}
+                  {field('whatsapp', 'WhatsApp', { optional: true })}
+                  {field('email', 'Email', { type: 'email', optional: true })}
+                  {field('brands', 'Marcas', { optional: true })}
+                  {field('terms', 'Condiciones comerciales', {
+                    optional: true,
+                  })}
+                  {field('discountPercent', 'Descuento habitual (%)', {
+                    type: 'number',
+                    optional: true,
+                  })}
+                  {field('paymentDays', 'Días de pago', {
+                    type: 'number',
+                    optional: true,
+                  })}
+                  {field('notes', 'Observaciones', { optional: true })}
+                </>
+              )}
+              {modal === 'master-active' && (
+                <p>
+                  {selected?.active ? 'Se archivará' : 'Se reactivará'}{' '}
+                  <strong>
+                    {selected?.name ??
+                      `${selected?.surname ?? ''} ${selected?.phone ?? ''}`}
+                  </strong>
+                  . El historial relacionado se conserva completo.
+                </p>
+              )}
               {modal === 'method' && (
                 <>
                   {field('name', 'Nombre', { value: selected?.name })}
@@ -1905,6 +2812,15 @@ export default function Admin({ section }: { section: string }) {
                   {field('stock', 'Stock inicial', { type: 'number' })}
                   {field('minimum', 'Stock mínimo', {
                     type: 'number',
+                    optional: true,
+                  })}
+                  {field('ideal', 'Stock ideal', {
+                    type: 'number',
+                    optional: true,
+                    value: 6,
+                  })}
+                  {field('entryAt', 'Fecha de ingreso', {
+                    type: 'date',
                     optional: true,
                   })}
                 </>
@@ -2013,11 +2929,99 @@ export default function Admin({ section }: { section: string }) {
                   })}
                 </>
               )}
+              {modal === 'recurring-expense' && (
+                <>
+                  {field('description', 'Concepto')}
+                  {field('category', 'Categoría', {
+                    choices: [
+                      'Alquiler',
+                      'Servicios',
+                      'Impuestos',
+                      'Sueldos y cargas',
+                      'Marketing',
+                      'Logística',
+                      'Mantenimiento',
+                      'Otros gastos',
+                    ].map((value) => [value, value]),
+                    value: 'Servicios',
+                  })}
+                  {field('amount', 'Importe (pesos)', { type: 'number' })}
+                  {field('frequency', 'Frecuencia', {
+                    choices: [
+                      ['monthly', 'Mensual'],
+                      ['weekly', 'Semanal'],
+                    ],
+                    value: 'monthly',
+                  })}
+                  {field('interval', 'Cada cuántos períodos', {
+                    type: 'number',
+                    value: 1,
+                  })}
+                  {field('startsOn', 'Primer vencimiento', {
+                    type: 'date',
+                    value: new Intl.DateTimeFormat('en-CA', {
+                      timeZone: 'America/Argentina/Buenos_Aires',
+                    }).format(new Date()),
+                  })}
+                  {field('endsOn', 'Último vencimiento', {
+                    type: 'date',
+                    optional: true,
+                  })}
+                  {field('supplierId', 'Proveedor', {
+                    choices: supplierChoices,
+                    optional: true,
+                  })}
+                  {field('methodId', 'Medio previsto', {
+                    choices: paymentChoices,
+                    optional: true,
+                  })}
+                </>
+              )}
+              {modal === 'installment-obligation' && (
+                <>
+                  {field('description', 'Concepto')}
+                  {field('total', 'Importe total (pesos)', {
+                    type: 'number',
+                  })}
+                  {field('installmentCount', 'Cantidad de cuotas', {
+                    type: 'number',
+                    value: 3,
+                  })}
+                  {field('firstDueOn', 'Primer vencimiento', {
+                    type: 'date',
+                    value: new Intl.DateTimeFormat('en-CA', {
+                      timeZone: 'America/Argentina/Buenos_Aires',
+                    }).format(new Date()),
+                  })}
+                  {field('intervalMonths', 'Meses entre cuotas', {
+                    type: 'number',
+                    value: 1,
+                  })}
+                  {field('kind', 'Tipo de obligación', {
+                    choices: [
+                      'Proveedor',
+                      'Transferencia',
+                      'Cheque',
+                      'eCheq',
+                      'Servicio',
+                      'Cuota',
+                    ].map((value) => [value, value]),
+                    value: 'Cuota',
+                  })}
+                  {field('supplierId', 'Proveedor', {
+                    choices: supplierChoices,
+                    optional: true,
+                  })}
+                </>
+              )}
               {modal === 'create' && (
                 <>
                   {section === 'products' && (
                     <>
                       {field('name', 'Nombre')}
+                      {field('internalCode', 'Código interno', {
+                        optional: true,
+                      })}
                       {field('category', 'Categoría', {
                         choices: [
                           'Remeras',
@@ -2031,7 +3035,17 @@ export default function Admin({ section }: { section: string }) {
                           'Calzado',
                         ].map((x) => [x, x]),
                       })}
+                      {field('subcategory', 'Subcategoría', { optional: true })}
                       {field('brand', 'Marca', { optional: true })}
+                      {field('season', 'Temporada', { optional: true })}
+                      {field('collection', 'Colección', { optional: true })}
+                      {field('location', 'Ubicación en el local', {
+                        optional: true,
+                      })}
+                      {field('supplierId', 'Proveedor', {
+                        choices: supplierChoices,
+                        optional: true,
+                      })}
                       {field('color', 'Color')}
                       {field('size', 'Talle')}
                       {field('sku', 'SKU')}
@@ -2041,6 +3055,15 @@ export default function Admin({ section }: { section: string }) {
                       {field('stock', 'Stock inicial', { type: 'number' })}
                       {field('minimum', 'Stock mínimo', {
                         type: 'number',
+                        optional: true,
+                      })}
+                      {field('ideal', 'Stock ideal', {
+                        type: 'number',
+                        optional: true,
+                        value: 6,
+                      })}
+                      {field('entryAt', 'Fecha de ingreso', {
+                        type: 'date',
                         optional: true,
                       })}
                     </>
@@ -2072,15 +3095,32 @@ export default function Admin({ section }: { section: string }) {
                   )}
                   {section === 'suppliers' && (
                     <>
-                      {field('name', 'Nombre / empresa')}
+                      {field('name', 'Nombre comercial')}
+                      {field('company', 'Empresa / razón social', {
+                        optional: true,
+                      })}
+                      {field('contact', 'Persona de contacto', {
+                        optional: true,
+                      })}
                       {field('phone', 'Teléfono', { optional: true })}
+                      {field('whatsapp', 'WhatsApp', { optional: true })}
                       {field('email', 'Email', {
                         type: 'email',
                         optional: true,
                       })}
+                      {field('brands', 'Marcas', { optional: true })}
                       {field('terms', 'Condiciones comerciales', {
                         optional: true,
                       })}
+                      {field('discountPercent', 'Descuento habitual (%)', {
+                        type: 'number',
+                        optional: true,
+                      })}
+                      {field('paymentDays', 'Días de pago', {
+                        type: 'number',
+                        optional: true,
+                      })}
+                      {field('notes', 'Observaciones', { optional: true })}
                     </>
                   )}
                   {section === 'expenses' && (
@@ -2415,16 +3455,34 @@ export default function Admin({ section }: { section: string }) {
                   )}
                 </>
               )}
-              <Button type="submit" className="activate" disabled={busy}>
+              <Button
+                type="submit"
+                className="activate"
+                disabled={
+                  busy || (modal === 'product-import' && !form.importPreview)
+                }
+              >
                 {busy
                   ? 'Guardando…'
-                  : modal === 'refund'
-                    ? 'Confirmar devolución'
-                    : modal === 'purchase-receipt'
-                      ? 'Registrar recepción'
-                      : modal === 'action'
-                        ? 'Confirmar'
-                        : 'Guardar'}
+                  : modal === 'product-import'
+                    ? 'Aplicar importación'
+                    : modal.startsWith('edit-')
+                      ? 'Guardar cambios'
+                      : modal === 'master-active'
+                        ? selected?.active
+                          ? 'Archivar'
+                          : 'Reactivar'
+                        : modal === 'refund'
+                          ? 'Confirmar devolución'
+                          : modal === 'recurring-expense'
+                            ? 'Crear gasto recurrente'
+                            : modal === 'installment-obligation'
+                              ? 'Crear plan de cuotas'
+                              : modal === 'purchase-receipt'
+                                ? 'Registrar recepción'
+                                : modal === 'action'
+                                  ? 'Confirmar'
+                                  : 'Guardar'}
                 <Check />
               </Button>
             </form>

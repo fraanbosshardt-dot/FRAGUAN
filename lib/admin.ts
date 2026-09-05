@@ -8,6 +8,7 @@ import {
   auditStatement,
 } from '@/db/queries';
 import { Actor, AppError, requirePermission } from './auth';
+import { compareDashboardPeriod, dashboardSql } from './dashboard-metrics';
 import * as v from './validation';
 import { z } from 'zod';
 async function cashEntry(
@@ -47,16 +48,36 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
   let commands: D1PreparedStatement[] = [];
   if (resource === 'products') {
     const x = v.productInput.parse(raw);
+    if (x.ideal < x.minimum)
+      throw new AppError(400, 'El stock ideal no puede ser menor al mínimo.');
+    if (
+      x.supplierId &&
+      !(await one(
+        'SELECT id FROM suppliers WHERE id=? AND active=1',
+        x.supplierId,
+      ))
+    )
+      throw new AppError(400, 'Proveedor inválido.');
     commands = [
       statement(
-        'INSERT INTO products(id,name,category,brand) VALUES (?,?,?,?)',
+        `INSERT INTO products(id,name,internalCode,category,subcategory,brand,season,
+                collection,location,supplierId,updatedAt)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         key,
         x.name,
+        x.internalCode,
         x.category,
+        x.subcategory,
         x.brand,
+        x.season,
+        x.collection,
+        x.location,
+        x.supplierId || null,
+        date,
       ),
       statement(
-        'INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum) VALUES (?,?,?,?,?,?,?,?,?)',
+        `INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum,
+                ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         `${key}-v`,
         key,
         x.sku,
@@ -66,6 +87,9 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
         x.price,
         x.cost,
         x.minimum,
+        x.ideal,
+        x.entryAt,
+        date,
       ),
       statement(
         'INSERT INTO stock_movements(id,variantId,quantity,before,after,reason,actorId,reference,createdAt) VALUES (?,?,?,?,?,?,?,?,?)',
@@ -108,12 +132,22 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
     const x = v.supplierInput.parse(raw);
     commands = [
       statement(
-        'INSERT INTO suppliers(id,name,phone,email,terms) VALUES (?,?,?,?,?)',
+        `INSERT INTO suppliers(id,name,company,contact,phone,whatsapp,email,brands,terms,
+                discountBps,paymentDays,notes,updatedAt)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         key,
         x.name,
+        x.company,
+        x.contact,
         x.phone,
+        x.whatsapp,
         x.email,
+        x.brands,
         x.terms,
+        x.discountBps,
+        x.paymentDays,
+        x.notes,
+        date,
       ),
     ];
   } else if (resource === 'expenses') {
@@ -510,41 +544,36 @@ export async function adminAction(a: Actor, raw: unknown) {
   return { ok: true };
 }
 export async function dashboard() {
-  const total = await one(
-    "SELECT COALESCE(SUM(total),0) AS revenue,COUNT(*) AS tickets,COALESCE(AVG(total),0) AS average FROM sales WHERE status='confirmed'",
-  );
-  const month = now().slice(0, 7);
-  const monthStats = await one(
-    "SELECT COALESCE(SUM(total),0) AS revenue,COUNT(*) AS tickets FROM sales WHERE status='confirmed' AND substr(datetime(createdAt,'-3 hours'),1,7)=?",
-    month,
-  );
-  const today = await one(
-    "SELECT COALESCE(SUM(total),0) AS revenue,COUNT(*) AS tickets FROM sales WHERE status='confirmed' AND date(createdAt,'-3 hours')=date('now','-3 hours')",
-  );
-  const costs = await one(
-    "SELECT COALESCE(SUM(i.cost*i.quantity),0) AS cost,COALESCE(SUM(i.quantity),0) AS units FROM sale_items i JOIN sales s ON s.id=i.saleId WHERE s.status='confirmed'",
-  );
-  const fees = await one(
-    "SELECT COALESCE(SUM(p.commission),0) AS fees FROM payments p JOIN sales s ON s.id=p.saleId WHERE s.status='confirmed'",
-  );
-  const expenses = await one(
-    'SELECT COALESCE(SUM(amount),0) AS total FROM expenses',
-  );
-  const inventory = await one(
-    'SELECT SUM(stock) AS units,SUM(stock*cost) AS capital,SUM(stock*price) AS potential, SUM(CASE WHEN stock<=minimum THEN 1 ELSE 0 END) AS low FROM variants',
-  );
-  const trend = await rows(
-    "SELECT date(createdAt,'-3 hours') AS date,SUM(total) AS total FROM sales WHERE status='confirmed' GROUP BY date(createdAt,'-3 hours') ORDER BY date DESC LIMIT 30",
-  );
-  const best = await rows(
-    "SELECT i.name,SUM(i.quantity) AS units,SUM(i.price*i.quantity) AS total FROM sale_items i JOIN sales s ON s.id=i.saleId WHERE s.status='confirmed' GROUP BY i.name ORDER BY units DESC LIMIT 5",
-  );
-  const byPayment = await rows(
-    "SELECT m.name,SUM(p.amount) AS total FROM payments p JOIN sales s ON s.id=p.saleId JOIN payment_methods m ON m.id=p.methodId WHERE s.status='confirmed' GROUP BY m.name",
-  );
-  const sellers = await rows(
-    "SELECT u.name,COUNT(s.id) AS tickets,SUM(s.total) AS total FROM sales s JOIN users u ON u.id=s.sellerId WHERE s.status='confirmed' GROUP BY u.id ORDER BY total DESC",
-  );
+  const asOf = now();
+  const [
+    total,
+    monthStats,
+    today,
+    previousMonth,
+    previousDay,
+    costs,
+    fees,
+    expenses,
+    inventory,
+    trend,
+    best,
+    byPayment,
+    sellers,
+  ] = await Promise.all([
+    one(dashboardSql.total),
+    one(dashboardSql.month, asOf, asOf),
+    one(dashboardSql.today, asOf),
+    one(dashboardSql.previousMonth, asOf, asOf, asOf, asOf),
+    one(dashboardSql.previousDay, asOf),
+    one(dashboardSql.costs),
+    one(dashboardSql.fees),
+    one(dashboardSql.expenses),
+    one(dashboardSql.inventory),
+    rows(dashboardSql.trend),
+    rows(dashboardSql.best),
+    rows(dashboardSql.byPayment),
+    rows(dashboardSql.sellers),
+  ]);
   return {
     total,
     month: monthStats,
@@ -557,5 +586,9 @@ export async function dashboard() {
     best,
     byPayment,
     sellers,
+    comparison: {
+      today: compareDashboardPeriod(today, previousDay),
+      month: compareDashboardPeriod(monthStats, previousMonth),
+    },
   };
 }

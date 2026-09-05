@@ -29,20 +29,34 @@ export const brands = table('brands', {
 export const suppliers = table('suppliers', {
   id: text().primaryKey(),
   name: text().notNull(),
+  company: text().notNull().default(''),
+  contact: text().notNull().default(''),
   phone: text().notNull().default(''),
+  whatsapp: text().notNull().default(''),
   email: text().notNull().default(''),
+  brands: text().notNull().default(''),
   terms: text().notNull().default(''),
+  discountBps: integer().notNull().default(0),
+  paymentDays: integer().notNull().default(0),
+  notes: text().notNull().default(''),
   active: integer().notNull().default(1),
+  updatedAt: text(),
+  archivedAt: text(),
 });
 export const products = table('products', {
   id: text().primaryKey(),
   name: text().notNull(),
+  internalCode: text().notNull().default(''),
   category: text().notNull(),
+  subcategory: text().notNull().default(''),
   brand: text().notNull().default('FRAGUAN'),
   season: text().notNull().default('Esenciales 2026'),
-  image: text().notNull().default(''),
+  collection: text().notNull().default(''),
+  location: text().notNull().default(''),
   supplierId: text().references(() => suppliers.id),
   active: integer().notNull().default(1),
+  updatedAt: text(),
+  archivedAt: text(),
 });
 export const variants = table(
   'variants',
@@ -59,6 +73,9 @@ export const variants = table(
     cost: integer().notNull(),
     stock: integer().notNull().default(0),
     minimum: integer().notNull().default(3),
+    ideal: integer().notNull().default(6),
+    entryAt: text().notNull().default(''),
+    updatedAt: text(),
   },
   (t) => [
     uniqueIndex('variant_combination').on(t.productId, t.color, t.size),
@@ -76,8 +93,15 @@ export const customers = table(
     phone: text().notNull(),
     email: text().notNull().default(''),
     birthday: text(),
+    whatsapp: text().notNull().default(''),
+    locality: text().notNull().default(''),
+    usualSizes: text().notNull().default(''),
+    notes: text().notNull().default(''),
     points: integer().notNull().default(0),
+    active: integer().notNull().default(1),
     createdAt: text().notNull(),
+    updatedAt: text(),
+    archivedAt: text(),
   },
   (t) => [index('customer_phone').on(t.phone)],
 );
@@ -334,6 +358,60 @@ export const payables = table('payables', {
   reference: text().notNull().default(''),
   purchaseId: text().references(() => purchases.id),
 });
+export const recurringExpenses = table('recurring_expenses', {
+  id: text().primaryKey(),
+  description: text().notNull(),
+  category: text().notNull(),
+  amount: integer().notNull(),
+  frequency: text().notNull(),
+  interval: integer().notNull().default(1),
+  startsOn: text().notNull(),
+  endsOn: text(),
+  supplierId: text().references(() => suppliers.id),
+  methodId: text(),
+  active: integer().notNull().default(1),
+  createdBy: text()
+    .notNull()
+    .references(() => users.id),
+  createdAt: text().notNull(),
+  updatedAt: text().notNull(),
+});
+export const financialObligations = table('financial_obligations', {
+  id: text().primaryKey(),
+  description: text().notNull(),
+  supplierId: text().references(() => suppliers.id),
+  total: integer().notNull(),
+  installmentCount: integer().notNull(),
+  firstDueOn: text().notNull(),
+  intervalMonths: integer().notNull().default(1),
+  kind: text().notNull().default('Cuota'),
+  status: text().notNull().default('active'),
+  createdBy: text()
+    .notNull()
+    .references(() => users.id),
+  createdAt: text().notNull(),
+});
+export const obligationInstallments = table(
+  'obligation_installments',
+  {
+    id: text().primaryKey(),
+    obligationId: text()
+      .notNull()
+      .references(() => financialObligations.id),
+    number: integer().notNull(),
+    amount: integer().notNull(),
+    dueOn: text().notNull(),
+    status: text().notNull().default('pending'),
+    payableId: text()
+      .notNull()
+      .references(() => payables.id),
+    paidAt: text(),
+  },
+  (t) => [
+    uniqueIndex('obligation_installment_number').on(t.obligationId, t.number),
+    uniqueIndex('obligation_installment_payable').on(t.payableId),
+  ],
+);
 export const withdrawals = table('withdrawals', {
   id: text().primaryKey(),
   person: text().notNull(),

@@ -36,13 +36,32 @@ import {
   getCustomerIntelligence,
 } from '@/lib/customer-intelligence';
 import { getStockReplenishment } from '@/lib/stock-replenishment';
-import { readFinancialCalendarFromD1 } from '@/lib/financial-calendar';
 import {
   createPurchaseOrder,
   getPurchaseOrder,
   receivePurchaseOrder,
   transitionPurchaseOrder,
 } from '@/lib/purchase-operations';
+import { getBusinessReport } from '@/lib/reporting';
+import {
+  createInstallmentObligation,
+  createRecurringExpense,
+  getPlannedFinancialCalendar,
+  listFinancialPlans,
+  materializeFinancialPlan,
+  toggleRecurringExpense,
+} from '@/lib/financial-planning';
+import {
+  listAdminCustomers,
+  listAdminProducts,
+  listAdminSuppliers,
+  setMasterRecordActive,
+  updateCustomer,
+  updateProduct,
+  updateSupplier,
+  updateVariant,
+} from '@/lib/master-data';
+import { importProducts, productImportTemplate } from '@/lib/product-import';
 export const dynamic = 'force-dynamic';
 function promotionRule(value: unknown) {
   if (typeof value !== 'string' || !value) return {} as Record<string, any>;
@@ -149,19 +168,13 @@ export async function GET(
         if (q.length < 2) return reply([]);
         return reply(
           await rows(
-            "SELECT id,name,surname,phone FROM customers WHERE name||' '||surname LIKE ? OR phone LIKE ? LIMIT 15",
+            "SELECT id,name,surname,phone FROM customers WHERE active=1 AND (name||' '||surname LIKE ? OR phone LIKE ?) LIMIT 15",
             `%${q}%`,
             `%${q}%`,
           ),
         );
       }
-      return reply(
-        await rows(
-          "SELECT c.id,c.name,c.surname,c.phone,c.email,c.points,c.createdAt,COUNT(s.id) AS purchases,COALESCE(SUM(s.total),0) AS spent,MAX(s.createdAt) AS lastPurchase FROM customers c LEFT JOIN sales s ON s.customerId=c.id AND s.status='confirmed' WHERE c.name||' '||c.surname LIKE ? OR c.phone LIKE ? GROUP BY c.id ORDER BY c.createdAt DESC LIMIT 500",
-          `%${q}%`,
-          `%${q}%`,
-        ),
-      );
+      return reply(await listAdminCustomers(a, q));
     }
     if (resource === 'customer-credits') {
       requirePermission(a, 'customer-credits');
@@ -234,21 +247,45 @@ export async function GET(
     if (resource === 'financial-calendar') {
       requirePermission(a, 'cash-flow');
       const horizonDays = Number(url.searchParams.get('days') ?? 60);
-      return reply(await readFinancialCalendarFromD1({}, { horizonDays }));
+      return reply(await getPlannedFinancialCalendar(a, horizonDays));
+    }
+    if (resource === 'financial-plans')
+      return reply(await listFinancialPlans(a));
+    if (resource === 'product-import-template')
+      return reply(await productImportTemplate(a));
+    if (resource === 'reports') {
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+      }).format(new Date());
+      const optional = (key: string) => url.searchParams.get(key) || undefined;
+      return reply(
+        await getBusinessReport(a, {
+          from: url.searchParams.get('from') ?? `${today.slice(0, 7)}-01`,
+          to: url.searchParams.get('to') ?? today,
+          sellerId: optional('sellerId'),
+          category: optional('category'),
+          brand: optional('brand'),
+          supplierId: optional('supplierId'),
+          methodId: optional('methodId'),
+        }),
+      );
     }
     requirePermission(a, resource);
-    if (['dashboard', 'reports', 'insights'].includes(resource))
+    if (['dashboard', 'insights'].includes(resource))
       return reply(await dashboard());
     if (resource === 'products' || resource === 'stock')
       return reply(
-        await rows(
-          'SELECT v.id,v.productId,p.name,p.category,p.brand,v.sku,v.barcode,v.color,v.size,v.price,v.cost,v.stock,v.minimum FROM variants v JOIN products p ON p.id=v.productId WHERE p.active=1 ORDER BY p.rowid,v.rowid',
+        await listAdminProducts(
+          a,
+          resource === 'products' &&
+            url.searchParams.get('includeArchived') === '1',
         ),
       );
     if (resource === 'suppliers')
       return reply(
-        await rows(
-          'SELECT id,name,phone,email,terms FROM suppliers WHERE active=1',
+        await listAdminSuppliers(
+          a,
+          url.searchParams.get('includeArchived') === '1',
         ),
       );
     if (resource === 'purchases') {
@@ -413,6 +450,26 @@ export async function POST(
       return reply(await transitionPurchaseOrder(a, body));
     if (resource === 'purchase-receipts')
       return reply(await receivePurchaseOrder(a, body));
+    if (resource === 'recurring-expenses')
+      return reply(await createRecurringExpense(a, body), 201);
+    if (resource === 'installment-obligations')
+      return reply(await createInstallmentObligation(a, body), 201);
+    if (resource === 'materialize-financial')
+      return reply(await materializeFinancialPlan(a, body));
+    if (resource === 'toggle-recurring')
+      return reply(await toggleRecurringExpense(a, body));
+    if (resource === 'update-product')
+      return reply(await updateProduct(a, body));
+    if (resource === 'update-variant')
+      return reply(await updateVariant(a, body));
+    if (resource === 'update-customer')
+      return reply(await updateCustomer(a, body));
+    if (resource === 'update-supplier')
+      return reply(await updateSupplier(a, body));
+    if (resource === 'set-master-active')
+      return reply(await setMasterRecordActive(a, body));
+    if (resource === 'product-import')
+      return reply(await importProducts(a, body));
     if (resource === 'refunds') {
       return reply(await refundPartial(a, body));
     }

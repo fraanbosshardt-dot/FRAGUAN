@@ -46,8 +46,14 @@ export const customerInput = z
 export const productInput = z
   .object({
     name: text,
+    internalCode: z.string().trim().max(200).default(''),
     category: text,
+    subcategory: z.string().trim().max(200).default(''),
     brand: text,
+    season: z.string().trim().max(200).default(''),
+    collection: z.string().trim().max(200).default(''),
+    location: z.string().trim().max(200).default(''),
+    supplierId: z.union([text, z.literal(''), z.null()]).default(null),
     color: text,
     size: text,
     sku: text,
@@ -56,14 +62,23 @@ export const productInput = z
     cost: money,
     stock: z.number().int().min(0).max(100000),
     minimum: z.number().int().min(0).max(1000),
+    ideal: z.number().int().min(0).max(100000).default(6),
+    entryAt: z.union([z.iso.date(), z.literal('')]).default(''),
   })
   .strict();
 export const supplierInput = z
   .object({
     name: text,
+    company: z.string().trim().max(200).default(''),
+    contact: z.string().trim().max(200).default(''),
     phone: z.string().max(30),
+    whatsapp: z.string().trim().max(30).default(''),
     email: z.union([z.email(), z.literal('')]),
+    brands: z.string().trim().max(200).default(''),
     terms: z.string().max(500),
+    discountBps: z.number().int().min(0).max(10000).default(0),
+    paymentDays: z.number().int().min(0).max(3650).default(0),
+    notes: z.string().trim().max(1500).default(''),
   })
   .strict();
 export const expenseInput = z

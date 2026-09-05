@@ -97,11 +97,10 @@ export async function setup(demo: boolean) {
           : '');
       commands.push(
         statement(
-          'INSERT INTO products(id,name,category,image,supplierId) VALUES (?,?,?,?,?)',
+          'INSERT INTO products(id,name,category,supplierId) VALUES (?,?,?,?)',
           productId,
           name,
           p[1],
-          '',
           'sup-demo',
         ),
       );

@@ -47,9 +47,13 @@ export async function addVariant(a: Actor, raw: unknown) {
       cost: money,
       stock: z.number().int().min(0).max(100000),
       minimum: z.number().int().min(0).max(1000),
+      ideal: z.number().int().min(0).max(100000).default(6),
+      entryAt: z.union([z.iso.date(), z.literal('')]).default(''),
     })
     .strict()
     .parse(raw);
+  if (x.ideal < x.minimum)
+    throw new AppError(400, 'El stock ideal no puede ser menor al mínimo.');
   if (
     !(await one('SELECT id FROM products WHERE id=? AND active=1', x.productId))
   )
@@ -57,7 +61,8 @@ export async function addVariant(a: Actor, raw: unknown) {
   const key = id();
   await db().batch([
     statement(
-      'INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum) VALUES (?,?,?,?,?,?,?,?,?)',
+      `INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum,
+              ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       key,
       x.productId,
       x.sku,
@@ -67,6 +72,9 @@ export async function addVariant(a: Actor, raw: unknown) {
       x.price,
       x.cost,
       x.minimum,
+      x.ideal,
+      x.entryAt,
+      now(),
     ),
     statement(
       'INSERT INTO stock_movements(id,variantId,quantity,before,after,reason,actorId,reference,createdAt) VALUES (?,?,?,?,?,?,?,?,?)',
