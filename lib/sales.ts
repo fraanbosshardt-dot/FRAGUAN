@@ -233,6 +233,24 @@ export async function quote(raw: unknown, pricingOnly = false): Promise<any> {
     if (requestedCredit > availableCredit)
       throw new AppError(409, 'El cliente no tiene saldo a favor suficiente.');
   }
+  if (data.payments.some((payment) => payment.methodId === 'cashback')) {
+    if (!data.customerId)
+      throw new AppError(400, 'Seleccioná un cliente para usar cashback.');
+    const requestedCashback = data.payments
+      .filter((payment) => payment.methodId === 'cashback')
+      .reduce((sum, payment) => sum + payment.baseMinor, 0);
+    const availableCashback = Number(
+      (
+        await one<{ balance: number }>(
+          "SELECT COALESCE(SUM(balance),0) AS balance FROM customer_cashback WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>=?)",
+          data.customerId,
+          now(),
+        )
+      )?.balance ?? 0,
+    );
+    if (requestedCashback > availableCashback)
+      throw new AppError(409, 'El cliente no tiene cashback suficiente.');
+  }
   const payments = [];
   for (const p of data.payments) {
     const m = await one<Method>(
@@ -458,7 +476,7 @@ export async function confirmSale(a: Actor, raw: unknown) {
         payment.reference,
       ),
     );
-    if (payment.id !== 'store_credit')
+    if (payment.id !== 'store_credit' && payment.id !== 'cashback')
       commands.push(
         statement(
           'INSERT INTO cash_movements(id,sessionId,kind,amount,methodId,reference,actorId,createdAt) VALUES (?,?,?,?,?,?,?,?)',
@@ -472,7 +490,7 @@ export async function confirmSale(a: Actor, raw: unknown) {
           date,
         ),
       );
-    else {
+    else if (payment.id === 'store_credit') {
       let pending = payment.amount;
       const credits = await rows<{ id: string; balance: number }>(
         "SELECT id,balance FROM customer_credits WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>=?) ORDER BY createdAt,id",
@@ -497,6 +515,31 @@ export async function confirmSale(a: Actor, raw: unknown) {
       }
       if (pending)
         throw new AppError(409, 'El saldo a favor cambió. Revisá el cobro.');
+    } else {
+      let pending = payment.amount;
+      const cashback = await rows<{ id: string; balance: number }>(
+        "SELECT id,balance FROM customer_cashback WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>=?) ORDER BY createdAt,id",
+        data.customerId,
+        date,
+      );
+      for (const reward of cashback) {
+        const used = Math.min(pending, reward.balance);
+        if (used > 0)
+          commands.push(
+            statement(
+              'INSERT INTO cashback_usages(id,cashbackId,saleId,amount,createdAt) VALUES (?,?,?,?,?)',
+              id(),
+              reward.id,
+              saleId,
+              used,
+              date,
+            ),
+          );
+        pending -= used;
+        if (!pending) break;
+      }
+      if (pending)
+        throw new AppError(409, 'El cashback cambió. Revisá el cobro.');
     }
   }
   if (data.customerId) {
@@ -517,6 +560,30 @@ export async function confirmSale(a: Actor, raw: unknown) {
         date,
       ),
     );
+    const [loyaltyConfig, loyaltyContext] = await Promise.all([
+      readCustomerIntelligenceConfig(),
+      customerCommercialContext(data.customerId),
+    ]);
+    const cashbackBps =
+      loyaltyConfig.loyalty.cashbackBps[loyaltyContext?.level ?? 'FRAGUAN'];
+    const cashbackAmount = Math.floor(
+      ((q.subtotal - q.discount) * cashbackBps) / 10_000,
+    );
+    if (cashbackAmount > 0)
+      commands.push(
+        statement(
+          'INSERT INTO customer_cashback(id,customerId,saleId,amount,balance,expiresAt,createdAt) VALUES (?,?,?,?,?,?,?)',
+          id(),
+          data.customerId,
+          saleId,
+          cashbackAmount,
+          cashbackAmount,
+          new Date(
+            Date.now() + loyaltyConfig.loyalty.cashbackExpiryDays * 86400000,
+          ).toISOString(),
+          date,
+        ),
+      );
   }
   commands.push(
     auditStatement(a.id, 'Venta confirmada', saleId, null, { total: q.total }),

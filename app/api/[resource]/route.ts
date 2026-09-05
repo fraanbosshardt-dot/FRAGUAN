@@ -201,7 +201,30 @@ export async function GET(
         customerId,
         now(),
       );
-      return reply({ balance: Number(credit?.balance ?? 0) });
+      const cashback = await one<{ balance: number }>(
+        "SELECT COALESCE(SUM(balance),0) AS balance FROM customer_cashback WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>=?)",
+        customerId,
+        now(),
+      );
+      return reply({
+        balance: Number(credit?.balance ?? 0),
+        cashbackBalance: Number(cashback?.balance ?? 0),
+      });
+    }
+    if (resource === 'customer-cashback') {
+      requirePermission(a, 'customer-intelligence');
+      const customerId = url.searchParams.get('customerId');
+      return reply(
+        await rows(
+          `SELECT cb.id,cb.customerId,c.name AS customerName,c.surname AS customerSurname,
+            cb.saleId,cb.amount,cb.balance,cb.status,cb.expiresAt,cb.createdAt
+           FROM customer_cashback cb JOIN customers c ON c.id=cb.customerId
+           WHERE (? IS NULL OR cb.customerId=?)
+           ORDER BY cb.createdAt DESC LIMIT 250`,
+          customerId,
+          customerId,
+        ),
+      );
     }
     if (resource === 'sales') {
       if (!can(a, 'sales') && !can(a, 'own-sales'))

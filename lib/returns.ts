@@ -184,15 +184,24 @@ export async function refundPartial(actor: Actor, raw: unknown) {
                 )
               )?.total ?? 0,
             )
-          : Number(
-              (
-                await one<{ total: number }>(
-                  "SELECT COALESCE(-SUM(cm.amount),0) AS total FROM cash_movements cm JOIN refunds r ON r.id=cm.reference WHERE r.saleId=? AND cm.kind='Devolución' AND cm.methodId=?",
-                  sale.id,
-                  payment.methodId,
-                )
-              )?.total ?? 0,
-            );
+          : payment.methodId === 'cashback'
+            ? Number(
+                (
+                  await one<{ total: number }>(
+                    'SELECT COALESCE(SUM(amount),0) AS total FROM customer_cashback WHERE saleId=? AND refundId IS NOT NULL',
+                    sale.id,
+                  )
+                )?.total ?? 0,
+              )
+            : Number(
+                (
+                  await one<{ total: number }>(
+                    "SELECT COALESCE(-SUM(cm.amount),0) AS total FROM cash_movements cm JOIN refunds r ON r.id=cm.reference WHERE r.saleId=? AND cm.kind='Devolución' AND cm.methodId=?",
+                    sale.id,
+                    payment.methodId,
+                  )
+                )?.total ?? 0,
+              );
       const capacity = Math.max(0, payment.amount - alreadyReturned);
       const proportional = allAfter
         ? capacity
@@ -218,15 +227,24 @@ export async function refundPartial(actor: Actor, raw: unknown) {
                   )
                 )?.total ?? 0,
               )
-            : Number(
-                (
-                  await one<{ total: number }>(
-                    "SELECT COALESCE(-SUM(cm.amount),0) AS total FROM cash_movements cm JOIN refunds r ON r.id=cm.reference WHERE r.saleId=? AND cm.kind='Devolución' AND cm.methodId=?",
-                    sale.id,
-                    payment.methodId,
-                  )
-                )?.total ?? 0,
-              );
+            : payment.methodId === 'cashback'
+              ? Number(
+                  (
+                    await one<{ total: number }>(
+                      'SELECT COALESCE(SUM(amount),0) AS total FROM customer_cashback WHERE saleId=? AND refundId IS NOT NULL',
+                      sale.id,
+                    )
+                  )?.total ?? 0,
+                )
+              : Number(
+                  (
+                    await one<{ total: number }>(
+                      "SELECT COALESCE(-SUM(cm.amount),0) AS total FROM cash_movements cm JOIN refunds r ON r.id=cm.reference WHERE r.saleId=? AND cm.kind='Devolución' AND cm.methodId=?",
+                      sale.id,
+                      payment.methodId,
+                    )
+                  )?.total ?? 0,
+                );
         const extra = Math.min(
           remainingToAllocate,
           Math.max(0, payment.amount - alreadyReturned - used),
@@ -257,7 +275,9 @@ export async function refundPartial(actor: Actor, raw: unknown) {
           .reduce((total, payment) => total + payment.amount, 0);
   const requiresCashSession =
     input.method === 'original' &&
-    paymentAllocations.some((payment) => payment.methodId !== 'store_credit');
+    paymentAllocations.some(
+      (payment) => !['store_credit', 'cashback'].includes(payment.methodId),
+    );
   const session = requiresCashSession
     ? await one<{ id: string }>(
         'SELECT id FROM cash_sessions WHERE closedAt IS NULL',
@@ -371,6 +391,22 @@ export async function refundPartial(actor: Actor, raw: unknown) {
             createdAt,
           ),
         );
+      } else if (payment.methodId === 'cashback') {
+        if (!sale.customerId)
+          throw new AppError(409, 'La venta con cashback no tiene cliente.');
+        commands.push(
+          statement(
+            'INSERT INTO customer_cashback(id,customerId,saleId,amount,balance,expiresAt,createdAt,refundId) VALUES (?,?,?,?,?,?,?,?)',
+            id(),
+            sale.customerId,
+            sale.id,
+            payment.amount,
+            payment.amount,
+            new Date(Date.now() + 365 * 86400000).toISOString(),
+            createdAt,
+            refundId,
+          ),
+        );
       } else
         commands.push(
           statement(
@@ -424,6 +460,30 @@ export async function refundPartial(actor: Actor, raw: unknown) {
           'Devolución parcial',
           refundId,
           createdAt,
+        ),
+      );
+    const cashback = await one<{ earned: number; balance: number }>(
+      'SELECT COALESCE(SUM(amount),0) AS earned,COALESCE(SUM(balance),0) AS balance FROM customer_cashback WHERE customerId=? AND saleId=? AND refundId IS NULL',
+      sale.customerId,
+      sale.id,
+    );
+    const cashbackTarget = allAfter
+      ? Number(cashback?.earned ?? 0)
+      : Math.floor(
+          (Number(cashback?.earned ?? 0) * (previous + amount)) / sale.total,
+        );
+    const cashbackReverse = Math.min(
+      Number(cashback?.balance ?? 0),
+      Math.max(0, cashbackTarget),
+    );
+    if (cashbackReverse)
+      commands.push(
+        statement(
+          "UPDATE customer_cashback SET balance=MAX(0,balance-?),status=CASE WHEN balance-?=0 THEN 'used' ELSE 'active' END WHERE customerId=? AND saleId=? AND status='active'",
+          cashbackReverse,
+          cashbackReverse,
+          sale.customerId,
+          sale.id,
         ),
       );
   }

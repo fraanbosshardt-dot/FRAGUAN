@@ -28,6 +28,7 @@
 | Flujo de fondos | Implementado y probado | Entradas/salidas históricas, proyección de cobros y obligaciones con saldo acumulado por día. |
 | Calendario financiero | Implementado y probado | Gastos recurrentes, obligaciones en cuotas, materialización idempotente, pausa/reactivación y disparo de cuentas pagables. |
 | Clientes e inteligencia | Implementado y probado | Segmentos, niveles FRAGUAN/Silver/Gold/Black, métricas, historial, top clientes y configuración de umbrales. |
+| Club FRAGUAN | Cashback implementado y probado | Tasas y vencimiento configurables por nivel, acumulación automática por venta, uso como medio de pago, reversión en devoluciones y beneficios descriptivos. |
 | Reposición | Implementada y probada | Recomendaciones por stock mínimo/ideal, ventas netas, cobertura, proveedor y prioridad. |
 | Reportes | Implementados y probados | Ventas, líneas, productos, categorías, marcas, proveedores, medios, vendedores, costos, rentabilidad y devoluciones con filtros. |
 | Dashboard | Implementado y probado | Ventas confirmadas/parcialmente devueltas, neto, unidades retenidas, costo prorrateado, comisiones, medios de pago y comparaciones Argentina. |
@@ -36,13 +37,13 @@
 
 ## Pruebas ejecutadas
 
-Pasaron las pruebas unitarias y de integración de reglas comerciales, stock, calendario financiero, planificación, reporting, dashboard, CSV y seguridad del vendedor. También pasó `tests-master-data.mjs`, que cubre CRUD de datos maestros, archivo/reactivación, edición de variante sin stock directo, importación CSV y aislamiento del vendedor. `npx tsc --noEmit` pasa después de los cambios actuales.
+Pasaron las pruebas unitarias y de integración de reglas comerciales, stock, calendario financiero, planificación, reporting, dashboard, CSV, Club FRAGUAN y seguridad del vendedor. También pasaron `tests-master-data.mjs` y `tests-cashback.mjs`, que cubren CRUD de datos maestros, archivo/reactivación, edición de variante sin stock directo, importación CSV, aislamiento del vendedor, acumulación y reversión de cashback. `npx tsc --noEmit` pasa después de los cambios actuales.
 
 La base usada es una D1 local de demostración bajo `app/.wrangler/`. El script de aplicación manual de migraciones deja el journal de Drizzle sin reconciliar; antes de conectar una base definitiva habrá que generar/aplicar el historial de forma única y verificable.
 
 ## Pendientes de negocio
 
-- Club FRAGUAN completo: cashback, canje, beneficios, vencimientos y reglas configurables desde administración.
+- Club FRAGUAN: canje de puntos, beneficios accionables por canal y comunicaciones automáticas de cumpleaños/promociones.
 - Atajo global Cmd/Ctrl-K y refinamiento de accesibilidad, skeletons y modo oscuro.
 - Compras: interfaz de múltiples líneas más completa, estados logísticos, impuestos, transporte y condiciones avanzadas.
 - Cheques/eCheq: ciclo de estados, vencimientos, depósitos, rechazos y conciliación bancaria.

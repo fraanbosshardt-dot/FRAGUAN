@@ -71,7 +71,7 @@ Ejemplo de respuesta permitida para una variante:
 
 El dinero se representa en centavos enteros: `5990000` equivale a **$59.900**. La presentación es: **Camisa Oxford / Celeste / L / $59.900 / Stock: 3**.
 
-Se permiten campos comerciales adicionales necesarios para buscar y presentar el producto, como imagen, SKU, código de barras, marca y categoría. Las opciones de pago muestran precios finales al cliente, cuotas y descuentos aplicables, nunca comisiones internas, acreditaciones netas o fórmulas de rentabilidad.
+Se permiten campos comerciales adicionales necesarios para buscar y presentar el producto, como SKU, código de barras, marca y categoría. FRAGUAN no utiliza fotos ni URLs de imágenes para productos, variantes, clientes o comprobantes. Las opciones de pago muestran precios finales al cliente, cuotas y descuentos aplicables, nunca comisiones internas, acreditaciones netas o fórmulas de rentabilidad.
 
 No puede existir `cost`, `margin`, `markup`, `profit`, datos de proveedor ni información equivalente, tampoco dentro de objetos anidados. Esta restricción alcanza catálogo, detalle, carrito cotizado, venta confirmada, ventas recientes y tickets.
 

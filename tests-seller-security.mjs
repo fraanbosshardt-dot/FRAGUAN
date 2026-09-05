@@ -235,7 +235,10 @@ try {
     `customer-credit-balance?customerId=${encodeURIComponent(createdCustomerId)}`,
   );
   assert.equal(credit.status, 200, JSON.stringify(credit.body));
-  assertExactKeys('customer-credit-balance', credit.body, ['balance']);
+  assertExactKeys('customer-credit-balance', credit.body, [
+    'balance',
+    'cashbackBalance',
+  ]);
   assertSellerSafe('customer-credit-balance', credit.body);
 
   const sellableVariant = catalog.body.find((variant) => variant.stock > 0);

@@ -480,6 +480,32 @@ export const creditUsages = table('credit_usages', {
   amount: integer().notNull(),
   createdAt: text().notNull(),
 });
+export const customerCashback = table('customer_cashback', {
+  id: text().primaryKey(),
+  customerId: text()
+    .notNull()
+    .references(() => customers.id),
+  saleId: text()
+    .notNull()
+    .references(() => sales.id),
+  amount: integer().notNull(),
+  balance: integer().notNull(),
+  status: text().notNull().default('active'),
+  expiresAt: text(),
+  createdAt: text().notNull(),
+  refundId: text().references(() => refunds.id),
+});
+export const cashbackUsages = table('cashback_usages', {
+  id: text().primaryKey(),
+  cashbackId: text()
+    .notNull()
+    .references(() => customerCashback.id),
+  saleId: text()
+    .notNull()
+    .references(() => sales.id),
+  amount: integer().notNull(),
+  createdAt: text().notNull(),
+});
 export const managerAuthorizations = table('manager_authorizations', {
   id: text().primaryKey(),
   tokenHash: text().notNull().unique(),

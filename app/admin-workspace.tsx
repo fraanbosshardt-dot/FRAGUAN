@@ -332,6 +332,15 @@ export default function Admin({ section }: { section: string }) {
       blackSpend: Number(black.minSpendMinor ?? 0) / 100,
       blackPurchases: black.minPurchases ?? 0,
       blackPoints: black.minPoints ?? 0,
+      cashbackExpiryDays: config?.loyalty?.cashbackExpiryDays ?? 365,
+      fraguanCashback: Number(config?.loyalty?.cashbackBps?.FRAGUAN ?? 0) / 100,
+      silverCashback: Number(config?.loyalty?.cashbackBps?.Silver ?? 0) / 100,
+      goldCashback: Number(config?.loyalty?.cashbackBps?.Gold ?? 0) / 100,
+      blackCashback: Number(config?.loyalty?.cashbackBps?.Black ?? 0) / 100,
+      fraguanBenefits: (config?.loyalty?.benefits?.FRAGUAN ?? []).join(', '),
+      silverBenefits: (config?.loyalty?.benefits?.Silver ?? []).join(', '),
+      goldBenefits: (config?.loyalty?.benefits?.Gold ?? []).join(', '),
+      blackBenefits: (config?.loyalty?.benefits?.Black ?? []).join(', '),
     });
     setSelected(null);
     setError('');
@@ -578,6 +587,31 @@ export default function Admin({ section }: { section: string }) {
                 minPurchases: Number(form.blackPurchases),
                 minPoints: Number(form.blackPoints),
               },
+            },
+            cashbackBps: {
+              FRAGUAN: Math.round(Number(form.fraguanCashback) * 100),
+              Silver: Math.round(Number(form.silverCashback) * 100),
+              Gold: Math.round(Number(form.goldCashback) * 100),
+              Black: Math.round(Number(form.blackCashback) * 100),
+            },
+            cashbackExpiryDays: Number(form.cashbackExpiryDays),
+            benefits: {
+              FRAGUAN: String(form.fraguanBenefits || '')
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean),
+              Silver: String(form.silverBenefits || '')
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean),
+              Gold: String(form.goldBenefits || '')
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean),
+              Black: String(form.blackBenefits || '')
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean),
             },
           },
         });
@@ -2686,6 +2720,24 @@ export default function Admin({ section }: { section: string }) {
                   {field('loyaltyWindowDays', 'Ventana de evaluación (días)', {
                     type: 'number',
                   })}
+                  {field(
+                    'cashbackExpiryDays',
+                    'Vencimiento del cashback (días)',
+                    {
+                      type: 'number',
+                    },
+                  )}
+                  <h3>Cashback y beneficios</h3>
+                  {field('fraguanCashback', 'FRAGUAN · cashback (%)', {
+                    type: 'number',
+                  })}
+                  {field(
+                    'fraguanBenefits',
+                    'FRAGUAN · beneficios (separados por coma)',
+                    {
+                      optional: true,
+                    },
+                  )}
                   <h3>Silver</h3>
                   {field('silverSpend', 'Gasto mínimo (pesos)', {
                     type: 'number',
@@ -2695,6 +2747,12 @@ export default function Admin({ section }: { section: string }) {
                   })}
                   {field('silverPoints', 'Puntos mínimos', {
                     type: 'number',
+                  })}
+                  {field('silverCashback', 'Silver · cashback (%)', {
+                    type: 'number',
+                  })}
+                  {field('silverBenefits', 'Silver · beneficios', {
+                    optional: true,
                   })}
                   <h3>Gold</h3>
                   {field('goldSpend', 'Gasto mínimo (pesos)', {
@@ -2706,6 +2764,12 @@ export default function Admin({ section }: { section: string }) {
                   {field('goldPoints', 'Puntos mínimos', {
                     type: 'number',
                   })}
+                  {field('goldCashback', 'Gold · cashback (%)', {
+                    type: 'number',
+                  })}
+                  {field('goldBenefits', 'Gold · beneficios', {
+                    optional: true,
+                  })}
                   <h3>Black</h3>
                   {field('blackSpend', 'Gasto mínimo (pesos)', {
                     type: 'number',
@@ -2715,6 +2779,12 @@ export default function Admin({ section }: { section: string }) {
                   })}
                   {field('blackPoints', 'Puntos mínimos', {
                     type: 'number',
+                  })}
+                  {field('blackCashback', 'Black · cashback (%)', {
+                    type: 'number',
+                  })}
+                  {field('blackBenefits', 'Black · beneficios', {
+                    optional: true,
                   })}
                 </>
               )}

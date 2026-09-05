@@ -42,6 +42,9 @@ export interface CustomerLoyaltyConfig {
   /** Rolling period used for spend and purchase conditions. */
   evaluationWindowDays: number;
   thresholds: Record<PromotedLoyaltyLevel, LoyaltyThreshold>;
+  cashbackBps: Record<LoyaltyLevel, number>;
+  cashbackExpiryDays: number;
+  benefits: Record<LoyaltyLevel, string[]>;
 }
 
 export interface CustomerIntelligenceConfig {
@@ -60,6 +63,9 @@ export interface CustomerIntelligenceConfigInput {
   loyalty?: {
     evaluationWindowDays?: number;
     thresholds?: PartialThresholds;
+    cashbackBps?: Partial<Record<LoyaltyLevel, number>>;
+    cashbackExpiryDays?: number;
+    benefits?: Partial<Record<LoyaltyLevel, string[]>>;
   };
   historyLimit?: number;
   topCustomerLimit?: number;
@@ -101,6 +107,23 @@ export const DEFAULT_CUSTOMER_INTELLIGENCE_CONFIG: CustomerIntelligenceConfig =
           minPurchases: 0,
           minPoints: 0,
         },
+      },
+      cashbackBps: {
+        FRAGUAN: 0,
+        Silver: 100,
+        Gold: 200,
+        Black: 300,
+      },
+      cashbackExpiryDays: 365,
+      benefits: {
+        FRAGUAN: [],
+        Silver: ['Acceso a promociones del Club'],
+        Gold: ['Cashback preferencial', 'Promociones exclusivas'],
+        Black: [
+          'Cashback máximo',
+          'Acceso anticipado',
+          'Beneficio de cumpleaños',
+        ],
       },
     },
     historyLimit: 50,
@@ -402,6 +425,17 @@ export function resolveCustomerIntelligenceConfig(
         Gold: thresholdWithOverrides('Gold', input.loyalty?.thresholds),
         Black: thresholdWithOverrides('Black', input.loyalty?.thresholds),
       },
+      cashbackBps: {
+        ...DEFAULT_CUSTOMER_INTELLIGENCE_CONFIG.loyalty.cashbackBps,
+        ...input.loyalty?.cashbackBps,
+      },
+      cashbackExpiryDays:
+        input.loyalty?.cashbackExpiryDays ??
+        DEFAULT_CUSTOMER_INTELLIGENCE_CONFIG.loyalty.cashbackExpiryDays,
+      benefits: {
+        ...DEFAULT_CUSTOMER_INTELLIGENCE_CONFIG.loyalty.benefits,
+        ...input.loyalty?.benefits,
+      },
     },
     historyLimit:
       input.historyLimit ?? DEFAULT_CUSTOMER_INTELLIGENCE_CONFIG.historyLimit,
@@ -483,6 +517,30 @@ export function resolveCustomerIntelligenceConfig(
       threshold.minPoints,
     );
   }
+  for (const level of LOYALTY_LEVELS) {
+    checkedInteger(
+      `loyalty.cashbackBps.${level}`,
+      config.loyalty.cashbackBps[level],
+      0,
+      10_000,
+    );
+    if (!Array.isArray(config.loyalty.benefits[level]))
+      throw new RangeError(`Los beneficios de ${level} deben ser una lista.`);
+    if (config.loyalty.benefits[level].length > 10)
+      throw new RangeError(`El nivel ${level} admite hasta 10 beneficios.`);
+    if (
+      config.loyalty.benefits[level].some(
+        (benefit) => typeof benefit !== 'string' || benefit.trim().length > 200,
+      )
+    )
+      throw new RangeError(`Los beneficios de ${level} no son válidos.`);
+  }
+  checkedInteger(
+    'loyalty.cashbackExpiryDays',
+    config.loyalty.cashbackExpiryDays,
+    1,
+    3_650,
+  );
   for (const [lower, higher] of [
     ['Silver', 'Gold'],
     ['Gold', 'Black'],
@@ -556,6 +614,16 @@ export async function saveCustomerIntelligenceConfig(
           ...current.loyalty.thresholds.Black,
           ...input.loyalty?.thresholds?.Black,
         },
+      },
+      cashbackBps: {
+        ...current.loyalty.cashbackBps,
+        ...input.loyalty?.cashbackBps,
+      },
+      cashbackExpiryDays:
+        input.loyalty?.cashbackExpiryDays ?? current.loyalty.cashbackExpiryDays,
+      benefits: {
+        ...current.loyalty.benefits,
+        ...input.loyalty?.benefits,
       },
     },
     historyLimit: input.historyLimit ?? current.historyLimit,

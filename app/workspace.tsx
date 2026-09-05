@@ -68,6 +68,7 @@ export default function Workspace() {
     [dark, setDark] = useState(false),
     [reference, setReference] = useState(''),
     [creditBalance, setCreditBalance] = useState(0),
+    [cashbackBalance, setCashbackBalance] = useState(0),
     [refundReason, setRefundReason] = useState(''),
     [refundToken, setRefundToken] = useState(''),
     [refundMethod, setRefundMethod] = useState('original'),
@@ -104,14 +105,22 @@ export default function Workspace() {
   useEffect(() => {
     if (!customer?.id) {
       setCreditBalance(0);
+      setCashbackBalance(0);
       if (method === 'store_credit') setMethod('cash');
+      if (method === 'cashback') setMethod('cash');
       return;
     }
-    api<{ balance: number }>(
+    api<{ balance: number; cashbackBalance: number }>(
       'customer-credit-balance?customerId=' + encodeURIComponent(customer.id),
     )
-      .then((result) => setCreditBalance(result.balance))
-      .catch(() => setCreditBalance(0));
+      .then((result) => {
+        setCreditBalance(result.balance);
+        setCashbackBalance(result.cashbackBalance ?? 0);
+      })
+      .catch(() => {
+        setCreditBalance(0);
+        setCashbackBalance(0);
+      });
   }, [customer?.id]);
   const groups = useMemo(() => {
     const map = new Map<string, Row>();
@@ -942,7 +951,11 @@ export default function Workspace() {
                 <>
                   <div className="payment-methods">
                     {methods
-                      .filter((m) => m.id !== 'store_credit' || customer)
+                      .filter(
+                        (m) =>
+                          !['store_credit', 'cashback'].includes(m.id) ||
+                          customer,
+                      )
                       .map((m) => (
                         <Button
                           key={m.id}
@@ -955,7 +968,9 @@ export default function Workspace() {
                           {m.name}
                           {m.id === 'store_credit' && creditBalance > 0
                             ? ` · ${money(creditBalance)}`
-                            : ''}
+                            : m.id === 'cashback' && cashbackBalance > 0
+                              ? ` · ${money(cashbackBalance)}`
+                              : ''}
                         </Button>
                       ))}
                   </div>
