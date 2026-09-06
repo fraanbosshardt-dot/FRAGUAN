@@ -34,6 +34,11 @@ const createInput = z
       .max(100)
       .default('cuenta_corriente'),
     supplierReference: z.string().trim().max(100).default(''),
+    expectedAt: z.iso.date().nullable().default(null),
+    carrier: z.string().trim().max(150).default(''),
+    trackingReference: z.string().trim().max(150).default(''),
+    deliveryAddress: z.string().trim().max(500).default(''),
+    paymentTerms: z.string().trim().max(1000).default(''),
     notes: z.string().trim().max(1000).default(''),
     idempotencyKey: z.string().uuid().optional(),
   })
@@ -166,8 +171,9 @@ export async function createPurchaseOrder(actor: Actor, raw: unknown) {
     statement(
       `INSERT INTO purchases(
         id,supplierId,status,subtotal,discount,tax,shipping,total,paymentMethod,
-        supplierReference,notes,idempotencyKey,requestHash,createdAt,updatedAt,dueAt,actorId
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        supplierReference,notes,idempotencyKey,requestHash,createdAt,updatedAt,dueAt,actorId,
+        expectedAt,carrier,trackingReference,deliveryAddress,paymentTerms
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       purchaseId,
       input.supplierId,
       'draft',
@@ -185,6 +191,11 @@ export async function createPurchaseOrder(actor: Actor, raw: unknown) {
       createdAt,
       input.dueAt,
       actor.id,
+      input.expectedAt,
+      input.carrier,
+      input.trackingReference,
+      input.deliveryAddress,
+      input.paymentTerms,
     ),
   ];
   for (const item of input.items)

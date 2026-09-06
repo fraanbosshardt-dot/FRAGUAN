@@ -1,0 +1,5 @@
+ALTER TABLE purchases ADD COLUMN expectedAt TEXT;
+ALTER TABLE purchases ADD COLUMN carrier TEXT NOT NULL DEFAULT '';
+ALTER TABLE purchases ADD COLUMN trackingReference TEXT NOT NULL DEFAULT '';
+ALTER TABLE purchases ADD COLUMN deliveryAddress TEXT NOT NULL DEFAULT '';
+ALTER TABLE purchases ADD COLUMN paymentTerms TEXT NOT NULL DEFAULT '';

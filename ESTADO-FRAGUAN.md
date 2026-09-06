@@ -125,3 +125,13 @@ Este bloque reemplaza los pendientes anteriores cuando se superponen. El sistema
 - Impuestos y transporte se muestran por separado. Corrección del listado anterior: ambos importes, compras multilínea y recepción parcial ya estaban implementados; permanecen pendientes logística avanzada e integración de envío externo.
 - Historial administrativo de los últimos 250 cambios de cheques con estado anterior/nuevo, motivo y responsable, también exportable.
 - TypeScript verificado sin errores. La validación visual y de impresión física continúa pendiente.
+
+## Continuación — logística, recuperación y períodos
+
+- Compras: fecha prevista, transportista, seguimiento, dirección y condiciones adicionales persistidas, visibles y exportables. No consulta transportistas ni envía órdenes externas.
+- Migración local `0011_purchase_delivery.sql` aplicada después de generar una copia SQLite consistente y verificarla en `outputs/backups/` (fuera de Git).
+- Herramientas para inicializar archivos nuevos, respaldar, verificar y restaurar a destinos nuevos. Instrucciones en `RECUPERACION.md`. Historial independiente con hashes; no sustituye la reconciliación del journal de Drizzle ni adopta la demo a ciegas.
+- Prueba de instalación limpia, repetición idempotente, detección de migraciones alteradas, respaldo y restauración con conservación de datos: aprobada.
+- 18 pruebas de operaciones aprobadas. TypeScript aprobado; compilación de producción aprobada para logística y migración.
+- Comisiones: selector de período y rango incluido en las exportaciones.
+- Pendientes que requieren decisiones/conexiones reales: política del cashback gastado, comunicación automática, Google Login, base definitiva, adaptación a Vercel e integraciones fiscales/bancarias. QA visual, dispositivos e impresión aún pendientes.

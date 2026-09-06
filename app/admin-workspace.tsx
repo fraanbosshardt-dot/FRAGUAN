@@ -900,6 +900,11 @@ export default function Admin({ section }: { section: string }) {
           shipping: form.shipping ? minor(form.shipping) : 0,
           paymentMethod: form.paymentMethod || 'cuenta_corriente',
           supplierReference: form.supplierReference || '',
+          expectedAt: form.expectedAt || null,
+          carrier: form.carrier || '',
+          trackingReference: form.trackingReference || '',
+          deliveryAddress: form.deliveryAddress || '',
+          paymentTerms: form.paymentTerms || '',
           notes: form.notes || '',
           idempotencyKey: crypto.randomUUID(),
         };
@@ -2638,6 +2643,25 @@ export default function Admin({ section }: { section: string }) {
                       ['Vencimiento', date(selected.dueAt)],
                       ['Medio de pago', selected.paymentMethod],
                       [
+                        'Condiciones de pago',
+                        selected.paymentTerms || 'Sin condiciones adicionales',
+                      ],
+                      [
+                        'Entrega prevista',
+                        selected.expectedAt
+                          ? date(selected.expectedAt)
+                          : 'Sin fecha',
+                      ],
+                      ['Transportista', selected.carrier || 'Sin asignar'],
+                      [
+                        'Seguimiento',
+                        selected.trackingReference || 'Sin referencia',
+                      ],
+                      [
+                        'Dirección de entrega',
+                        selected.deliveryAddress || 'Sin especificar',
+                      ],
+                      [
                         'Referencia del proveedor',
                         selected.supplierReference || 'Sin referencia',
                       ],
@@ -2683,6 +2707,23 @@ export default function Admin({ section }: { section: string }) {
                   <p>
                     {date(selected.createdAt)} · Vence {date(selected.dueAt)}
                   </p>
+                  <p>
+                    Entrega prevista:{' '}
+                    {selected.expectedAt
+                      ? date(selected.expectedAt)
+                      : 'Sin fecha acordada'}
+                  </p>
+                  {selected.carrier && <p>Transportista: {selected.carrier}</p>}
+                  {selected.trackingReference && (
+                    <p>Seguimiento: {selected.trackingReference}</p>
+                  )}
+                  {selected.deliveryAddress && (
+                    <p>Entrega en: {selected.deliveryAddress}</p>
+                  )}
+                  {selected.paymentTerms && (
+                    <p>Condiciones: {selected.paymentTerms}</p>
+                  )}
+                  {selected.notes && <p>Observaciones: {selected.notes}</p>}
                 </div>
                 <div className="profile-badges">
                   <span>{labels[selected.status] ?? selected.status}</span>
@@ -3931,6 +3972,22 @@ export default function Admin({ section }: { section: string }) {
                         optional: true,
                       })}
                       {field('dueAt', 'Vencimiento de pago', { type: 'date' })}
+                      {field(
+                        'paymentTerms',
+                        'Condiciones de pago adicionales',
+                        { optional: true },
+                      )}
+                      {field('expectedAt', 'Entrega prevista', {
+                        type: 'date',
+                        optional: true,
+                      })}
+                      {field('carrier', 'Transportista', { optional: true })}
+                      {field('trackingReference', 'Referencia de seguimiento', {
+                        optional: true,
+                      })}
+                      {field('deliveryAddress', 'Dirección de entrega', {
+                        optional: true,
+                      })}
                       {field('notes', 'Observaciones', { optional: true })}
                     </>
                   )}

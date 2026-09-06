@@ -397,3 +397,34 @@ test('seller cannot use administration and user overrides never add powers', asy
     );
   assert.equal(none.length, 0);
 });
+
+test('purchase delivery conditions persist with totals and reject invalid dates', async (t) => {
+  const f = fixture(t);
+  f.database.exec(
+    "INSERT INTO suppliers(id,name,phone,email,terms) VALUES ('delivery-supplier','Proveedor','','','')",
+  );
+  const service = f.load('lib/purchase-operations.ts');
+  const variant = f.database
+    .prepare('SELECT id FROM variants LIMIT 1')
+    .get().id;
+  const input = {
+    supplierId: 'delivery-supplier',
+    dueAt: '2026-10-01',
+    expectedAt: '2026-09-20',
+    carrier: 'Transporte local',
+    trackingReference: 'GUIA-1',
+    deliveryAddress: 'Depósito FRAGUAN',
+    paymentTerms: 'Pago a 30 días',
+    tax: 2100,
+    shipping: 1000,
+    items: [{ variantId: variant, quantity: 2, cost: 5000 }],
+  };
+  const order = await service.createPurchaseOrder(actor, input);
+  assert.equal(order.total, 13100);
+  assert.equal(order.carrier, input.carrier);
+  assert.equal(order.expectedAt, input.expectedAt);
+  assert.equal(order.paymentTerms, input.paymentTerms);
+  await assert.rejects(() =>
+    service.createPurchaseOrder(actor, { ...input, expectedAt: '2026-02-30' }),
+  );
+});

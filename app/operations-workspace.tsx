@@ -69,10 +69,15 @@ export default function Operations({ section }: { section: string }) {
     [form, setForm] = useState<Row>({}),
     [selectedUser, setSelectedUser] = useState(''),
     [denied, setDenied] = useState<string[]>([]);
-  const load = () => api(section).then(setData);
+  const [period, setPeriod] = useState({ from: '', to: '' });
+  const [appliedPeriod, setAppliedPeriod] = useState('');
+  const load = () =>
+    api(section + (section === 'seller-commissions' ? appliedPeriod : '')).then(
+      setData,
+    );
   useEffect(() => {
     load().catch((e) => setError(e.message));
-  }, [section]);
+  }, [section, appliedPeriod]);
   const accounts: [string, string][] = (data?.accounts ?? []).map((r: Row) => [
     r.id,
     r.name,
@@ -575,13 +580,51 @@ export default function Operations({ section }: { section: string }) {
       )}
       {section === 'seller-commissions' && data && (
         <>
+          <form
+            className="heading-actions"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (period.from > period.to) {
+                setError(
+                  'La fecha inicial debe ser anterior o igual a la final.',
+                );
+                return;
+              }
+              setError('');
+              setAppliedPeriod('?' + new URLSearchParams(period).toString());
+            }}
+          >
+            <label>
+              Desde
+              <Input
+                type="date"
+                required
+                value={period.from}
+                onChange={(event) =>
+                  setPeriod({ ...period, from: event.target.value })
+                }
+              />
+            </label>
+            <label>
+              Hasta
+              <Input
+                type="date"
+                required
+                value={period.to}
+                onChange={(event) =>
+                  setPeriod({ ...period, to: event.target.value })
+                }
+              />
+            </label>
+            <Button type="submit">Consultar período</Button>
+          </form>
           <p>
             Período: {date(data.from)} al {date(data.to)}. Estimación sobre
             ventas netas de devoluciones, aplicando la tasa actual. No registra
             un pago de sueldo ni de comisión.
           </p>
           {table(
-            'Comisiones estimadas',
+            `Comisiones estimadas · ${data.from} a ${data.to}`,
             data.sellers,
             [
               ['name', 'Vendedor'],
