@@ -45,6 +45,30 @@ import {
 } from 'recharts';
 import { api, money, minor, date, useSession, Row } from '@/lib/client';
 import { buildProductCsvTemplate, parseProductCsv } from '@/lib/product-csv';
+import { GlobalSearch } from '@/components/global-search';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { ExportActions } from '@/components/export-actions';
+import { InventoryLines } from '@/components/inventory-lines';
+import { Barcode } from '@/components/barcode';
+const exportLabels: Record<string, string> = {
+  products: 'Productos',
+  categories: 'Categorías',
+  brands: 'Marcas',
+  suppliers: 'Proveedores',
+  sellers: 'Vendedores',
+  paymentMethods: 'Medios de pago',
+  name: 'Nombre',
+  units: 'Unidades',
+  tickets: 'Tickets',
+  revenueMinor: 'Ventas netas (ARS)',
+  costMinor: 'Costo (ARS)',
+  commissionMinor: 'Comisiones (ARS)',
+  grossProfitMinor: 'Ganancia comercial (ARS)',
+  marginBps: 'Margen (%)',
+  sku: 'SKU',
+  color: 'Color',
+  size: 'Talle',
+};
 const navigation = [
   ['dashboard', 'Vista general', LayoutDashboard],
   ['products', 'Productos', Package],
@@ -68,6 +92,11 @@ const navigation = [
   ['users', 'Equipo y permisos', Users],
   ['audit', 'Auditoría', ShieldCheck],
   ['settings', 'Configuración', SlidersHorizontal],
+  ['banking', 'Bancos y cheques', Wallet],
+  ['club-rewards', 'Canjes del Club', Sparkles],
+  ['access', 'Permisos por usuario', ShieldCheck],
+  ['communications', 'Comunicaciones', Users],
+  ['seller-commissions', 'Comisiones del equipo', TrendingUp],
 ] as const;
 const columns: Record<string, [string, string, string?][]> = {
   products: [
@@ -273,6 +302,13 @@ export default function Admin({ section }: { section: string }) {
   useEffect(() => {
     load().catch((e) => setError(e.message));
   }, [section]);
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setSearch(query.get('q') ?? '');
+    if (query.get('customer')) void customerProfile(query.get('customer')!);
+    if (query.get('sale')) void details({ id: query.get('sale') });
+    if (query.get('purchase')) void purchaseDetails(query.get('purchase')!);
+  }, [section]);
   async function openForm(type = 'create', row: Row | null = null) {
     setForm(
       row && type.startsWith('edit-')
@@ -440,33 +476,6 @@ export default function Admin({ section }: { section: string }) {
     if (value.changeBps == null) return 'Sin base en el período anterior';
     const sign = value.changeBps > 0 ? '+' : '';
     return `${sign}${(value.changeBps / 100).toFixed(1)}% vs. período anterior`;
-  }
-  function exportCsv() {
-    const cols = columns[section] ?? [
-      ['name', 'Nombre'],
-      ['total', 'Total'],
-    ];
-    const escaped = (v: unknown) => {
-      let s = String(v ?? '');
-      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-      return '"' + s.replaceAll('"', '""') + '"';
-    };
-    const csv = [
-      cols.map((c) => escaped(c[1])).join(';'),
-      ...filtered.map((r) =>
-        cols
-          .map(([k, , kind]) => escaped(kind === 'money' ? r[k] / 100 : r[k]))
-          .join(';'),
-      ),
-    ].join('\r\n');
-    const url = URL.createObjectURL(
-      new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }),
-    );
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fraguan-${section}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
   async function downloadProductTemplate() {
     try {
@@ -928,7 +937,12 @@ export default function Admin({ section }: { section: string }) {
         payload = { name: form.name, email: form.email, role: form.role };
       if (section === 'inventory')
         payload = {
-          items: [{ variantId: form.variantId, counted: Number(form.counted) }],
+          items: (form.countLines ?? [{ variantId: '', counted: '' }]).map(
+            (line: Row) => ({
+              variantId: line.variantId,
+              counted: Number(line.counted),
+            }),
+          ),
         };
       await mutate(section, payload);
     } catch (err: any) {
@@ -1043,6 +1057,8 @@ export default function Admin({ section }: { section: string }) {
             FRAGUAN <span>/</span> {title}
           </span>
           <div>
+            <GlobalSearch />
+            <ThemeToggle />
             {session?.demo && (
               <span className="demo-pill">DATOS DE DEMOSTRACIÓN</span>
             )}
@@ -1062,6 +1078,48 @@ export default function Admin({ section }: { section: string }) {
               <p>{descriptions[section]}</p>
             </div>
             <div className="heading-actions">
+              {columns[section] && Array.isArray(data) && (
+                <ExportActions
+                  name={section}
+                  sheets={[
+                    {
+                      name: title,
+                      columns: columns[section].map((c) => c[1]),
+                      rows: filtered.map((row) =>
+                        columns[section].map(([key, , kind]) =>
+                          kind === 'money'
+                            ? Number(row[key] ?? 0) / 100
+                            : (row[key] ?? ''),
+                        ),
+                      ),
+                    },
+                  ]}
+                />
+              )}
+              {section === 'reports' && data?.breakdowns && (
+                <ExportActions
+                  name={`reportes-${reportFrom}-${reportTo}`}
+                  sheets={Object.entries(data.breakdowns).map(
+                    ([name, records]) => ({
+                      name: exportLabels[name] ?? name,
+                      columns: Object.keys(
+                        (records as Row[])[0] ?? { name: '' },
+                      )
+                        .filter((key) => key !== 'id')
+                        .map((key) => exportLabels[key] ?? key),
+                      rows: (records as Row[]).map((row) =>
+                        Object.entries(row)
+                          .filter(([key]) => key !== 'id')
+                          .map(([key, value]) =>
+                            key.endsWith('Minor') || key.endsWith('Bps')
+                              ? Number(value ?? 0) / 100
+                              : value,
+                          ),
+                      ),
+                    }),
+                  )}
+                />
+              )}
               <Button
                 variant="outline"
                 onClick={() => load().catch((e) => setError(e.message))}
@@ -1069,11 +1127,6 @@ export default function Admin({ section }: { section: string }) {
               >
                 <RefreshCw size={15} />
               </Button>
-              {columns[section] && (
-                <Button variant="outline" onClick={exportCsv}>
-                  <Download size={15} /> Exportar CSV
-                </Button>
-              )}
               {section === 'products' && (
                 <Button
                   variant="outline"
@@ -1628,14 +1681,17 @@ export default function Admin({ section }: { section: string }) {
               <div className="metric-grid">
                 <Metric
                   title="Fondos registrados hoy"
-                  value={money(data.currentRecordedCash?.amountMinor)}
+                  value={money(
+                    (data.currentRecordedCash?.amountMinor ?? 0) +
+                      (data.currentRecordedBank?.amountMinor ?? 0),
+                  )}
                   detail={
                     data.currentRecordedCash?.status === 'open'
-                      ? 'Efectivo de la caja abierta'
-                      : 'No hay una caja abierta'
+                      ? `Caja abierta + ${data.currentRecordedBank?.accounts ?? 0} cuentas bancarias registradas`
+                      : `Sin caja abierta · ${data.currentRecordedBank?.accounts ?? 0} cuentas bancarias registradas`
                   }
                 />
-                {[7, 30, 90].map((days) => (
+                {[7, 30, 60, 90].map((days) => (
                   <Metric
                     key={days}
                     title={`Proyección a ${days} días`}
@@ -2283,6 +2339,27 @@ export default function Admin({ section }: { section: string }) {
                               Ajustar
                             </Button>
                           )}
+                          {section === 'suppliers' &&
+                            session?.permissions?.includes('reports') && (
+                              <Button
+                                variant="ghost"
+                                onClick={async () => {
+                                  try {
+                                    setSelected(
+                                      await api(
+                                        'supplier-history?id=' +
+                                          encodeURIComponent(r.id),
+                                      ),
+                                    );
+                                    setModal('supplier-profile');
+                                  } catch (e) {
+                                    setError((e as Error).message);
+                                  }
+                                }}
+                              >
+                                Historial y rendimiento
+                              </Button>
+                            )}
                           {section === 'suppliers' && (
                             <>
                               <Button
@@ -2355,6 +2432,26 @@ export default function Admin({ section }: { section: string }) {
                               onClick={() => actionDialog('pay-payable', r)}
                             >
                               Pagar
+                            </Button>
+                          )}
+                          {section === 'inventory' && (
+                            <Button
+                              variant="ghost"
+                              onClick={async () => {
+                                try {
+                                  setSelected(
+                                    await api(
+                                      'inventory?id=' +
+                                        encodeURIComponent(r.id),
+                                    ),
+                                  );
+                                  setModal('inventory-detail');
+                                } catch (e) {
+                                  setError((e as Error).message);
+                                }
+                              }}
+                            >
+                              Ver diferencias
                             </Button>
                           )}
                           {section === 'inventory' && r.status === 'draft' && (
@@ -2470,6 +2567,7 @@ export default function Admin({ section }: { section: string }) {
                     </span>
                     <b>{money(selected.price)}</b>
                     <small>SKU {selected.sku}</small>
+                    <Barcode value={selected.barcode} />
                     <small className="label-barcode">{selected.barcode}</small>
                   </article>
                 ))}
@@ -2619,6 +2717,190 @@ export default function Admin({ section }: { section: string }) {
                     </div>
                   ))}
                 </>
+              )}
+            </div>
+          ) : modal === 'supplier-profile' && selected ? (
+            <div className="customer-profile">
+              <h2>{selected.supplier.name}</h2>
+              <p>
+                Ventas del {date(selected.period.from)} al{' '}
+                {date(selected.period.to)}.
+              </p>
+              <div className="metric-grid">
+                <Metric
+                  title="Ventas netas"
+                  value={money(selected.sales.revenueMinor)}
+                  detail={`${selected.sales.units} unidades`}
+                />
+                <Metric
+                  title="Ganancia comercial"
+                  value={money(selected.sales.grossProfitMinor)}
+                  detail="Después de costos y comisiones de cobro"
+                />
+                <Metric
+                  title="Capital en stock"
+                  value={money(selected.stock.cost)}
+                  detail={`${selected.stock.units} unidades actuales`}
+                />
+              </div>
+              <p>
+                Unidades vendidas / stock actual:{' '}
+                {selected.rotation === null
+                  ? 'Sin stock actual'
+                  : Number(selected.rotation).toFixed(2)}
+                . Esta relación usa el stock actual, no un promedio histórico.
+              </p>
+              <ExportActions
+                name="historial-proveedor"
+                sheets={[
+                  {
+                    name: 'Órdenes',
+                    columns: [
+                      'Fecha',
+                      'Referencia',
+                      'Estado',
+                      'Total ARS',
+                      'Pedidas',
+                      'Recibidas',
+                    ],
+                    rows: selected.orders.map((r: Row) => [
+                      r.createdAt,
+                      r.supplierReference,
+                      r.status,
+                      r.total / 100,
+                      r.ordered,
+                      r.received,
+                    ]),
+                  },
+                ]}
+              />
+              <div className="data-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Estado</th>
+                      <th>Total</th>
+                      <th>Recibidas / pedidas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selected.orders.map((r: Row) => (
+                      <tr key={r.id}>
+                        <td>{date(r.createdAt)}</td>
+                        <td>{labels[r.status] ?? r.status}</td>
+                        <td>{money(r.total)}</td>
+                        <td>
+                          {r.received} / {r.ordered}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!selected.orders.length && (
+                  <p className="quiet">No hay órdenes para este proveedor.</p>
+                )}
+              </div>
+            </div>
+          ) : modal === 'inventory-detail' && selected ? (
+            <div className="customer-profile">
+              <h2>Diferencias del inventario</h2>
+              <p>
+                {selected.status === 'draft'
+                  ? 'Borrador · cantidades editables hasta aprobar'
+                  : 'Conteo aprobado'}
+              </p>
+              <div className="data-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Variante</th>
+                      <th>Sistema</th>
+                      <th>Encontrado</th>
+                      <th>Diferencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selected.items.map((r: Row, index: number) => (
+                      <tr key={r.id}>
+                        <td>
+                          {r.name}
+                          <small>
+                            {r.color} · {r.size} · {r.sku}
+                          </small>
+                        </td>
+                        <td>{r.expected}</td>
+                        <td>
+                          {selected.status === 'draft' ? (
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100000}
+                              aria-label={`Cantidad encontrada de ${r.name} ${r.color} ${r.size}`}
+                              value={r.counted}
+                              onChange={(e) =>
+                                setSelected({
+                                  ...selected,
+                                  items: selected.items.map(
+                                    (line: Row, i: number) =>
+                                      i === index
+                                        ? { ...line, counted: e.target.value }
+                                        : line,
+                                  ),
+                                })
+                              }
+                            />
+                          ) : (
+                            r.counted
+                          )}
+                        </td>
+                        <td>{Number(r.counted) - r.expected}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <ExportActions
+                name="diferencias-inventario"
+                sheets={[
+                  {
+                    name: 'Conteo',
+                    columns: [
+                      'SKU',
+                      'Producto',
+                      'Color',
+                      'Talle',
+                      'Sistema',
+                      'Encontrado',
+                      'Diferencia',
+                    ],
+                    rows: selected.items.map((r: Row) => [
+                      r.sku,
+                      r.name,
+                      r.color,
+                      r.size,
+                      r.expected,
+                      Number(r.counted),
+                      Number(r.counted) - r.expected,
+                    ]),
+                  },
+                ]}
+              />
+              {selected.status === 'draft' && (
+                <Button
+                  disabled={busy}
+                  onClick={() =>
+                    mutate('inventory-edit', {
+                      id: selected.id,
+                      items: selected.items.map((r: Row) => ({
+                        id: r.id,
+                        counted: Number(r.counted),
+                      })),
+                    })
+                  }
+                >
+                  Guardar conteo
+                </Button>
               )}
             </div>
           ) : modal === 'customer-profile' && selected ? (
@@ -3722,16 +4004,15 @@ export default function Admin({ section }: { section: string }) {
                   )}
                   {section === 'inventory' && (
                     <>
-                      {field('variantId', 'Variante a contar', {
-                        choices: variantChoices,
-                      })}
-                      {field('counted', 'Cantidad encontrada', {
-                        type: 'number',
-                      })}
-                      <p className="quiet">
-                        Guardar el conteo no modifica stock. Se requiere una
-                        aprobación posterior.
-                      </p>
+                      <InventoryLines
+                        lines={
+                          form.countLines ?? [{ variantId: '', counted: '' }]
+                        }
+                        choices={variantChoices}
+                        onChange={(countLines) =>
+                          setForm({ ...form, countLines })
+                        }
+                      />
                     </>
                   )}
                 </>

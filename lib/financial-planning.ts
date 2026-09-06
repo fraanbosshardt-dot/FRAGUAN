@@ -70,7 +70,7 @@ async function validateSupplier(supplierId: string | null) {
 }
 
 export async function listFinancialPlans(actor: Actor) {
-  requirePermission(actor, 'cash-flow');
+  requirePermission(actor, 'financial-calendar');
   const [recurring, obligations] = await Promise.all([
     rows(
       `SELECT r.*,s.name AS supplier
@@ -278,7 +278,7 @@ export async function getPlannedFinancialCalendar(
   actor: Actor,
   horizonDays = 60,
 ) {
-  requirePermission(actor, 'cash-flow');
+  requirePermission(actor, 'financial-calendar');
   const recurringExpenses = await rows<RecurringExpenseDefinition>(
     `SELECT r.id,r.description,r.amount AS amountMinor,r.startsOn,r.frequency,
             r.interval,r.endsOn,r.category AS kind,r.supplierId,s.name AS supplierName

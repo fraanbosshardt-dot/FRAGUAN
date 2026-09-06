@@ -384,8 +384,13 @@ export function buildStockReplenishmentReport(
   };
 }
 
-export function requireStockReplenishmentAccess(actor: Pick<Actor, 'role'>) {
-  if (actor.role !== 'ADMIN' && actor.role !== 'GERENTE')
+export function requireStockReplenishmentAccess(
+  actor: Pick<Actor, 'role' | 'denied'>,
+) {
+  if (
+    (actor.role !== 'ADMIN' && actor.role !== 'GERENTE') ||
+    actor.denied?.includes('replenishment')
+  )
     throw new AppError(403, 'Acceso denegado.');
 }
 

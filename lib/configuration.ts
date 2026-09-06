@@ -20,6 +20,17 @@ export async function configureMethod(a: Actor, raw: unknown) {
     x.id,
   );
   if (!before) throw new AppError(404, 'Medio de pago no encontrado.');
+  if (
+    ['store_credit', 'cashback'].includes(x.id) &&
+    (x.surchargeBps !== 0 ||
+      x.commissionBps !== 0 ||
+      x.days !== 0 ||
+      x.installments !== 1)
+  )
+    throw new AppError(
+      400,
+      'Los saldos internos no admiten recargos, comisiones, cuotas ni plazos de acreditación.',
+    );
   await db().batch([
     statement(
       'UPDATE payment_methods SET name=?,surchargeBps=?,commissionBps=?,days=?,installments=? WHERE id=?',

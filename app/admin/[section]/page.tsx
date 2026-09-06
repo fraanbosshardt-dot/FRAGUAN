@@ -1,6 +1,7 @@
 import { actor, can } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Admin from '../../admin-workspace';
+import Operations from '../../operations-workspace';
 export const dynamic = 'force-dynamic';
 export default async function AdminPage({
   params,
@@ -17,7 +18,17 @@ export default async function AdminPage({
           <a href="/pos">Volver al punto de venta</a>
         </main>
       );
-    return <Admin section={section} />;
+    return [
+      'banking',
+      'club-rewards',
+      'access',
+      'communications',
+      'seller-commissions',
+    ].includes(section) ? (
+      <Operations section={section} />
+    ) : (
+      <Admin section={section} />
+    );
   } catch {
     redirect('/pos');
   }

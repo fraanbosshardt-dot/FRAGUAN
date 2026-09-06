@@ -89,6 +89,10 @@ export default function Workspace() {
     if (session?.user) refresh().catch((e) => setError(e.message));
   }, [session]);
   useEffect(() => {
+    const saved = localStorage.getItem('fraguan-theme');
+    setDark(saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+  }, []);
+  useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
   useEffect(() => {
@@ -450,7 +454,7 @@ export default function Workspace() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setDark(!dark)}
+            onClick={() => { localStorage.setItem('fraguan-theme', !dark ? 'dark' : 'light'); setDark(!dark); }}
             aria-label="Cambiar tema"
           >
             {dark ? <Sun /> : <Moon />}

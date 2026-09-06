@@ -16,7 +16,7 @@ const filtersSchema = z
 export type BusinessReportFilters = z.infer<typeof filtersSchema>;
 
 function dateAtArgentinaMidnight(date: string) {
-  return `${date}T00:00:00-03:00`;
+  return new Date(`${date}T00:00:00-03:00`).toISOString();
 }
 
 function addDays(date: string, days: number) {

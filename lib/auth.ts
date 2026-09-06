@@ -6,6 +6,7 @@ export type Actor = {
   name: string;
   role: 'ADMIN' | 'GERENTE' | 'VENDEDOR' | 'CAJA' | 'STOCK';
   active: number;
+  denied?: string[];
 };
 export class AppError extends Error {
   constructor(
@@ -28,6 +29,25 @@ export async function actor() {
   );
   if (!a?.active)
     throw new AppError(403, 'Tu cuenta no tiene acceso a FRAGUAN.');
+  if (a.role !== 'ADMIN') {
+    const policy = await one<{ value: string }>(
+      'SELECT value FROM settings WHERE key=?',
+      `access:${a.id}`,
+    );
+    if (policy) {
+      try {
+        const denied = JSON.parse(policy.value);
+        if (
+          !Array.isArray(denied) ||
+          !denied.every((p) => typeof p === 'string')
+        )
+          throw new Error();
+        a.denied = denied;
+      } catch {
+        throw new AppError(403, 'La configuración de acceso debe revisarse.');
+      }
+    }
+  }
   return a;
 }
 const grants: Record<string, string[]> = {
@@ -54,12 +74,17 @@ const grants: Record<string, string[]> = {
     'insights',
     'customer-intelligence',
     'customer-credits',
+    'banking',
+    'club-rewards',
+    'communications',
+    'seller-commissions',
   ],
   VENDEDOR: ['pos', 'customers', 'own-sales'],
   CAJA: ['pos', 'customers', 'own-sales', 'cash'],
   STOCK: ['stock', 'products', 'suppliers', 'purchases', 'inventory'],
 };
 export function can(a: Actor, resource: string) {
+  if (a.denied?.includes(resource)) return false;
   return (
     grants[a.role]?.includes('*') || grants[a.role]?.includes(resource) || false
   );

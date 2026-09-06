@@ -548,3 +548,118 @@ export const audit = table('audit_log', {
   after: text(),
   createdAt: text().notNull(),
 });
+export const bankAccounts = table('bank_accounts', {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  bank: text().notNull(),
+  alias: text().notNull().default(''),
+  opening: integer().notNull().default(0),
+  active: integer().notNull().default(1),
+  createdAt: text().notNull(),
+});
+export const bankEntries = table(
+  'bank_entries',
+  {
+    id: text().primaryKey(),
+    accountId: text()
+      .notNull()
+      .references(() => bankAccounts.id),
+    amount: integer().notNull(),
+    description: text().notNull(),
+    reference: text().notNull().unique(),
+    occurredAt: text().notNull(),
+    reconciledAt: text(),
+    statementReference: text(),
+    actorId: text()
+      .notNull()
+      .references(() => users.id),
+    createdAt: text().notNull(),
+  },
+  (t) => [
+    check('bank_entry_nonzero', sql`${t.amount} <> 0`),
+    uniqueIndex('bank_statement_unique')
+      .on(t.accountId, t.statementReference)
+      .where(sql`${t.statementReference} IS NOT NULL`),
+  ],
+);
+export const checks = table(
+  'checks',
+  {
+    id: text().primaryKey(),
+    number: text().notNull(),
+    bank: text().notNull(),
+    type: text().notNull(),
+    direction: text().notNull(),
+    party: text().notNull(),
+    amount: integer().notNull(),
+    issuedAt: text().notNull(),
+    dueAt: text().notNull(),
+    accountId: text()
+      .notNull()
+      .references(() => bankAccounts.id),
+    status: text().notNull(),
+    version: integer().notNull().default(0),
+    payableId: text().references(() => payables.id),
+    createdAt: text().notNull(),
+  },
+  (t) => [
+    uniqueIndex('check_number_unique').on(t.bank, t.number, t.direction),
+    check('check_positive', sql`${t.amount}>0`),
+    uniqueIndex('check_payable_once')
+      .on(t.payableId)
+      .where(
+        sql`${t.payableId} IS NOT NULL AND ${t.status} NOT IN ('cancelled','rejected')`,
+      ),
+  ],
+);
+export const checkEvents = table(
+  'check_events',
+  {
+    id: text().primaryKey(),
+    checkId: text()
+      .notNull()
+      .references(() => checks.id),
+    fromStatus: text().notNull(),
+    toStatus: text().notNull(),
+    version: integer().notNull(),
+    reason: text().notNull(),
+    actorId: text()
+      .notNull()
+      .references(() => users.id),
+    createdAt: text().notNull(),
+  },
+  (t) => [uniqueIndex('check_event_version').on(t.checkId, t.version)],
+);
+export const clubRewards = table(
+  'club_rewards',
+  {
+    id: text().primaryKey(),
+    name: text().notNull(),
+    description: text().notNull(),
+    points: integer().notNull(),
+    active: integer().notNull().default(1),
+    createdAt: text().notNull(),
+  },
+  (t) => [check('reward_points_positive', sql`${t.points}>0`)],
+);
+export const clubRedemptions = table(
+  'club_redemptions',
+  {
+    id: text().primaryKey(),
+    customerId: text()
+      .notNull()
+      .references(() => customers.id),
+    rewardId: text()
+      .notNull()
+      .references(() => clubRewards.id),
+    points: integer().notNull(),
+    rewardName: text().notNull(),
+    status: text().notNull().default('reserved'),
+    idempotencyKey: text().notNull().unique(),
+    actorId: text()
+      .notNull()
+      .references(() => users.id),
+    createdAt: text().notNull(),
+  },
+  (t) => [check('redemption_points_positive', sql`${t.points}>0`)],
+);

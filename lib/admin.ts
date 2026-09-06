@@ -310,7 +310,9 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
         date,
       ),
     ];
-    for (const i of x.items)
+    for (const i of x.items) {
+      if (!(await one('SELECT id FROM variants WHERE id=?', i.variantId)))
+        throw new AppError(400, 'Variante no encontrada.');
       commands.push(
         statement(
           'INSERT INTO inventory_count_items(id,countId,variantId,expected,counted) SELECT ?,?,id,stock,? FROM variants WHERE id=?',
@@ -320,6 +322,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
           i.variantId,
         ),
       );
+    }
   } else throw new AppError(403, 'Acceso denegado.');
   commands.push(auditStatement(a.id, `Crear ${resource}`, key, null, raw));
   await db().batch(commands);
@@ -441,6 +444,16 @@ export async function adminAction(a: Actor, raw: unknown) {
     );
   } else if (input.action === 'pay-payable') {
     requirePermission(a, 'payables');
+    if (
+      await one(
+        "SELECT id FROM checks WHERE payableId=? AND status IN ('issued','deposited')",
+        input.id,
+      )
+    )
+      throw new AppError(
+        409,
+        'Esta cuenta tiene un cheque pendiente. Registrá su débito o cancelación en Bancos y cheques.',
+      );
     const p = await one<{ id: string; amount: number; status: string }>(
       'SELECT id,amount,status FROM payables WHERE id=?',
       input.id,

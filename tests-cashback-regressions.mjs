@@ -12,9 +12,9 @@ import ts from 'typescript';
 // changing the developer's customers, stock, cash session, or Club settings.
 const root = dirname(fileURLToPath(import.meta.url));
 const nodeRequire = createRequire(import.meta.url);
-const actor = { id: 'admin', role: 'ADMIN', active: 1 };
+export const actor = { id: 'admin', role: 'ADMIN', active: 1 };
 
-function fixture(t, { rate = 100, expiry = 30 } = {}) {
+export function fixture(t, { rate = 100, expiry = 30 } = {}) {
   const database = new DatabaseSync(':memory:');
   t.after(() => database.close());
   database.exec('PRAGMA foreign_keys=ON');
@@ -107,6 +107,7 @@ function fixture(t, { rate = 100, expiry = 30 } = {}) {
   const returns = load(resolve(root, 'lib/returns.ts'));
   return {
     database,
+    load: (name) => load(resolve(root, name)),
     async sell(quantity, cashback = 0, key = crypto.randomUUID()) {
       const total = quantity * 10000;
       return sales.confirmSale(actor, {

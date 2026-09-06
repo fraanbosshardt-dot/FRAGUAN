@@ -76,3 +76,44 @@ npm run dev -- --host 127.0.0.1
 ```
 
 Usar siempre el entorno local de demostración mientras se desarrollan los módulos pendientes. No cargar datos reales en esta base.
+
+## Actualización — 5 de septiembre de 2026
+
+Este bloque reemplaza los pendientes anteriores cuando se superponen. El sistema continúa en desarrollo local; no está habilitado para operación productiva.
+
+| Entrega | Estado y alcance |
+| --- | --- |
+| Búsqueda global | Implementada con Ctrl/Cmd-K, enlaces a registros y permisos en servidor. Vendedor excluido de búsqueda administrativa. |
+| Tema | Alternancia claro/oscuro persistida en administración y POS. Sin fotos. |
+| Exportaciones | CSV, Excel XLSX real con varias hojas e impresión para guardar PDF. Texto tratado como texto para evitar fórmulas inyectadas. |
+| Etiquetas | Barras Code39 SVG para códigos compatibles de hasta 24 caracteres. Codificación contrastada con ReportLab; falta probar impresora y lector físicos. |
+| Inventario | Conteos de múltiples variantes, edición de borradores, diferencias y exportación. Aprobar aplica stock; aprobado queda congelado. |
+| Bancos | Cuentas, saldo contable, movimientos idempotentes y conciliación manual contra importe, fecha y referencia del extracto. No consulta bancos externos. |
+| Cheques/eCheq | Registro local, vencimientos, depósito, acreditación, rechazo y cancelación. Vinculación a deuda y pago único al acreditarse. No emite eCheq bancario. |
+| Flujo de fondos | Integra saldos bancarios registrados y cheques; reemplaza la deuda vinculada sin duplicarla. Horizontes 7/30/60/90 días. |
+| Club y puntos | Catálogo de beneficios, reserva de puntos, entrega y cancelación con restitución única. No modifica automáticamente stock ni genera ventas. |
+| Permisos individuales | Administrador puede restringir capacidades del rol. Nunca amplía las capacidades base ni habilita finanzas al vendedor. |
+| Proveedores | Historial de compras y rendimiento con ventas netas e inventario actual. |
+| Comisiones de vendedores | Tasa configurable y estimación sobre ventas netas de devoluciones. La tasa actual se aplica al período consultado; no es liquidación de sueldos. |
+| Comunicaciones | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático ni se enviaron mensajes. |
+| Fechas de reportes | Corregidos límites del día argentino frente a timestamps UTC. |
+
+### Verificación de este bloque
+
+- TypeScript sin errores y compilación de producción completa.
+- 17 escenarios en `tests-operations.mjs`, incluidos los 6 de cashback: canjes, concurrencia protegida por base, cheques, deudas, conciliación, inventario, comisiones, proveedores y fechas.
+- Seguridad del vendedor verificada contra servidor local: no recibe costos ni métricas administrativas.
+- Calendario, planificación y reporting verificados; integración, administración y reglas avanzadas también ejecutadas durante el bloque.
+- XLSX leído por una implementación independiente (openpyxl); barras Code39 contrastadas con ReportLab.
+- Sin revisión visual automatizada ni validación física de tickets/etiquetas. Estas pruebas no certifican seguridad productiva.
+
+### Pendientes efectivos para cierre
+
+- QA visual y recorrido integral con dispositivos, impresora y lector de la tienda; accesibilidad y adaptación de las pantallas extensas.
+- Compras: condiciones logísticas avanzadas, transporte, impuestos y envío al proveedor.
+- Comunicación automática de Club y beneficios integrados a canales externos.
+- Definir recuperación de cashback ya gastado al devolver y si pagos con cashback generan nuevas recompensas.
+- Migraciones productivas: SQL local aplicado hasta `0010_check_payables.sql`; reconciliar journal de Drizzle y ensayar instalación limpia, respaldo y restauración.
+- Base definitiva, Google Login y Vercel al final. El runtime actual es Vinext/Cloudflare D1: Vercel necesita adaptación del almacenamiento y runtime; no alcanza con cargar variables.
+- Integración fiscal y APIs de cobro/bancos/mensajería solo cuando se definan. Ticket actual es interno; saldos bancarios son contables registrados.
+- Backups, observabilidad, secretos, recuperación y revisión de seguridad antes de datos reales.

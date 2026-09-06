@@ -18,6 +18,17 @@ import {
   auditStatement,
 } from '@/db/queries';
 import { setup } from '@/lib/seed';
+import { globalSearch } from '@/lib/global-search';
+import { listAccess, saveAccess } from '@/lib/access-control';
+import { banking, bankingWrite } from '@/lib/banking';
+import { clubRewards, clubRewardWrite } from '@/lib/club-rewards';
+import { inventoryDetail, editInventory } from '@/lib/inventory';
+import { communicationSuggestions } from '@/lib/communications';
+import {
+  sellerCommissions,
+  configureSellerCommission,
+} from '@/lib/seller-commissions';
+import { supplierHistory } from '@/lib/supplier-history';
 import { customerInput } from '@/lib/validation';
 import {
   confirmSale,
@@ -31,6 +42,7 @@ import { adminWrite, adminAction, dashboard } from '@/lib/admin';
 import { z } from 'zod';
 import { configureMethod, addVariant } from '@/lib/configuration';
 import { getCashFlow } from '@/lib/cashflow';
+import { consolidatedCashFlow } from '@/lib/consolidated-cashflow';
 import {
   getCustomerInsights,
   getCustomerIntelligence,
@@ -92,7 +104,13 @@ export async function GET(
       if (!configured) return reply({ needsSetup: true, name: u.displayName });
       const a = await actor();
       return reply({
-        user: a,
+        user: {
+          id: a.id,
+          email: a.email,
+          name: a.name,
+          role: a.role,
+          active: a.active,
+        },
         demo:
           (
             await one<{ value: string }>(
@@ -125,10 +143,38 @@ export async function GET(
           'users',
           'audit',
           'settings',
+          'access',
+          'banking',
+          'club-rewards',
+          'communications',
+          'seller-commissions',
         ].filter((p) => can(a, p)),
       });
     }
     const a = await actor();
+    if (resource === 'global-search')
+      return reply(await globalSearch(a, url.searchParams.get('q') ?? ''));
+    if (resource === 'access') return reply(await listAccess(a));
+    if (resource === 'communications')
+      return reply(await communicationSuggestions(a));
+    if (resource === 'supplier-history')
+      return reply(await supplierHistory(a, url.searchParams.get('id') ?? ''));
+    if (resource === 'seller-commissions') {
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+      }).format(new Date());
+      return reply(
+        await sellerCommissions(
+          a,
+          url.searchParams.get('from') ?? `${today.slice(0, 7)}-01`,
+          url.searchParams.get('to') ?? today,
+        ),
+      );
+    }
+    if (resource === 'inventory' && url.searchParams.has('id'))
+      return reply(await inventoryDetail(a, url.searchParams.get('id')!));
+    if (resource === 'banking') return reply(await banking(a));
+    if (resource === 'club-rewards') return reply(await clubRewards(a));
     if (resource === 'catalog') {
       requirePermission(a, 'pos');
       return reply(
@@ -260,8 +306,8 @@ export async function GET(
       );
     }
     if (resource === 'cash-flow') {
-      requirePermission(a, 'reports');
-      return reply(await getCashFlow());
+      requirePermission(a, 'cash-flow');
+      return reply(await consolidatedCashFlow());
     }
     if (resource === 'customer-intelligence') {
       requirePermission(a, 'customer-intelligence');
@@ -515,6 +561,14 @@ export async function POST(
     if (resource === 'actions') return reply(await adminAction(a, body));
     if (resource === 'configure-method')
       return reply(await configureMethod(a, body));
+    if (resource === 'access') return reply(await saveAccess(a, body));
+    if (resource === 'seller-commissions')
+      return reply(await configureSellerCommission(a, body));
+    if (resource === 'inventory-edit')
+      return reply(await editInventory(a, body));
+    if (resource === 'banking') return reply(await bankingWrite(a, body));
+    if (resource === 'club-rewards')
+      return reply(await clubRewardWrite(a, body));
     if (resource === 'variants') return reply(await addVariant(a, body), 201);
     return reply(await adminWrite(resource, a, body), 201);
   } catch (e) {
