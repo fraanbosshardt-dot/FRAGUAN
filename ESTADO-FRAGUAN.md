@@ -117,3 +117,11 @@ Este bloque reemplaza los pendientes anteriores cuando se superponen. El sistema
 - Base definitiva, Google Login y Vercel al final. El runtime actual es Vinext/Cloudflare D1: Vercel necesita adaptación del almacenamiento y runtime; no alcanza con cargar variables.
 - Integración fiscal y APIs de cobro/bancos/mensajería solo cuando se definan. Ticket actual es interno; saldos bancarios son contables registrados.
 - Backups, observabilidad, secretos, recuperación y revisión de seguridad antes de datos reales.
+
+## Continuación — órdenes exportables e historial de cheques
+
+- Orden de compra exportable en XLSX/CSV e impresión PDF: identificación, proveedor, vencimiento, condiciones, referencia, líneas y totales separados. Descarga local; no envía mensajes.
+- El botón ahora dice «Marcar como enviada» para describir el cambio de estado interno.
+- Impuestos y transporte se muestran por separado. Corrección del listado anterior: ambos importes, compras multilínea y recepción parcial ya estaban implementados; permanecen pendientes logística avanzada e integración de envío externo.
+- Historial administrativo de los últimos 250 cambios de cheques con estado anterior/nuevo, motivo y responsable, también exportable.
+- TypeScript verificado sin errores. La validación visual y de impresión física continúa pendiente.

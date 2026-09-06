@@ -2397,7 +2397,7 @@ export default function Admin({ section }: { section: string }) {
                                 changePurchaseStatus(String(r.id), 'send')
                               }
                             >
-                              Enviar
+                              Marcar como enviada
                             </Button>
                           )}
                           {section === 'purchases' && r.status === 'sent' && (
@@ -2624,6 +2624,58 @@ export default function Admin({ section }: { section: string }) {
             </>
           ) : modal === 'purchase-detail' && selected ? (
             <div className="customer-profile">
+              <ExportActions
+                name={`orden-${selected.id}`}
+                sheets={[
+                  {
+                    name: 'Orden de compra',
+                    columns: ['Dato', 'Detalle'],
+                    rows: [
+                      ['Orden', selected.id],
+                      ['Proveedor', selected.supplier],
+                      ['Estado', labels[selected.status] ?? selected.status],
+                      ['Fecha', date(selected.createdAt)],
+                      ['Vencimiento', date(selected.dueAt)],
+                      ['Medio de pago', selected.paymentMethod],
+                      [
+                        'Referencia del proveedor',
+                        selected.supplierReference || 'Sin referencia',
+                      ],
+                      ['Notas y condiciones', selected.notes || 'Sin notas'],
+                      ['Subtotal ARS', selected.subtotal / 100],
+                      ['Descuentos ARS', selected.discount / 100],
+                      ['Impuestos ARS', selected.tax / 100],
+                      ['Transporte ARS', selected.shipping / 100],
+                      ['Total ARS', selected.total / 100],
+                    ],
+                  },
+                  {
+                    name: 'Detalle de mercadería',
+                    columns: [
+                      'Producto',
+                      'SKU',
+                      'Color',
+                      'Talle',
+                      'Pedido',
+                      'Recibido',
+                      'Costo unitario ARS',
+                      'Descuento de línea ARS',
+                      'Neto de línea ARS',
+                    ],
+                    rows: (selected.items ?? []).map((item: Row) => [
+                      item.name,
+                      item.sku,
+                      item.color,
+                      item.size,
+                      item.quantity,
+                      item.received,
+                      item.cost / 100,
+                      (item.discount ?? 0) / 100,
+                      (item.quantity * item.cost - (item.discount ?? 0)) / 100,
+                    ]),
+                  },
+                ]}
+              />
               <div className="profile-heading">
                 <div>
                   <p className="eyebrow">ORDEN DE COMPRA</p>
@@ -2673,10 +2725,12 @@ export default function Admin({ section }: { section: string }) {
                 <span>−{money(selected.discount)}</span>
               </div>
               <div className="summary-line">
-                <span>Impuestos + transporte</span>
-                <span>
-                  {money((selected.tax ?? 0) + (selected.shipping ?? 0))}
-                </span>
+                <span>Impuestos</span>
+                <span>{money(selected.tax ?? 0)}</span>
+              </div>
+              <div className="summary-line">
+                <span>Transporte</span>
+                <span>{money(selected.shipping ?? 0)}</span>
               </div>
               <div className="total-line">
                 <span>Total</span>
@@ -2687,7 +2741,7 @@ export default function Admin({ section }: { section: string }) {
                   onClick={() => changePurchaseStatus(selected.id, 'send')}
                   disabled={busy}
                 >
-                  Enviar orden
+                  Marcar como enviada
                 </Button>
               )}
               {selected.status === 'sent' && (

@@ -421,6 +421,22 @@ export default function Operations({ section }: { section: string }) {
                 </Button>
               ),
           )}
+          {table(
+            'Historial de cheques (últimos 250 cambios)',
+            data.events.map((event: Row) => ({
+              ...event,
+              fromStatus: labels[event.fromStatus] ?? event.fromStatus,
+              toStatus: labels[event.toStatus] ?? event.toStatus,
+            })),
+            [
+              ['number', 'Cheque'],
+              ['createdAt', 'Fecha', 'date'],
+              ['fromStatus', 'Estado anterior'],
+              ['toStatus', 'Nuevo estado'],
+              ['reason', 'Motivo'],
+              ['actor', 'Registrado por'],
+            ],
+          )}
         </>
       )}
       {section === 'club-rewards' && data && (
