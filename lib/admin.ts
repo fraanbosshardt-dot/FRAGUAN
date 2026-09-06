@@ -485,28 +485,17 @@ export async function adminAction(a: Actor, raw: unknown) {
         input.id,
       ),
     ];
-    for (const i of await rows<{
-      variantId: string;
-      expected: number;
-      counted: number;
-    }>(
-      'SELECT variantId,expected,counted FROM inventory_count_items WHERE countId=?',
-      input.id,
-    ))
-      commands.push(
-        statement(
-          'INSERT INTO stock_movements(id,variantId,quantity,before,after,reason,actorId,reference,createdAt) VALUES (?,?,?,?,?,?,?,?,?)',
-          id(),
-          i.variantId,
-          i.counted - i.expected,
-          i.expected,
-          i.counted,
-          'Inventario aprobado',
-          a.id,
-          input.id,
-          date,
-        ),
-      );
+    commands.push(
+      statement(
+        `INSERT INTO stock_movements(id,variantId,quantity,before,after,reason,actorId,reference,createdAt)
+         SELECT lower(hex(randomblob(16))),variantId,counted-expected,expected,counted,'Inventario aprobado',?,?,?
+         FROM inventory_count_items WHERE countId=?`,
+        a.id,
+        input.id,
+        date,
+        input.id,
+      ),
+    );
   } else if (input.action === 'set-price') {
     requirePermission(a, 'products');
     if (a.role === 'STOCK') throw new AppError(403, 'Acceso denegado.');

@@ -135,3 +135,10 @@ Este bloque reemplaza los pendientes anteriores cuando se superponen. El sistema
 - 18 pruebas de operaciones aprobadas. TypeScript aprobado; compilación de producción aprobada para logística y migración.
 - Comisiones: selector de período y rango incluido en las exportaciones.
 - Pendientes que requieren decisiones/conexiones reales: política del cashback gastado, comunicación automática, Google Login, base definitiva, adaptación a Vercel e integraciones fiscales/bancarias. QA visual, dispositivos e impresión aún pendientes.
+
+## Bloque de cierre local — 5 de septiembre de 2026
+
+- Inventario aprobado protegido también en la base: no se pueden editar, borrar ni insertar líneas luego de aprobar el conteo.
+- Respaldo previo a la migración `0012_inventory_freeze.sql` verificado y guardado fuera de Git.
+- 18 escenarios de operaciones, recuperación de base, TypeScript y compilación de producción aprobados.
+- El producto sigue en modo local de demostración. No se conectaron credenciales, servicios externos ni datos reales.

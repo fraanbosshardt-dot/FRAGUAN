@@ -164,6 +164,29 @@ test('inventory drafts validate variants, allow edits and freeze on approval', a
     100,
   );
   await adminAction(actor, { action: 'approve-count', id: count.id });
+  assert.throws(
+    () =>
+      f.database
+        .prepare('UPDATE inventory_count_items SET counted=0 WHERE countId=?')
+        .run(count.id),
+    /inventory_already_approved/,
+  );
+  assert.throws(
+    () =>
+      f.database
+        .prepare('DELETE FROM inventory_count_items WHERE countId=?')
+        .run(count.id),
+    /inventory_already_approved/,
+  );
+  assert.throws(
+    () =>
+      f.database
+        .prepare(
+          'INSERT INTO inventory_count_items(id,countId,variantId,expected,counted) VALUES (?,?,?,?,?)',
+        )
+        .run('extra', count.id, 'variant', 99, 0),
+    /inventory_already_approved/,
+  );
   assert.equal(
     f.database.prepare("SELECT stock FROM variants WHERE id='variant'").get()
       .stock,

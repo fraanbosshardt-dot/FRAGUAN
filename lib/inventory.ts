@@ -3,7 +3,12 @@ import { Actor, AppError, requirePermission } from './auth';
 import { auditStatement, db, one, rows, statement } from '@/db/queries';
 export async function inventoryDetail(a: Actor, id: string) {
   requirePermission(a, 'inventory');
-  const count = await one<{id: string; status: string; createdAt: string; approvedAt: string | null}>(
+  const count = await one<{
+    id: string;
+    status: string;
+    createdAt: string;
+    approvedAt: string | null;
+  }>(
     'SELECT id,status,createdAt,approvedAt FROM inventory_counts WHERE id=?',
     id,
   );
@@ -45,10 +50,9 @@ export async function editInventory(a: Actor, raw: unknown) {
   await db().batch([
     ...input.items.map((i) =>
       statement(
-        "UPDATE inventory_count_items SET counted=? WHERE id=? AND countId=? AND EXISTS(SELECT 1 FROM inventory_counts WHERE id=? AND status='draft')",
+        'UPDATE inventory_count_items SET counted=? WHERE id=? AND countId=?',
         i.counted,
         i.id,
-        input.id,
         input.id,
       ),
     ),

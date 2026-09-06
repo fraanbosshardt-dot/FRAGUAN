@@ -238,7 +238,18 @@ export default function Operations({ section }: { section: string }) {
         </p>
       )}
       {success && <p role="status">{success}</p>}
-      {!data && <p role="status">Cargando…</p>}
+      {!data && !error && <p role="status">Cargando…</p>}
+      {!data && error && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            setError('');
+            load().catch((e) => setError(e.message));
+          }}
+        >
+          Reintentar carga
+        </Button>
+      )}
       {section === 'banking' && data && (
         <>
           <p>
@@ -257,8 +268,9 @@ export default function Operations({ section }: { section: string }) {
                     { key: 'alias', label: 'Alias / referencia' },
                     {
                       key: 'opening',
-                      label: 'Saldo inicial (pesos)',
-                      type: 'money',
+                      label:
+                        'Saldo inicial (pesos; negativo si hay descubierto)',
+                      type: 'signed-money',
                     },
                   ],
                   { opening: '0' },
