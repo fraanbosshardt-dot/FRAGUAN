@@ -50,6 +50,8 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { ExportActions } from '@/components/export-actions';
 import { InventoryLines } from '@/components/inventory-lines';
 import { Barcode } from '@/components/barcode';
+import { printCommerce } from '@/lib/printing';
+import { LoadingState } from '@/components/loading-state';
 const exportLabels: Record<string, string> = {
   products: 'Productos',
   categories: 'Categorías',
@@ -57,6 +59,8 @@ const exportLabels: Record<string, string> = {
   suppliers: 'Proveedores',
   sellers: 'Vendedores',
   paymentMethods: 'Medios de pago',
+  promotions: 'Resultados de promociones',
+  grantedDiscountMinor: 'Descuento original otorgado (ARS)',
   name: 'Nombre',
   units: 'Unidades',
   tickets: 'Tickets',
@@ -107,6 +111,8 @@ const columns: Record<string, [string, string, string?][]> = {
     ['size', 'Talle'],
     ['price', 'Precio', 'money'],
     ['cost', 'Costo', 'money'],
+    ['marginPercent', 'Margen bruto %'],
+    ['markupPercent', 'Markup %'],
     ['stock', 'Stock'],
     ['ideal', 'Ideal'],
     ['active', 'Activo'],
@@ -150,7 +156,8 @@ const columns: Record<string, [string, string, string?][]> = {
     ['supplier', 'Proveedor'],
     ['createdAt', 'Fecha', 'date'],
     ['dueAt', 'Vencimiento', 'date'],
-    ['status', 'Estado'],
+    ['completionStatus', 'Estado de la compra'],
+    ['paymentStatus', 'Pago'],
     ['total', 'Total', 'money'],
   ],
   expenses: [
@@ -243,6 +250,7 @@ const labels: Record<string, string> = {
   received: 'Recibida',
   pending: 'Pendiente',
   paid: 'Pagada',
+  not_registered: 'Sin obligación registrada',
   approved: 'Aprobado',
   cash: 'Efectivo',
   debit: 'Débito',
@@ -261,6 +269,7 @@ export default function Admin({ section }: { section: string }) {
     [modal, setModal] = useState(''),
     [selected, setSelected] = useState<Row | null>(null),
     [search, setSearch] = useState(''),
+    [page, setPage] = useState(0),
     [aux, setAux] = useState<Row>({ variants: [], suppliers: [] }),
     [form, setForm] = useState<Row>({}),
     [success, setSuccess] = useState(''),
@@ -470,6 +479,12 @@ export default function Admin({ section }: { section: string }) {
   const filtered = list.filter((r) =>
     Object.values(r).join(' ').toLowerCase().includes(search.toLowerCase()),
   );
+  const pageSize = 50;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pageCount - 1);
+  useEffect(() => {
+    setPage(0);
+  }, [search, section]);
   function reportComparison(key: string) {
     const value = data?.comparison?.[key];
     if (!value) return 'Sin período comparable';
@@ -545,6 +560,7 @@ export default function Admin({ section }: { section: string }) {
         ) : (
           <Input
             type={options?.type ?? 'text'}
+            step={options?.type === 'number' ? 'any' : undefined}
             value={form[name] ?? options?.value ?? ''}
             required={!options?.optional}
             onChange={(e) => setForm({ ...form, [name]: e.target.value })}
@@ -746,8 +762,8 @@ export default function Admin({ section }: { section: string }) {
         return;
       }
       if (modal === 'method') {
-        await mutate('configure-method', {
-          id: selected?.id,
+        await mutate(selected?.id ? 'configure-method' : 'create-method', {
+          ...(selected?.id ? { id: selected.id } : {}),
           name: form.name ?? selected?.name,
           surchargeBps: Math.round(
             Number(form.surcharge ?? selected?.surchargeBps / 100) * 100,
@@ -1180,6 +1196,7 @@ export default function Admin({ section }: { section: string }) {
               {success}
             </p>
           )}
+          {!data && !error && <LoadingState />}
           {['dashboard', 'insights'].includes(section) && data && (
             <>
               <div className="metric-grid">
@@ -1609,6 +1626,46 @@ export default function Admin({ section }: { section: string }) {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </section>
+              <section className="panel">
+                <div className="panel-heading">
+                  <h2>Resultados de promociones</h2>
+                </div>
+                <p className="quiet">
+                  Ventas con saldo neto en el período. Si un ticket usó varias
+                  promociones aparece en cada una: estas filas no se suman. El
+                  descuento es el otorgado originalmente; las ventas y el
+                  resultado descuentan devoluciones.
+                </p>
+                <div className="data-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Promoción</th>
+                        <th>Tickets</th>
+                        <th>Descuento original</th>
+                        <th>Venta neta asociada</th>
+                        <th>Resultado comercial</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.breakdowns?.promotions?.map((item: Row) => (
+                        <tr key={`${item.id}-${item.name}`}>
+                          <td>{item.name}</td>
+                          <td>{item.tickets}</td>
+                          <td>{money(item.grantedDiscountMinor)}</td>
+                          <td>{money(item.revenueMinor)}</td>
+                          <td>{money(item.grossProfitMinor)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!data.breakdowns?.promotions?.length && (
+                    <p className="empty-state">
+                      Sin ventas con promociones en este período.
+                    </p>
+                  )}
                 </div>
               </section>
               {!!data.productsWithoutSales?.length && (
@@ -2139,8 +2196,24 @@ export default function Admin({ section }: { section: string }) {
                 Cambiar período de consulta
               </Button>
               <h2 className="spaced-heading">
-                Medios de pago · configuración inicial
+                Medios de pago y planes de cuotas
               </h2>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelected({
+                    name: '',
+                    surchargeBps: 0,
+                    commissionBps: 0,
+                    days: 0,
+                    installments: 1,
+                  });
+                  setForm({});
+                  setModal('method');
+                }}
+              >
+                Agregar medio o plan
+              </Button>
               <div className="data-table">
                 <table>
                   <thead>
@@ -2149,6 +2222,8 @@ export default function Admin({ section }: { section: string }) {
                       <th>Recargo al cliente</th>
                       <th>Comisión interna</th>
                       <th>Acreditación</th>
+                      <th>Cuotas</th>
+                      <th>Disponible</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
@@ -2159,6 +2234,8 @@ export default function Admin({ section }: { section: string }) {
                         <td>{m.surchargeBps / 100}%</td>
                         <td>{m.commissionBps / 100}%</td>
                         <td>{m.days} días</td>
+                        <td>{m.installments}</td>
+                        <td>{m.active ? 'Sí' : 'No'}</td>
                         <td>
                           <Button
                             variant="ghost"
@@ -2170,6 +2247,22 @@ export default function Admin({ section }: { section: string }) {
                           >
                             Editar
                           </Button>
+                          {!['cash', 'store_credit', 'cashback'].includes(
+                            m.id,
+                          ) && (
+                            <Button
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() =>
+                                mutate('set-method-active', {
+                                  id: m.id,
+                                  active: !m.active,
+                                }).catch((e) => setError(e.message))
+                              }
+                            >
+                              {m.active ? 'Pausar' : 'Reactivar'}
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -2182,7 +2275,7 @@ export default function Admin({ section }: { section: string }) {
               </p>
             </section>
           )}
-          {columns[section] && (
+          {columns[section] && data && (
             <section className="panel table-panel">
               <div className="table-toolbar">
                 <div>
@@ -2207,289 +2300,301 @@ export default function Admin({ section }: { section: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.slice(0, 250).map((r, i) => (
-                      <tr key={r.id ?? i}>
-                        {columns[section].map(([key, , kind]) => (
-                          <td key={key}>
-                            {kind === 'money' ? (
-                              money(r[key])
-                            ) : kind === 'date' ? (
-                              date(r[key])
-                            ) : key === 'status' ? (
-                              <span className={'status ' + r[key]}>
-                                {labels[r[key]] ?? r[key]}
-                              </span>
-                            ) : key === 'active' ? (
-                              r[key] ? (
-                                'Sí'
+                    {filtered
+                      .slice(
+                        currentPage * pageSize,
+                        (currentPage + 1) * pageSize,
+                      )
+                      .map((r, i) => (
+                        <tr key={r.id ?? i}>
+                          {columns[section].map(([key, , kind]) => (
+                            <td key={key}>
+                              {kind === 'money' ? (
+                                money(r[key])
+                              ) : kind === 'date' ? (
+                                date(r[key])
+                              ) : key === 'status' ? (
+                                <span className={'status ' + r[key]}>
+                                  {labels[r[key]] ?? r[key]}
+                                </span>
+                              ) : key === 'active' ? (
+                                r[key] ? (
+                                  'Sí'
+                                ) : (
+                                  'No'
+                                )
                               ) : (
-                                'No'
-                              )
-                            ) : (
-                              (labels[r[key]] ?? String(r[key] ?? '—'))
+                                (labels[r[key]] ?? String(r[key] ?? '—'))
+                              )}
+                            </td>
+                          ))}
+                          <td className="row-actions">
+                            {section === 'sales' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => details(r)}
+                                >
+                                  Ver ticket
+                                </Button>
+                                {['confirmed', 'partially_refunded'].includes(
+                                  r.status,
+                                ) && (
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => openRefund(r)}
+                                  >
+                                    Devolver
+                                  </Button>
+                                )}
+                              </>
                             )}
-                          </td>
-                        ))}
-                        <td className="row-actions">
-                          {section === 'sales' && (
-                            <>
+                            {section === 'customers' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => customerProfile(String(r.id))}
+                                >
+                                  Perfil
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => openForm('edit-customer', r)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() =>
+                                    openForm('master-active', {
+                                      ...r,
+                                      entity: 'customer',
+                                      targetId: r.id,
+                                    })
+                                  }
+                                >
+                                  {r.active ? 'Archivar' : 'Reactivar'}
+                                </Button>
+                              </>
+                            )}
+                            {section === 'products' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  disabled={!r.active}
+                                  onClick={() => {
+                                    setSelected(r);
+                                    setForm({});
+                                    setModal('variant');
+                                  }}
+                                >
+                                  + Variante
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => openForm('edit-product', r)}
+                                >
+                                  Producto
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => openForm('edit-variant', r)}
+                                >
+                                  Editar variante
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() =>
+                                    openForm('master-active', {
+                                      ...r,
+                                      entity: 'product',
+                                      targetId: r.productId,
+                                    })
+                                  }
+                                >
+                                  {r.active ? 'Archivar' : 'Reactivar'}
+                                </Button>
+                              </>
+                            )}
+                            {section === 'products' &&
+                              r.active &&
+                              session?.user?.role !== 'STOCK' && (
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => actionDialog('set-price', r)}
+                                >
+                                  Precio
+                                </Button>
+                              )}
+                            {section === 'products' && r.active && (
                               <Button
                                 variant="ghost"
-                                onClick={() => details(r)}
+                                onClick={() => openForm('labels', r)}
                               >
-                                Ver ticket
+                                <Printer size={14} /> Etiquetas
                               </Button>
-                              {['confirmed', 'partially_refunded'].includes(
+                            )}
+                            {section === 'stock' && (
+                              <Button
+                                variant="ghost"
+                                onClick={() => openForm('create', r)}
+                              >
+                                Ajustar
+                              </Button>
+                            )}
+                            {section === 'suppliers' &&
+                              session?.permissions?.includes('reports') && (
+                                <Button
+                                  variant="ghost"
+                                  onClick={async () => {
+                                    try {
+                                      setSelected(
+                                        await api(
+                                          'supplier-history?id=' +
+                                            encodeURIComponent(r.id),
+                                        ),
+                                      );
+                                      setModal('supplier-profile');
+                                    } catch (e) {
+                                      setError((e as Error).message);
+                                    }
+                                  }}
+                                >
+                                  Historial y rendimiento
+                                </Button>
+                              )}
+                            {section === 'suppliers' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => openForm('edit-supplier', r)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() =>
+                                    openForm('master-active', {
+                                      ...r,
+                                      entity: 'supplier',
+                                      targetId: r.id,
+                                    })
+                                  }
+                                >
+                                  {r.active ? 'Archivar' : 'Reactivar'}
+                                </Button>
+                              </>
+                            )}
+                            {section === 'purchases' && (
+                              <Button
+                                variant="ghost"
+                                onClick={() => purchaseDetails(String(r.id))}
+                              >
+                                Detalle
+                              </Button>
+                            )}
+                            {section === 'purchases' &&
+                              r.status === 'draft' && (
+                                <Button
+                                  variant="ghost"
+                                  onClick={() =>
+                                    changePurchaseStatus(String(r.id), 'send')
+                                  }
+                                >
+                                  Marcar como enviada
+                                </Button>
+                              )}
+                            {section === 'purchases' && r.status === 'sent' && (
+                              <Button
+                                variant="ghost"
+                                onClick={() =>
+                                  changePurchaseStatus(String(r.id), 'confirm')
+                                }
+                              >
+                                Confirmar
+                              </Button>
+                            )}
+                            {section === 'purchases' &&
+                              ['confirmed', 'partially_received'].includes(
                                 r.status,
                               ) && (
                                 <Button
                                   variant="ghost"
-                                  onClick={() => openRefund(r)}
+                                  onClick={() =>
+                                    purchaseDetails(
+                                      String(r.id),
+                                      'purchase-receipt',
+                                    )
+                                  }
                                 >
-                                  Devolver
+                                  Recibir
                                 </Button>
                               )}
-                            </>
-                          )}
-                          {section === 'customers' && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                onClick={() => customerProfile(String(r.id))}
-                              >
-                                Perfil
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() => openForm('edit-customer', r)}
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() =>
-                                  openForm('master-active', {
-                                    ...r,
-                                    entity: 'customer',
-                                    targetId: r.id,
-                                  })
-                                }
-                              >
-                                {r.active ? 'Archivar' : 'Reactivar'}
-                              </Button>
-                            </>
-                          )}
-                          {section === 'products' && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                disabled={!r.active}
-                                onClick={() => {
-                                  setSelected(r);
-                                  setForm({});
-                                  setModal('variant');
-                                }}
-                              >
-                                + Variante
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() => openForm('edit-product', r)}
-                              >
-                                Producto
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() => openForm('edit-variant', r)}
-                              >
-                                Editar variante
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() =>
-                                  openForm('master-active', {
-                                    ...r,
-                                    entity: 'product',
-                                    targetId: r.productId,
-                                  })
-                                }
-                              >
-                                {r.active ? 'Archivar' : 'Reactivar'}
-                              </Button>
-                            </>
-                          )}
-                          {section === 'products' &&
-                            r.active &&
-                            session?.user?.role !== 'STOCK' && (
-                              <Button
-                                variant="ghost"
-                                onClick={() => actionDialog('set-price', r)}
-                              >
-                                Precio
-                              </Button>
-                            )}
-                          {section === 'products' && r.active && (
-                            <Button
-                              variant="ghost"
-                              onClick={() => openForm('labels', r)}
-                            >
-                              <Printer size={14} /> Etiquetas
-                            </Button>
-                          )}
-                          {section === 'stock' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() => openForm('create', r)}
-                            >
-                              Ajustar
-                            </Button>
-                          )}
-                          {section === 'suppliers' &&
-                            session?.permissions?.includes('reports') && (
+                            {section === 'payables' &&
+                              r.status === 'pending' && (
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => actionDialog('pay-payable', r)}
+                                >
+                                  Pagar
+                                </Button>
+                              )}
+                            {section === 'inventory' && (
                               <Button
                                 variant="ghost"
                                 onClick={async () => {
                                   try {
                                     setSelected(
                                       await api(
-                                        'supplier-history?id=' +
+                                        'inventory?id=' +
                                           encodeURIComponent(r.id),
                                       ),
                                     );
-                                    setModal('supplier-profile');
+                                    setModal('inventory-detail');
                                   } catch (e) {
                                     setError((e as Error).message);
                                   }
                                 }}
                               >
-                                Historial y rendimiento
+                                Ver diferencias
                               </Button>
                             )}
-                          {section === 'suppliers' && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                onClick={() => openForm('edit-supplier', r)}
-                              >
-                                Editar
-                              </Button>
+                            {section === 'inventory' &&
+                              r.status === 'draft' && (
+                                <Button
+                                  variant="ghost"
+                                  onClick={() =>
+                                    actionDialog('approve-count', r)
+                                  }
+                                >
+                                  Aprobar
+                                </Button>
+                              )}
+                            {section === 'users' &&
+                              r.active &&
+                              r.id !== session?.user?.id && (
+                                <Button
+                                  variant="ghost"
+                                  onClick={() =>
+                                    actionDialog('disable-user', r)
+                                  }
+                                >
+                                  Desactivar
+                                </Button>
+                              )}
+                            {section === 'promotions' && (
                               <Button
                                 variant="ghost"
                                 onClick={() =>
-                                  openForm('master-active', {
-                                    ...r,
-                                    entity: 'supplier',
-                                    targetId: r.id,
-                                  })
+                                  actionDialog('toggle-promotion', r)
                                 }
                               >
-                                {r.active ? 'Archivar' : 'Reactivar'}
-                              </Button>
-                            </>
-                          )}
-                          {section === 'purchases' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() => purchaseDetails(String(r.id))}
-                            >
-                              Detalle
-                            </Button>
-                          )}
-                          {section === 'purchases' && r.status === 'draft' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() =>
-                                changePurchaseStatus(String(r.id), 'send')
-                              }
-                            >
-                              Marcar como enviada
-                            </Button>
-                          )}
-                          {section === 'purchases' && r.status === 'sent' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() =>
-                                changePurchaseStatus(String(r.id), 'confirm')
-                              }
-                            >
-                              Confirmar
-                            </Button>
-                          )}
-                          {section === 'purchases' &&
-                            ['confirmed', 'partially_received'].includes(
-                              r.status,
-                            ) && (
-                              <Button
-                                variant="ghost"
-                                onClick={() =>
-                                  purchaseDetails(
-                                    String(r.id),
-                                    'purchase-receipt',
-                                  )
-                                }
-                              >
-                                Recibir
+                                {r.active ? 'Pausar' : 'Activar'}
                               </Button>
                             )}
-                          {section === 'payables' && r.status === 'pending' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() => actionDialog('pay-payable', r)}
-                            >
-                              Pagar
-                            </Button>
-                          )}
-                          {section === 'inventory' && (
-                            <Button
-                              variant="ghost"
-                              onClick={async () => {
-                                try {
-                                  setSelected(
-                                    await api(
-                                      'inventory?id=' +
-                                        encodeURIComponent(r.id),
-                                    ),
-                                  );
-                                  setModal('inventory-detail');
-                                } catch (e) {
-                                  setError((e as Error).message);
-                                }
-                              }}
-                            >
-                              Ver diferencias
-                            </Button>
-                          )}
-                          {section === 'inventory' && r.status === 'draft' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() => actionDialog('approve-count', r)}
-                            >
-                              Aprobar
-                            </Button>
-                          )}
-                          {section === 'users' &&
-                            r.active &&
-                            r.id !== session?.user?.id && (
-                              <Button
-                                variant="ghost"
-                                onClick={() => actionDialog('disable-user', r)}
-                              >
-                                Desactivar
-                              </Button>
-                            )}
-                          {section === 'promotions' && (
-                            <Button
-                              variant="ghost"
-                              onClick={() =>
-                                actionDialog('toggle-promotion', r)
-                              }
-                            >
-                              {r.active ? 'Pausar' : 'Activar'}
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
                 {!filtered.length && (
@@ -2507,11 +2612,30 @@ export default function Admin({ section }: { section: string }) {
                     </p>
                   </div>
                 )}
-                {filtered.length > 250 && (
-                  <p className="quiet">
-                    Mostrando los primeros 250 registros. Usá el buscador para
-                    filtrar.
-                  </p>
+                {pageCount > 1 && (
+                  <nav
+                    className="table-pagination"
+                    aria-label="Páginas del listado"
+                  >
+                    <Button
+                      variant="outline"
+                      disabled={currentPage === 0}
+                      onClick={() => setPage(currentPage - 1)}
+                    >
+                      Anterior
+                    </Button>
+                    <span role="status">
+                      Página {currentPage + 1} de {pageCount} ·{' '}
+                      {filtered.length} registros
+                    </span>
+                    <Button
+                      variant="outline"
+                      disabled={currentPage + 1 === pageCount}
+                      onClick={() => setPage(currentPage + 1)}
+                    >
+                      Siguiente
+                    </Button>
+                  </nav>
                 )}
               </div>
             </section>
@@ -2550,7 +2674,7 @@ export default function Admin({ section }: { section: string }) {
                   Se imprime una etiqueta por unidad. El máximo de esta tanda es
                   100.
                 </p>
-                <Button type="button" onClick={() => window.print()}>
+                <Button type="button" onClick={() => printCommerce('labels')}>
                   <Printer /> Imprimir etiquetas
                 </Button>
               </div>
@@ -2604,7 +2728,10 @@ export default function Admin({ section }: { section: string }) {
                   Comprobante interno. No válido como factura fiscal.
                 </p>
               </div>
-              <Button className="no-print" onClick={() => window.print()}>
+              <Button
+                className="no-print"
+                onClick={() => printCommerce('receipt')}
+              >
                 <Printer /> Imprimir
               </Button>
               {['confirmed', 'partially_refunded'].includes(
@@ -2726,7 +2853,14 @@ export default function Admin({ section }: { section: string }) {
                   {selected.notes && <p>Observaciones: {selected.notes}</p>}
                 </div>
                 <div className="profile-badges">
-                  <span>{labels[selected.status] ?? selected.status}</span>
+                  <span>
+                    {labels[selected.completionStatus ?? selected.status] ??
+                      selected.status}
+                  </span>
+                  <span>
+                    Pago:{' '}
+                    {labels[selected.paymentStatus] ?? selected.paymentStatus}
+                  </span>
                   <span>{money(selected.total)}</span>
                 </div>
               </div>
@@ -2845,6 +2979,18 @@ export default function Admin({ section }: { section: string }) {
                   : Number(selected.rotation).toFixed(2)}
                 . Esta relación usa el stock actual, no un promedio histórico.
               </p>
+              <div className="metric-grid">
+                <Metric
+                  title="Entregas a tiempo"
+                  value={`${selected.fulfillment?.onTime ?? 0} / ${selected.fulfillment?.completed ?? 0}`}
+                  detail="Órdenes recibidas con fecha de entrega acordada"
+                />
+                <Metric
+                  title="Entregas atrasadas"
+                  value={String(selected.fulfillment?.overdue ?? 0)}
+                  detail="Órdenes abiertas cuya fecha prevista ya pasó"
+                />
+              </div>
               <ExportActions
                 name="historial-proveedor"
                 sheets={[
@@ -2857,6 +3003,9 @@ export default function Admin({ section }: { section: string }) {
                       'Total ARS',
                       'Pedidas',
                       'Recibidas',
+                      'Entrega prevista',
+                      'Recepción completa',
+                      'Transportista',
                     ],
                     rows: selected.orders.map((r: Row) => [
                       r.createdAt,
@@ -2865,6 +3014,9 @@ export default function Admin({ section }: { section: string }) {
                       r.total / 100,
                       r.ordered,
                       r.received,
+                      r.expectedAt ?? '',
+                      r.receivedAt ?? '',
+                      r.carrier ?? '',
                     ]),
                   },
                 ]}

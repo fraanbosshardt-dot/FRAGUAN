@@ -91,8 +91,10 @@ function addMoney(total: number, amount: number) {
 export async function getPurchaseOrder(actor: Actor, purchaseId: string) {
   requirePermission(actor, 'purchases');
   const purchase = await one<Record<string, any>>(
-    `SELECT p.*,s.name AS supplier
+    `SELECT p.*,s.name AS supplier,COALESCE(pa.status,'not_registered') AS paymentStatus,
+            CASE WHEN p.status='received' AND pa.status='paid' THEN 'paid' ELSE p.status END AS completionStatus
        FROM purchases p JOIN suppliers s ON s.id=p.supplierId
+       LEFT JOIN payables pa ON pa.purchaseId=p.id
       WHERE p.id=?`,
     purchaseId,
   );

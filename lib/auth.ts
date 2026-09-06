@@ -96,10 +96,40 @@ export function protectWrite(req: Request) {
   const origin = req.headers.get('origin');
   if (!origin || origin !== new URL(req.url).origin)
     throw new AppError(403, 'Origen no autorizado.');
-  if (!req.headers.get('content-type')?.includes('application/json'))
+  if (
+    req.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !==
+    'application/json'
+  )
     throw new AppError(415, 'Se requiere JSON.');
   const size = Number(req.headers.get('content-length') ?? 0);
   if (size > 100000) throw new AppError(413, 'Solicitud demasiado grande.');
+}
+export async function readJsonBody(req: Request) {
+  const reader = req.body?.getReader();
+  if (!reader) throw new AppError(400, 'Se requiere un cuerpo JSON.');
+  const decoder = new TextDecoder();
+  let bytes = 0,
+    source = '';
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 100000) {
+        await reader.cancel();
+        throw new AppError(413, 'Solicitud demasiado grande.');
+      }
+      source += decoder.decode(chunk.value, { stream: true });
+    }
+    source += decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
+  try {
+    return JSON.parse(source);
+  } catch {
+    throw new AppError(400, 'El cuerpo JSON no es válido.');
+  }
 }
 export function reply(data: unknown, status = 200) {
   return Response.json(data, {

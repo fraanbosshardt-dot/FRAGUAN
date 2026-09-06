@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { printCommerce } from '@/lib/printing';
+import { LoadingState } from '@/components/loading-state';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +43,7 @@ export default function Workspace() {
   const { session, error: sessionError, reload } = useSession(),
     clock = useClock();
   const [catalog, setCatalog] = useState<Row[]>([]),
+    [catalogLoading, setCatalogLoading] = useState(true),
     [methods, setMethods] = useState<Row[]>([]),
     [offers, setOffers] = useState<Row[]>([]),
     [search, setSearch] = useState(''),
@@ -86,11 +89,18 @@ export default function Workspace() {
     setOffers(o);
   };
   useEffect(() => {
-    if (session?.user) refresh().catch((e) => setError(e.message));
+    if (session?.user)
+      refresh()
+        .catch((e) => setError(e.message))
+        .finally(() => setCatalogLoading(false));
   }, [session]);
   useEffect(() => {
     const saved = localStorage.getItem('fraguan-theme');
-    setDark(saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+    setDark(
+      saved
+        ? saved === 'dark'
+        : matchMedia('(prefers-color-scheme: dark)').matches,
+    );
   }, []);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -454,7 +464,10 @@ export default function Workspace() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { localStorage.setItem('fraguan-theme', !dark ? 'dark' : 'light'); setDark(!dark); }}
+            onClick={() => {
+              localStorage.setItem('fraguan-theme', !dark ? 'dark' : 'light');
+              setDark(!dark);
+            }}
             aria-label="Cambiar tema"
           >
             {dark ? <Sun /> : <Moon />}
@@ -574,7 +587,8 @@ export default function Workspace() {
               </button>
             ))}
           </div>
-          {!filtered.length && (
+          {catalogLoading && <LoadingState label="Cargando colección…" />}
+          {!catalogLoading && !filtered.length && (
             <div className="empty-state">
               {session
                 ? 'No encontramos prendas. Probá otra búsqueda o cargá tu primera colección.'
@@ -1140,7 +1154,7 @@ export default function Workspace() {
               <Button
                 className="no-print"
                 variant="outline"
-                onClick={() => window.print()}
+                onClick={() => printCommerce('receipt')}
               >
                 <Printer /> Imprimir ticket
               </Button>

@@ -1,144 +1,74 @@
-# FRAGUAN — Estado del proyecto y continuidad
+# FRAGUAN — estado actual
+Actualizado: 5 de septiembre de 2026.
 
-**Actualizado:** 5 de septiembre de 2026.
-**Estado general:** desarrollo activo local. El producto tiene una base funcional amplia y todavía quedan módulos de operación y conexiones de producción.
+Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
-## Decisiones vigentes
+## Estado general
 
-1. **FRAGUAN no usa fotos.** El catálogo, el POS, la administración y las importaciones trabajan con producto, variante, precio y stock. La migración `0006_master_data_profiles.sql` elimina físicamente la columna fotográfica de `products`; las referencias a `image` en la primera migración son únicamente historial inmutable.
-2. La base definitiva, Google Auth / Google Login, Vercel y las APIs externas se conectan al final.
-3. El vendedor entra al POS y sólo recibe datos comerciales necesarios. Costos, márgenes, markup, ganancias, comisiones, stock editable, reportes y administración se bloquean en servidor y no se envían en las respuestas del catálogo vendedor.
-4. Los estados de esta hoja distinguen lógica implementada, pruebas locales y pendientes de producción.
+Implementación local con datos de demostración. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
 
-## Estado funcional
+## Funciones implementadas
 
-| Área | Estado actual | Evidencia |
-| --- | --- | --- |
-| POS y venta | Funcional y probado localmente | Búsqueda, variantes, carrito, clientes básicos, medios de pago, cuotas, pago dividido, descuentos autorizados, cotización y ticket interno. |
-| Seguridad del vendedor | Implementada y probada | `tests-seller-security.mjs` cubre campos permitidos, URLs/API directas, filtros falsos, roles, ventas propias y rechazo de recursos administrativos. |
-| Productos y variantes | Funcional | Alta, edición, SKU, código de barras, talle, color, precio, costo administrativo, stock mínimo/ideal, ingreso y archivo reversible. |
-| Datos maestros | Implementados y probados | Productos, clientes y proveedores con campos extendidos, edición, archivo/reactivación, auditoría y listados administrativos. |
-| Importación masiva | Implementada y probada | CSV con coma o punto decimal, separador auto-detectado, plantilla, vista previa, validación, create-only/upsert, máximo 200 filas, movimientos de stock trazables y rechazo explícito de columnas de fotos. |
-| Etiquetas | Implementadas localmente | Impresión por variante con cantidad configurable, nombre, talle, color, precio, SKU y código de barras en texto; sin imágenes. |
-| Stock | Funcional y trazable | Movimientos con motivo, actor, referencia, control de stock negativo y bloqueo de edición directa de stock desde variantes. |
-| Ventas y devoluciones | Funcional con alcance avanzado | Devoluciones parciales/totales, autorización de gerente, saldo a favor, reversión de stock/caja/puntos y protección contra reintentos. |
-| Promociones | Motor avanzado funcional | Porcentaje, monto fijo, 2x1, segunda unidad, categoría/marca, cupón, cumpleaños, nivel Club, vigencia, días/horarios, prioridad y exclusividad. |
-| Compras | Backend y flujo principal funcional | Órdenes con múltiples líneas, estados, recepción completa/parcial, ingreso de stock, costo actualizado y cuenta a pagar. |
-| Caja y gastos | Funcional y probado | Apertura/cierre, diferencia, gastos, retiros, pagos de cuentas y movimientos de caja. |
-| Flujo de fondos | Implementado y probado | Entradas/salidas históricas, proyección de cobros y obligaciones con saldo acumulado por día. |
-| Calendario financiero | Implementado y probado | Gastos recurrentes, obligaciones en cuotas, materialización idempotente, pausa/reactivación y disparo de cuentas pagables. |
-| Clientes e inteligencia | Implementado y probado | Segmentos, niveles FRAGUAN/Silver/Gold/Black, métricas, historial, top clientes y configuración de umbrales. |
-| Club FRAGUAN | Cashback implementado y probado | Tasas y vencimiento configurables por nivel, acumulación por venta, uso como medio de pago y reversión proporcional en devoluciones sucesivas. Perfil administrativo con saldo vigente, acreditaciones, ticket, origen, vencimiento y beneficios descriptivos. |
-| Reposición | Implementada y probada | Recomendaciones por stock mínimo/ideal, ventas netas, cobertura, proveedor y prioridad. |
-| Reportes | Implementados y probados | Ventas, líneas, productos, categorías, marcas, proveedores, medios, vendedores, costos, rentabilidad y devoluciones con filtros. |
-| Dashboard | Implementado y probado | Ventas confirmadas/parcialmente devueltas, neto, unidades retenidas, costo prorrateado, comisiones, medios de pago y comparaciones Argentina. |
-| Auditoría | Funcional | Cambios sensibles, importaciones, stock, ventas, compras, devoluciones, planes y datos maestros registran actor y detalle. |
-| Usuarios y permisos | Funcional local | Roles ADMIN, GERENTE, VENDEDOR, CAJA y STOCK con validación server-side; autenticación actual temporal. |
-
-## Pruebas ejecutadas
-
-Pasaron las pruebas unitarias y de integración de reglas comerciales, stock, calendario financiero, planificación, reporting, dashboard, CSV, Club FRAGUAN y seguridad del vendedor. También pasaron `tests-master-data.mjs` y `tests-cashback.mjs`, que cubren CRUD de datos maestros, archivo/reactivación, edición de variante sin stock directo, importación CSV, aislamiento del vendedor, acumulación y reversión de cashback. `npx tsc --noEmit` pasa después de los cambios actuales.
-
-La base usada es una D1 local de demostración bajo `app/.wrangler/`. El script de aplicación manual de migraciones deja el journal de Drizzle sin reconciliar; antes de conectar una base definitiva habrá que generar/aplicar el historial de forma única y verificable.
-
-### Último bloque: cashback y perfil del cliente
-
-- Corregida la segunda y posteriores devoluciones parciales: se descuenta únicamente el incremento proporcional de cada devolución.
-- El reintegro de un pago con cashback se conserva separado de la recompensa generada por esa compra. Su nueva vigencia respeta los días configurados en el Club.
-- Perfil de cliente con saldo a favor, cashback vigente y últimas 250 acreditaciones, diferenciando compra y reintegro. Los vencidos se identifican como tales y no suman al saldo disponible.
-- `tests-cashback-regressions.mjs`: seis escenarios con servicios reales y todas las migraciones sobre SQLite desechable. Incluye devoluciones sucesivas, pago mixto, vencimiento, consumo, reintentos, saldo no negativo y reintegro íntegro en cashback con caja cerrada. No altera la base de demostración.
-- TypeScript y compilación de producción verificados. La validación visual final sigue pendiente.
-- Regla actual: si la recompensa original ya se gastó, la devolución revierte hasta el saldo remanente de esa recompensa; no crea deuda automática. Debe definirse antes de producción cómo recuperar cashback gastado y si los pagos con cashback deben generar nuevas recompensas.
-
-## Pendientes de negocio
-
-- Club FRAGUAN: canje de puntos, beneficios accionables por canal y comunicaciones automáticas de cumpleaños/promociones.
-- Atajo global Cmd/Ctrl-K y refinamiento de accesibilidad, skeletons y modo oscuro.
-- Compras: interfaz de múltiples líneas más completa, estados logísticos, impuestos, transporte y condiciones avanzadas.
-- Cheques/eCheq: ciclo de estados, vencimientos, depósitos, rechazos y conciliación bancaria.
-- Reportes XLSX/PDF, exportaciones avanzadas y análisis histórico de proveedores.
-- Permisos administrativos más granulares y configuración completa de medios/cuentas bancarias.
-- Revisión visual automatizada final con navegador y pruebas de extremo a extremo.
-
-## Conexiones reservadas para el final
-
-- Base de datos definitiva y migraciones productivas.
-- Google Auth / Google Login.
-- Despliegue en Vercel.
-- Facturación fiscal, bancos, terminales, WhatsApp y otras APIs únicamente si se decide integrarlas.
-- Backups, recuperación, observabilidad y auditoría de seguridad antes de operar con datos reales.
-
-## Cómo continuar
-
-```powershell
-cd app
-npm run dev -- --host 127.0.0.1
-```
-
-Usar siempre el entorno local de demostración mientras se desarrollan los módulos pendientes. No cargar datos reales en esta base.
-
-## Actualización — 5 de septiembre de 2026
-
-Este bloque reemplaza los pendientes anteriores cuando se superponen. El sistema continúa en desarrollo local; no está habilitado para operación productiva.
-
-| Entrega | Estado y alcance |
+| Área | Alcance local |
 | --- | --- |
-| Búsqueda global | Implementada con Ctrl/Cmd-K, enlaces a registros y permisos en servidor. Vendedor excluido de búsqueda administrativa. |
-| Tema | Alternancia claro/oscuro persistida en administración y POS. Sin fotos. |
-| Exportaciones | CSV, Excel XLSX real con varias hojas e impresión para guardar PDF. Texto tratado como texto para evitar fórmulas inyectadas. |
-| Etiquetas | Barras Code39 SVG para códigos compatibles de hasta 24 caracteres. Codificación contrastada con ReportLab; falta probar impresora y lector físicos. |
-| Inventario | Conteos de múltiples variantes, edición de borradores, diferencias y exportación. Aprobar aplica stock; aprobado queda congelado. |
-| Bancos | Cuentas, saldo contable, movimientos idempotentes y conciliación manual contra importe, fecha y referencia del extracto. No consulta bancos externos. |
-| Cheques/eCheq | Registro local, vencimientos, depósito, acreditación, rechazo y cancelación. Vinculación a deuda y pago único al acreditarse. No emite eCheq bancario. |
-| Flujo de fondos | Integra saldos bancarios registrados y cheques; reemplaza la deuda vinculada sin duplicarla. Horizontes 7/30/60/90 días. |
-| Club y puntos | Catálogo de beneficios, reserva de puntos, entrega y cancelación con restitución única. No modifica automáticamente stock ni genera ventas. |
-| Permisos individuales | Administrador puede restringir capacidades del rol. Nunca amplía las capacidades base ni habilita finanzas al vendedor. |
-| Proveedores | Historial de compras y rendimiento con ventas netas e inventario actual. |
-| Comisiones de vendedores | Tasa configurable y estimación sobre ventas netas de devoluciones. La tasa actual se aplica al período consultado; no es liquidación de sueldos. |
-| Comunicaciones | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático ni se enviaron mensajes. |
-| Fechas de reportes | Corregidos límites del día argentino frente a timestamps UTC. |
+| POS | Búsqueda, SKU y código de barras por teclado, categorías, variantes, stock, carrito, cliente básico, promociones autorizadas, cuotas, pago dividido, cotización en servidor y venta atómica. |
+| Vendedor | Entrada directa al POS. Solo campos comerciales en APIs, ventas propias recientes y devoluciones autorizadas. Sin costos, margen, markup ni finanzas. |
+| Productos | Datos de producto y variantes, edición, archivo/reactivación, costo administrativo, precio, margen y markup, mínimos/ideales, ubicación e importación CSV con vista previa. |
+| Stock | Movimientos trazables, reposición sugerida y alertas por demanda/disponibilidad. Conteos multilínea, diferencias y exportación. Aprobación con cantidades vigentes dentro de transacción; la base congela las líneas aprobadas. |
+| Precios y medios | Precio de variante, promociones por medio, recargos configurables, alta/pausa/reactivación de medios y planes de cuotas, comisiones y acreditación estimada. Importes enteros en centavos; visualización sin perder centavos. |
+| Ventas y devoluciones | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde. |
+| Clientes | Perfil completo administrativo, historial, talles/preferencias, segmentos configurables, niveles del Club y saldos. |
+| Club | Puntos, cashback por nivel con vencimiento, catálogo de beneficios, reserva, entrega y cancelación de canjes con restitución única. |
+| Promociones | Porcentaje, monto fijo, 2x1, segunda unidad, categoría, marca, nivel, cumpleaños, cupones, prioridad y exclusividad. Vigencia hasta medianoche argentina. Reporte de resultado por promoción. |
+| Compras | Órdenes multilínea, impuestos, transporte, descuentos, vencimiento y condiciones. Entrega prevista, transportista, seguimiento y dirección. Recepción parcial/completa. Pago separado de recepción; una orden recibida y saldada se muestra pagada. Exportación de orden completa. |
+| Proveedores | Edición/archivo, historial, ventas netas, rentabilidad, capital actual en stock y cumplimiento de entregas con fecha pactada. |
+| Caja | Apertura/cierre, movimientos, efectivo esperado/contado y diferencias. |
+| Gastos y retiros | Gastos, planes recurrentes y retiros de propietarios separados de gastos operativos. |
+| Cuentas a pagar | Obligaciones, cuotas, vencimientos, calendario financiero y pagos registrados. |
+| Bancos y cheques | Cuentas y saldos contables, movimientos, conciliación manual, cheque/eCheq como registro local, depósito, acreditación/débito, rechazo, cancelación e historial. Cheque vinculado a deuda sin duplicar pago. |
+| Flujo de fondos | Caja, bancos registrados, cobros y obligaciones con proyecciones de 7/30/60/90 días. |
+| Reportes e Insights | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales. |
+| Comisiones | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período. |
+| Comunicación | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático. |
+| Administración | Roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga. |
+| Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4. |
+| Recuperación | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md. |
 
-### Verificación de este bloque
+## Reglas de negocio actuales
 
-- TypeScript sin errores y compilación de producción completa.
-- 17 escenarios en `tests-operations.mjs`, incluidos los 6 de cashback: canjes, concurrencia protegida por base, cheques, deudas, conciliación, inventario, comisiones, proveedores y fechas.
-- Seguridad del vendedor verificada contra servidor local: no recibe costos ni métricas administrativas.
-- Calendario, planificación y reporting verificados; integración, administración y reglas avanzadas también ejecutadas durante el bloque.
-- XLSX leído por una implementación independiente (openpyxl); barras Code39 contrastadas con ReportLab.
-- Sin revisión visual automatizada ni validación física de tickets/etiquetas. Estas pruebas no certifican seguridad productiva.
+- Todo importe monetario persistido usa centavos enteros.
+- La venta confirma pagos, caja, stock, cliente y fidelización de forma atómica. Los reintentos protegidos no deben duplicar efectos.
+- El backend valida permisos; los costos nunca forman parte de las respuestas del vendedor.
+- Un conteo físico no ajusta stock hasta aprobarse; después queda congelado en base.
+- Las comisiones son estimaciones usando la tasa actual para el período elegido; no liquidan sueldos.
+- Una venta con varias promociones aparece en cada promoción. Esas filas no se suman entre sí; el reporte aclara esta atribución.
+- El canje de puntos reserva beneficios; no genera automáticamente una venta o movimiento de mercadería.
+- Si se devuelve una venta cuya recompensa de cashback ya fue gastada, se revierte hasta el saldo remanente y no se crea deuda. Actualmente los pagos con cashback pueden generar una nueva recompensa. Revisar esta política comercial antes de producción.
+- Los registros bancarios, cheques, cobros y pagos son contables/manuales. No ordenan transferencias ni emiten eCheq externos.
+- Marcar una orden como enviada cambia el registro local; no envía mensajes al proveedor.
+- El ticket es interno y no sustituye la factura fiscal.
 
-### Pendientes efectivos para cierre
+## Verificación
 
-- QA visual y recorrido integral con dispositivos, impresora y lector de la tienda; accesibilidad y adaptación de las pantallas extensas.
-- Compras: condiciones logísticas avanzadas, transporte, impuestos y envío al proveedor.
-- Comunicación automática de Club y beneficios integrados a canales externos.
-- Definir recuperación de cashback ya gastado al devolver y si pagos con cashback generan nuevas recompensas.
-- Migraciones productivas: SQL local aplicado hasta `0010_check_payables.sql`; reconciliar journal de Drizzle y ensayar instalación limpia, respaldo y restauración.
-- Base definitiva, Google Login y Vercel al final. El runtime actual es Vinext/Cloudflare D1: Vercel necesita adaptación del almacenamiento y runtime; no alcanza con cargar variables.
-- Integración fiscal y APIs de cobro/bancos/mensajería solo cuando se definan. Ticket actual es interno; saldos bancarios son contables registrados.
-- Backups, observabilidad, secretos, recuperación y revisión de seguridad antes de datos reales.
+- 23 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
+- tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.
+- tests-reporting.mjs: totales netos, filtros, productos sin ventas y permisos.
+- tests-database-recovery.mjs: instalación limpia, repetición, detección de alteraciones, copia, restauración y conservación de datos.
+- TypeScript y compilación de producción verificados durante el cierre; detalles técnicos en IMPLEMENTATION.md.
+- XLSX contrastado con openpyxl y Code39 con ReportLab en el bloque anterior.
+- No se ha realizado QA visual con navegador ni prueba física de impresora/lector. La pregunta para incluir pruebas de navegador quedó planteada.
 
-## Continuación — órdenes exportables e historial de cheques
+## Lo que falta para operar
 
-- Orden de compra exportable en XLSX/CSV e impresión PDF: identificación, proveedor, vencimiento, condiciones, referencia, líneas y totales separados. Descarga local; no envía mensajes.
-- El botón ahora dice «Marcar como enviada» para describir el cambio de estado interno.
-- Impuestos y transporte se muestran por separado. Corrección del listado anterior: ambos importes, compras multilínea y recepción parcial ya estaban implementados; permanecen pendientes logística avanzada e integración de envío externo.
-- Historial administrativo de los últimos 250 cambios de cheques con estado anterior/nuevo, motivo y responsable, también exportable.
-- TypeScript verificado sin errores. La validación visual y de impresión física continúa pendiente.
+1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
+2. Conectar base definitiva y autenticación Google con identidades/roles reales.
+3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
+4. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0012_inventory_freeze.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
+6. Conectar factura fiscal, cobros, bancos y WhatsApp/email si se decide integrarlos. Actualmente no hay envíos ni movimientos externos.
 
-## Continuación — logística, recuperación y períodos
+## Continuidad
 
-- Compras: fecha prevista, transportista, seguimiento, dirección y condiciones adicionales persistidas, visibles y exportables. No consulta transportistas ni envía órdenes externas.
-- Migración local `0011_purchase_delivery.sql` aplicada después de generar una copia SQLite consistente y verificarla en `outputs/backups/` (fuera de Git).
-- Herramientas para inicializar archivos nuevos, respaldar, verificar y restaurar a destinos nuevos. Instrucciones en `RECUPERACION.md`. Historial independiente con hashes; no sustituye la reconciliación del journal de Drizzle ni adopta la demo a ciegas.
-- Prueba de instalación limpia, repetición idempotente, detección de migraciones alteradas, respaldo y restauración con conservación de datos: aprobada.
-- 18 pruebas de operaciones aprobadas. TypeScript aprobado; compilación de producción aprobada para logística y migración.
-- Comisiones: selector de período y rango incluido en las exportaciones.
-- Pendientes que requieren decisiones/conexiones reales: política del cashback gastado, comunicación automática, Google Login, base definitiva, adaptación a Vercel e integraciones fiscales/bancarias. QA visual, dispositivos e impresión aún pendientes.
-
-## Bloque de cierre local — 5 de septiembre de 2026
-
-- Inventario aprobado protegido también en la base: no se pueden editar, borrar ni insertar líneas luego de aprobar el conteo.
-- Respaldo previo a la migración `0012_inventory_freeze.sql` verificado y guardado fuera de Git.
-- 18 escenarios de operaciones, recuperación de base, TypeScript y compilación de producción aprobados.
-- El producto sigue en modo local de demostración. No se conectaron credenciales, servicios externos ni datos reales.
+Repositorio: app/. Rama: codex/initial-platform.
+Inicio local: npm run dev -- --host 127.0.0.1.
+Mantener datos reales fuera del entorno demo hasta completar la puesta en producción.

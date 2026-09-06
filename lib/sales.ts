@@ -10,6 +10,7 @@ import {
 import { Actor, AppError, can } from './auth';
 import { saleInput, quoteInput } from './validation';
 import { z } from 'zod';
+import { argentinaDay } from './business-date';
 import {
   evaluateCommercialRules,
   type CommercialPromotion,
@@ -148,8 +149,8 @@ export async function quote(raw: unknown, pricingOnly = false): Promise<any> {
   ].filter((value, index, values) => values.indexOf(value) === index);
   const activePromotionRows = await rows<PromotionRow>(
     'SELECT id,name,percent,methodId,startsAt,endsAt,active,ruleJson FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?',
-    now().slice(0, 10),
-    now().slice(0, 10),
+    argentinaDay(),
+    argentinaDay(),
   );
   const allPromotions = activePromotionRows.map(commercialPromotion);
   const normalizedCoupon = data.couponCode?.trim().toLocaleLowerCase('es-AR');

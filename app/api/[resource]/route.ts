@@ -4,6 +4,7 @@ import {
   can,
   requirePermission,
   protectWrite,
+  readJsonBody,
   reply,
   fail,
   AppError,
@@ -29,6 +30,7 @@ import {
   configureSellerCommission,
 } from '@/lib/seller-commissions';
 import { supplierHistory } from '@/lib/supplier-history';
+import { argentinaDay } from '@/lib/business-date';
 import { customerInput } from '@/lib/validation';
 import {
   confirmSale,
@@ -40,7 +42,12 @@ import {
 import { createRefundAuthorization, refundPartial } from '@/lib/returns';
 import { adminWrite, adminAction, dashboard } from '@/lib/admin';
 import { z } from 'zod';
-import { configureMethod, addVariant } from '@/lib/configuration';
+import {
+  configureMethod,
+  createMethod,
+  setMethodActive,
+  addVariant,
+} from '@/lib/configuration';
 import { getCashFlow } from '@/lib/cashflow';
 import { consolidatedCashFlow } from '@/lib/consolidated-cashflow';
 import {
@@ -195,8 +202,8 @@ export async function GET(
       requirePermission(a, 'pos');
       const offers = await rows<Record<string, any>>(
         'SELECT id,name,percent,methodId,ruleJson FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?',
-        now().slice(0, 10),
-        now().slice(0, 10),
+        argentinaDay(),
+        argentinaDay(),
       );
       return reply(
         offers.map(({ ruleJson, ...offer }) => {
@@ -376,10 +383,13 @@ export async function GET(
         await rows(
           `SELECT p.id,s.name AS supplier,p.total,p.subtotal,p.discount,p.tax,p.shipping,
                   p.status,p.createdAt,p.dueAt,p.paymentMethod,p.supplierReference,
+                  COALESCE(pa.status,'not_registered') AS paymentStatus,
+                  CASE WHEN p.status='received' AND pa.status='paid' THEN 'paid' ELSE p.status END AS completionStatus,
                   COUNT(pi.id) AS lines,COALESCE(SUM(pi.quantity),0) AS units,
                   COALESCE(SUM(pi.received),0) AS receivedUnits
              FROM purchases p JOIN suppliers s ON s.id=p.supplierId
              LEFT JOIN purchase_items pi ON pi.purchaseId=p.id
+             LEFT JOIN payables pa ON pa.purchaseId=p.id
             GROUP BY p.id ORDER BY p.createdAt DESC`,
         ),
       );
@@ -475,7 +485,7 @@ export async function GET(
           )?.value ?? 0,
         ),
         methods: await rows(
-          'SELECT id,name,surchargeBps,commissionBps,days,installments FROM payment_methods',
+          'SELECT id,name,surchargeBps,commissionBps,days,installments,active FROM payment_methods',
         ),
       });
     throw new AppError(403, 'Acceso denegado.');
@@ -490,7 +500,7 @@ export async function POST(
   try {
     protectWrite(req);
     const { resource } = await params;
-    const body = await req.json();
+    const body = await readJsonBody(req);
     if (resource === 'setup') {
       const x = z.object({ demo: z.boolean() }).strict().parse(body);
       return reply(await setup(x.demo), 201);
@@ -559,6 +569,10 @@ export async function POST(
     if (resource === 'refund-authorizations')
       return reply(await createRefundAuthorization(a, body), 201);
     if (resource === 'actions') return reply(await adminAction(a, body));
+    if (resource === 'create-method')
+      return reply(await createMethod(a, body), 201);
+    if (resource === 'set-method-active')
+      return reply(await setMethodActive(a, body));
     if (resource === 'configure-method')
       return reply(await configureMethod(a, body));
     if (resource === 'access') return reply(await saveAccess(a, body));

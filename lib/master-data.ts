@@ -91,7 +91,9 @@ export async function listAdminProducts(actor: Actor, includeArchived = true) {
     `SELECT v.id,v.productId,p.name,p.internalCode,p.category,p.subcategory,p.brand,
             p.season,p.collection,p.location,p.supplierId,s.name AS supplier,
             p.active,p.updatedAt,p.archivedAt,v.sku,v.barcode,v.color,v.size,
-            v.price,v.cost,v.stock,v.minimum,v.ideal,v.entryAt,v.updatedAt AS variantUpdatedAt
+            v.price,v.cost,v.stock,v.minimum,v.ideal,v.entryAt,v.updatedAt AS variantUpdatedAt,
+            CASE WHEN v.price>0 THEN ROUND((v.price-v.cost)*100.0/v.price,2) ELSE NULL END AS marginPercent,
+            CASE WHEN v.cost>0 THEN ROUND((v.price-v.cost)*100.0/v.cost,2) ELSE NULL END AS markupPercent
        FROM variants v JOIN products p ON p.id=v.productId
        LEFT JOIN suppliers s ON s.id=p.supplierId
       WHERE (?=1 OR p.active=1)

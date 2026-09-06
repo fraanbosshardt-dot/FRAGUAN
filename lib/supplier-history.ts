@@ -15,9 +15,9 @@ export async function supplierHistory(a: Actor, supplierId: string) {
   const from = new Date(Date.parse(`${to}T12:00:00Z`) - 364 * 86400000)
     .toISOString()
     .slice(0, 10);
-  const [orders, stock, report] = await Promise.all([
+  const [orders, stock, report, fulfillment] = await Promise.all([
     rows(
-      'SELECT p.id,p.status,p.createdAt,p.dueAt,p.total,p.supplierReference,SUM(i.quantity) AS ordered,SUM(i.received) AS received FROM purchases p LEFT JOIN purchase_items i ON i.purchaseId=p.id WHERE p.supplierId=? GROUP BY p.id ORDER BY p.createdAt DESC LIMIT 250',
+      'SELECT p.id,p.status,p.createdAt,p.dueAt,p.expectedAt,p.receivedAt,p.carrier,p.total,p.supplierReference,SUM(i.quantity) AS ordered,SUM(i.received) AS received FROM purchases p LEFT JOIN purchase_items i ON i.purchaseId=p.id WHERE p.supplierId=? GROUP BY p.id ORDER BY p.createdAt DESC LIMIT 250',
       supplierId,
     ),
     one<{ units: number; cost: number; retail: number }>(
@@ -25,6 +25,15 @@ export async function supplierHistory(a: Actor, supplierId: string) {
       supplierId,
     ),
     getBusinessReport(a, { from, to, supplierId }),
+    one(
+      `SELECT COUNT(*) AS scheduled,
+              COALESCE(SUM(CASE WHEN receivedAt IS NOT NULL THEN 1 ELSE 0 END),0) AS completed,
+              COALESCE(SUM(CASE WHEN receivedAt IS NOT NULL AND date(receivedAt,'-3 hours')<=expectedAt THEN 1 ELSE 0 END),0) AS onTime,
+              COALESCE(SUM(CASE WHEN receivedAt IS NULL AND expectedAt<? THEN 1 ELSE 0 END),0) AS overdue
+       FROM purchases WHERE supplierId=? AND expectedAt IS NOT NULL AND status IN ('confirmed','partially_received','received')`,
+      to,
+      supplierId,
+    ),
   ]);
   return {
     supplier,
@@ -34,5 +43,6 @@ export async function supplierHistory(a: Actor, supplierId: string) {
     sales: report.current,
     rotation: stock?.units ? Number(report.current.units) / stock.units : null,
     products: report.breakdowns.products,
+    fulfillment,
   };
 }

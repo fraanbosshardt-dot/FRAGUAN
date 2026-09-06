@@ -20,7 +20,8 @@ export const money = (n: number = 0) =>
   new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(n / 100);
 export const date = (value: string) =>
   value

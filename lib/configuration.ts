@@ -2,19 +2,62 @@ import { db, id, now, one, statement, auditStatement } from '@/db/queries';
 import { Actor, requirePermission, AppError } from './auth';
 import { z } from 'zod';
 import { text, money, positiveMoney } from './validation';
+const methodFields = z
+  .object({
+    name: text,
+    surchargeBps: z.number().int().min(0).max(10000),
+    commissionBps: z.number().int().min(0).max(10000),
+    days: z.number().int().min(0).max(365),
+    installments: z.number().int().min(1).max(24),
+  })
+  .strict();
+
+export async function createMethod(a: Actor, raw: unknown) {
+  requirePermission(a, 'settings');
+  const x = methodFields.parse(raw),
+    key = id();
+  await db().batch([
+    statement(
+      'INSERT INTO payment_methods(id,name,surchargeBps,commissionBps,days,installments) VALUES (?,?,?,?,?,?)',
+      key,
+      x.name,
+      x.surchargeBps,
+      x.commissionBps,
+      x.days,
+      x.installments,
+    ),
+    auditStatement(a.id, 'Crear medio de pago', key, null, x),
+  ]);
+  return { ok: true, id: key };
+}
+
+export async function setMethodActive(a: Actor, raw: unknown) {
+  requirePermission(a, 'settings');
+  const x = z.object({ id: text, active: z.boolean() }).strict().parse(raw);
+  if (['cash', 'store_credit', 'cashback'].includes(x.id))
+    throw new AppError(
+      400,
+      'Los medios de efectivo y saldos internos deben conservarse disponibles.',
+    );
+  const before = await one(
+    'SELECT id,active FROM payment_methods WHERE id=?',
+    x.id,
+  );
+  if (!before) throw new AppError(404, 'Medio de pago no encontrado.');
+  await db().batch([
+    statement(
+      'UPDATE payment_methods SET active=? WHERE id=?',
+      x.active ? 1 : 0,
+      x.id,
+    ),
+    auditStatement(a.id, 'Disponibilidad de medio de pago', x.id, before, x),
+  ]);
+  return { ok: true };
+}
+
 export async function configureMethod(a: Actor, raw: unknown) {
   requirePermission(a, 'settings');
-  const x = z
-    .object({
-      id: text,
-      name: text,
-      surchargeBps: z.number().int().min(0).max(10000),
-      commissionBps: z.number().int().min(0).max(10000),
-      days: z.number().int().min(0).max(365),
-      installments: z.number().int().min(1).max(24),
-    })
-    .strict()
-    .parse(raw);
+  const x = methodFields.extend({ id: text }).parse(raw);
   const before = await one(
     'SELECT id,name,surchargeBps,commissionBps,days,installments FROM payment_methods WHERE id=?',
     x.id,

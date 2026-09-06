@@ -12,6 +12,7 @@ import {
 import { GlobalSearch } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ExportActions } from '@/components/export-actions';
+import { LoadingState } from '@/components/loading-state';
 type Field = {
   key: string;
   label: string;
@@ -238,7 +239,7 @@ export default function Operations({ section }: { section: string }) {
         </p>
       )}
       {success && <p role="status">{success}</p>}
-      {!data && !error && <p role="status">Cargando…</p>}
+      {!data && !error && <LoadingState />}
       {!data && error && (
         <Button
           variant="outline"

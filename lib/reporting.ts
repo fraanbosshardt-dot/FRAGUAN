@@ -383,6 +383,7 @@ export async function getBusinessReport(actor: Actor, raw: unknown) {
     bySeller,
     byPayment,
     stagnantProducts,
+    byPromotion,
   ] = await Promise.all([
     rows(
       `${facts.sql}
@@ -501,6 +502,19 @@ export async function getBusinessReport(actor: Actor, raw: unknown) {
       ...facts.values,
     ),
     rows(noSales.sql, ...noSalesValues),
+    rows(
+      `${facts.sql}, promoted_sales AS (
+         SELECT saleId,SUM(revenueMinor) AS revenueMinor,
+                SUM(costMinor) AS costMinor,SUM(commissionMinor) AS commissionMinor
+         FROM report_lines GROUP BY saleId
+       )
+       SELECT d.promotionId AS id,d.name,COUNT(DISTINCT d.saleId) AS tickets,
+              SUM(d.amount) AS grantedDiscountMinor,SUM(p.revenueMinor) AS revenueMinor,
+              SUM(p.revenueMinor-p.costMinor-p.commissionMinor) AS grossProfitMinor
+       FROM promoted_sales p JOIN sale_discounts d ON d.saleId=p.saleId
+       GROUP BY d.promotionId,d.name ORDER BY revenueMinor DESC`,
+      ...facts.values,
+    ),
   ]);
   return {
     period: { from: filters.from, to: filters.to, days: length },
@@ -525,6 +539,7 @@ export async function getBusinessReport(actor: Actor, raw: unknown) {
       suppliers: bySupplier,
       sellers: bySeller,
       paymentMethods: byPayment,
+      promotions: byPromotion,
     },
     productsWithoutSales: stagnantProducts,
   };

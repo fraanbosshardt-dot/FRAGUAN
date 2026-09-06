@@ -447,7 +447,197 @@ test('purchase delivery conditions persist with totals and reject invalid dates'
   assert.equal(order.carrier, input.carrier);
   assert.equal(order.expectedAt, input.expectedAt);
   assert.equal(order.paymentTerms, input.paymentTerms);
+  await service.transitionPurchaseOrder(actor, {
+    purchaseId: order.id,
+    action: 'send',
+  });
+  await service.transitionPurchaseOrder(actor, {
+    purchaseId: order.id,
+    action: 'confirm',
+  });
+  const payable = f.database
+    .prepare('SELECT id FROM payables WHERE purchaseId=?')
+    .get(order.id);
+  await f.load('lib/admin.ts').adminAction(actor, {
+    action: 'pay-payable',
+    id: payable.id,
+    methodId: 'cash',
+  });
+  const prepaid = await service.getPurchaseOrder(actor, order.id);
+  assert.equal(prepaid.paymentStatus, 'paid');
+  assert.equal(prepaid.completionStatus, 'confirmed');
+  await service.receivePurchaseOrder(actor, {
+    purchaseId: order.id,
+    items: [{ purchaseItemId: order.items[0].id, quantity: 2 }],
+    idempotencyKey: crypto.randomUUID(),
+  });
+  const complete = await service.getPurchaseOrder(actor, order.id);
+  assert.equal(complete.completionStatus, 'paid');
+  assert.equal(complete.status, 'received');
   await assert.rejects(() =>
     service.createPurchaseOrder(actor, { ...input, expectedAt: '2026-02-30' }),
   );
+});
+
+test('promotion reporting preserves discounts and nets returned revenue', async (t) => {
+  const f = fixture(t);
+  f.database.exec(
+    "INSERT INTO promotions(id,name,percent,startsAt,endsAt) VALUES ('promo','Diez por ciento',10,'2020-01-01','2099-12-31')",
+  );
+  const sale = await f.load('lib/sales.ts').confirmSale(actor, {
+    items: [{ variantId: 'variant', quantity: 2 }],
+    customerId: 'customer',
+    promotionId: 'promo',
+    payments: [{ methodId: 'cash', baseMinor: 18000, receivedMinor: 18000 }],
+    idempotencyKey: crypto.randomUUID(),
+  });
+  const day = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+  }).format(new Date());
+  const report = () =>
+    f.load('lib/reporting.ts').getBusinessReport(actor, { from: day, to: day });
+  assert.equal((await report()).breakdowns.promotions[0].revenueMinor, 18000);
+  await f.refund(sale, 1);
+  const result = (await report()).breakdowns.promotions[0];
+  assert.equal(result.revenueMinor, 9000);
+  assert.equal(result.grantedDiscountMinor, 2000);
+  assert.equal(result.grossProfitMinor, 5000);
+  await f.refund(sale, 1);
+  assert.equal((await report()).breakdowns.promotions.length, 0);
+});
+
+test('custom installment methods calculate net amounts and pause without changing history', async (t) => {
+  const f = fixture(t),
+    configuration = f.load('lib/configuration.ts');
+  const method = await configuration.createMethod(actor, {
+    name: 'Crédito seis cuotas',
+    surchargeBps: 2000,
+    commissionBps: 650,
+    days: 30,
+    installments: 6,
+  });
+  const sale = await f.load('lib/sales.ts').confirmSale(actor, {
+    items: [{ variantId: 'variant', quantity: 1 }],
+    customerId: null,
+    promotionId: null,
+    payments: [{ methodId: method.id, baseMinor: 10000 }],
+    idempotencyKey: crypto.randomUUID(),
+  });
+  const payment = f.database
+    .prepare('SELECT amount,commission,net FROM payments WHERE saleId=?')
+    .get(sale.id);
+  assert.equal(payment.amount, 12000);
+  assert.equal(payment.commission, 780);
+  assert.equal(payment.net, 11220);
+  await configuration.setMethodActive(actor, { id: method.id, active: false });
+  await assert.rejects(
+    () =>
+      f.load('lib/sales.ts').confirmSale(actor, {
+        items: [{ variantId: 'variant', quantity: 1 }],
+        customerId: null,
+        promotionId: null,
+        payments: [{ methodId: method.id, baseMinor: 10000 }],
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    /no disponible/,
+  );
+  assert.equal(
+    f.database.prepare('SELECT net FROM payments WHERE saleId=?').get(sale.id)
+      .net,
+    11220,
+  );
+  await configuration.setMethodActive(actor, { id: method.id, active: true });
+  await assert.rejects(
+    () =>
+      configuration.createMethod(
+        { ...actor, role: 'VENDEDOR' },
+        { name: 'Falso' },
+      ),
+    /denegado/,
+  );
+  await assert.rejects(
+    () => configuration.setMethodActive(actor, { id: 'cash', active: false }),
+    /conservarse/,
+  );
+});
+
+test('JSON body limits enforce actual bytes even without content length', async (t) => {
+  const f = fixture(t),
+    { readJsonBody, protectWrite } = f.load('lib/auth.ts');
+  const request = (body) =>
+    new Request('http://localhost:3000/api/sales', {
+      method: 'POST',
+      headers: {
+        origin: 'http://localhost:3000',
+        'content-type': 'application/json',
+      },
+      body,
+    });
+  assert.equal(
+    (await readJsonBody(request('{"name":"Camisa Ñ"}'))).name,
+    'Camisa Ñ',
+  );
+  await assert.rejects(
+    () => readJsonBody(request('{')),
+    (error) => error.status === 400,
+  );
+  await assert.rejects(
+    () => readJsonBody(request(JSON.stringify({ value: 'x'.repeat(100001) }))),
+    (error) => error.status === 413,
+  );
+  assert.throws(
+    () =>
+      protectWrite(
+        new Request('http://localhost:3000/api/sales', {
+          method: 'POST',
+          headers: {
+            origin: 'https://foreign.test',
+            'content-type': 'application/json',
+          },
+        }),
+      ),
+    (error) => error.status === 403,
+  );
+});
+
+test('a promotion remains usable until midnight in Argentina, not midnight UTC', async (t) => {
+  for (const [timestamp, allowed] of [
+    ['2026-09-06T02:59:59Z', true],
+    ['2026-09-06T03:00:00Z', false],
+  ]) {
+    const f = fixture(t, { timestamp });
+    f.database.exec(
+      "INSERT INTO promotions(id,name,percent,startsAt,endsAt) VALUES ('last-day','Último día',10,'2026-09-05','2026-09-05')",
+    );
+    const quote = () =>
+      f.load('lib/sales.ts').quote({
+        items: [{ variantId: 'variant', quantity: 1 }],
+        customerId: null,
+        promotionId: 'last-day',
+        payments: [{ methodId: 'cash', baseMinor: 9000, receivedMinor: 9000 }],
+      });
+    if (allowed) assert.equal((await quote()).total, 9000);
+    else await assert.rejects(quote, /vencida/);
+  }
+});
+
+test('supplier fulfillment separates late open orders and on-time completed orders', async (t) => {
+  const f = fixture(t, { timestamp: '2026-09-06T15:00:00Z' });
+  f.database.exec(
+    "INSERT INTO suppliers(id,name,phone,email,terms) VALUES ('fulfillment','Proveedor','','','')",
+  );
+  const insert = f.database.prepare(
+    "INSERT INTO purchases(id,supplierId,status,total,createdAt,dueAt,actorId,expectedAt,receivedAt) VALUES (?,'fulfillment',?,100,'2026-09-01T12:00:00Z','2026-10-01','admin',?,?)",
+  );
+  insert.run('on-time', 'received', '2026-09-05', '2026-09-06T02:59:59Z');
+  insert.run('late', 'received', '2026-09-05', '2026-09-06T03:00:00Z');
+  insert.run('overdue', 'confirmed', '2026-09-05', null);
+  insert.run('unscheduled', 'received', null, '2026-09-05T12:00:00Z');
+  const result = await f
+    .load('lib/supplier-history.ts')
+    .supplierHistory(actor, 'fulfillment');
+  assert.equal(result.fulfillment.scheduled, 3);
+  assert.equal(result.fulfillment.completed, 2);
+  assert.equal(result.fulfillment.onTime, 1);
+  assert.equal(result.fulfillment.overdue, 1);
 });

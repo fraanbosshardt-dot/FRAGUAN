@@ -441,6 +441,8 @@ try {
     ['promotions', {}],
     ['users', {}],
     ['inventory', {}],
+    ['create-method', {}],
+    ['set-method-active', { id: 'debit', active: false }],
     ['recurring-expenses', {}],
     ['installment-obligations', {}],
     ['materialize-financial', {}],

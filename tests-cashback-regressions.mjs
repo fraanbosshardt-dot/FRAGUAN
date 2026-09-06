@@ -14,7 +14,17 @@ const root = dirname(fileURLToPath(import.meta.url));
 const nodeRequire = createRequire(import.meta.url);
 export const actor = { id: 'admin', role: 'ADMIN', active: 1 };
 
-export function fixture(t, { rate = 100, expiry = 30 } = {}) {
+export function fixture(t, { rate = 100, expiry = 30, timestamp } = {}) {
+  const Clock = timestamp
+    ? class extends Date {
+        constructor(...args) {
+          super(...(args.length ? args : [timestamp]));
+        }
+        static now() {
+          return Date.parse(timestamp);
+        }
+      }
+    : Date;
   const database = new DatabaseSync(':memory:');
   t.after(() => database.close());
   database.exec('PRAGMA foreign_keys=ON');
@@ -68,8 +78,10 @@ export function fixture(t, { rate = 100, expiry = 30 } = {}) {
         exports: module.exports,
         crypto,
         console,
-        Date,
+        Date: Clock,
         TextEncoder,
+        TextDecoder,
+        URL,
         require(name) {
           if (name === 'cloudflare:workers') return { env: { DB: binding } };
           if (name === '@/app/chatgpt-auth')
