@@ -62,12 +62,13 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 
 ## Lo que falta para operar
 
-1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
-2. Conectar base definitiva y autenticación Google con identidades/roles reales.
-3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0013_stock_notes.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
-5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
-6. Conectar factura fiscal, cobros, bancos y WhatsApp/email si se decide integrarlos. Actualmente no hay envíos ni movimientos externos.
+1. Unificar en la interfaz las secciones Productos y Stock bajo “Productos y stock”. Cada producto debe mostrar sus datos generales, variantes, precio, SKU/código de barras, existencias, mínimos, ideal y ubicación. Mantener internamente producto, variante y stock separados, y conservar “Movimientos de stock” como historial independiente.
+2. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
+3. Conectar base definitiva y autenticación Google con identidades/roles reales.
+4. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
+5. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0013_stock_notes.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+6. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
+7. Conectar factura fiscal, cobros, bancos y WhatsApp/email si se decide integrarlos. Actualmente no hay envíos ni movimientos externos.
 
 ## Continuidad
 
