@@ -456,8 +456,13 @@ export default function Workspace() {
         </div>
         <div className="user-chip">
           {session?.permissions?.includes('dashboard') && (
-            <a title="Administración" href="/admin/dashboard">
+            <a
+              className="admin-entry"
+              title="Administración"
+              href="/admin-access?returnTo=%2Fadmin%2Fdashboard"
+            >
               <LayoutDashboard size={18} />
+              <span>Administración</span>
             </a>
           )}
           <Button

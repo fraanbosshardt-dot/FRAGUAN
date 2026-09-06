@@ -24,6 +24,7 @@ import {
   Check,
   Printer,
   TrendingUp,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,36 +73,69 @@ const exportLabels: Record<string, string> = {
   color: 'Color',
   size: 'Talle',
 };
-const navigation = [
-  ['dashboard', 'Vista general', LayoutDashboard],
-  ['products', 'Productos', Package],
-  ['stock', 'Stock y variantes', Boxes],
-  ['stock-movements', 'Movimientos de stock', ArrowUpRight],
-  ['replenishment', 'Reposición sugerida', RefreshCw],
-  ['sales', 'Ventas', ShoppingBag],
-  ['customers', 'Clientes & Club', Users],
-  ['customer-intelligence', 'Inteligencia de clientes', Sparkles],
-  ['suppliers', 'Proveedores', Truck],
-  ['purchases', 'Compras', ClipboardList],
-  ['cash', 'Caja', Wallet],
-  ['cash-flow', 'Flujo de fondos', TrendingUp],
-  ['financial-calendar', 'Calendario financiero', CalendarClock],
-  ['expenses', 'Gastos', Receipt],
-  ['payables', 'Cuentas a pagar', CalendarClock],
-  ['withdrawals', 'Retiros de socios', ArrowUpRight],
-  ['promotions', 'Promociones', Tag],
-  ['inventory', 'Inventario físico', Boxes],
-  ['reports', 'Reportes', LayoutDashboard],
-  ['insights', 'FRAGUAN Insights', Sparkles],
-  ['users', 'Equipo y permisos', Users],
-  ['audit', 'Auditoría', ShieldCheck],
-  ['settings', 'Configuración', SlidersHorizontal],
-  ['banking', 'Bancos y cheques', Wallet],
-  ['club-rewards', 'Canjes del Club', Sparkles],
-  ['access', 'Permisos por usuario', ShieldCheck],
-  ['communications', 'Comunicaciones', Users],
-  ['seller-commissions', 'Comisiones del equipo', TrendingUp],
-] as const;
+type NavigationItem = readonly [string, string, LucideIcon];
+type NavigationGroup = {
+  label: string;
+  items: readonly NavigationItem[];
+};
+const navigationGroups: readonly NavigationGroup[] = [
+  {
+    label: 'Inicio',
+    items: [['dashboard', 'Vista general', LayoutDashboard]],
+  },
+  {
+    label: 'Ventas y clientes',
+    items: [
+      ['sales', 'Ventas y devoluciones', ShoppingBag],
+      ['customers', 'Clientes y Club', Users],
+      ['customer-intelligence', 'Segmentos y fidelización', Sparkles],
+      ['club-rewards', 'Canjes del Club', Tag],
+      ['promotions', 'Promociones', Tag],
+      ['communications', 'Comunicaciones', Users],
+    ],
+  },
+  {
+    label: 'Productos y compras',
+    items: [
+      ['products', 'Productos y stock', Package],
+      ['stock-movements', 'Movimientos de stock', ArrowUpRight],
+      ['replenishment', 'Reposición sugerida', RefreshCw],
+      ['inventory', 'Inventario físico', Boxes],
+      ['suppliers', 'Proveedores', Truck],
+      ['purchases', 'Compras', ClipboardList],
+    ],
+  },
+  {
+    label: 'Dinero y compromisos',
+    items: [
+      ['cash', 'Caja', Wallet],
+      ['banking', 'Bancos y cheques', Wallet],
+      ['expenses', 'Gastos', Receipt],
+      ['payables', 'Cuentas a pagar', CalendarClock],
+      ['financial-calendar', 'Calendario financiero', CalendarClock],
+      ['cash-flow', 'Flujo de fondos', TrendingUp],
+      ['withdrawals', 'Retiros de socios', ArrowUpRight],
+    ],
+  },
+  {
+    label: 'Análisis',
+    items: [
+      ['reports', 'Reportes', LayoutDashboard],
+      ['insights', 'FRAGUAN Insights', Sparkles],
+      ['seller-commissions', 'Comisiones del equipo', TrendingUp],
+    ],
+  },
+  {
+    label: 'Sistema',
+    items: [
+      ['users', 'Equipo', Users],
+      ['access', 'Permisos por usuario', ShieldCheck],
+      ['audit', 'Auditoría', ShieldCheck],
+      ['settings', 'Configuración', SlidersHorizontal],
+    ],
+  },
+];
+const navigation = navigationGroups.flatMap((group) => group.items);
 const columns: Record<string, [string, string, string?][]> = {
   products: [
     ['name', 'Producto'],
@@ -114,7 +148,9 @@ const columns: Record<string, [string, string, string?][]> = {
     ['marginPercent', 'Margen bruto %'],
     ['markupPercent', 'Markup %'],
     ['stock', 'Stock'],
+    ['minimum', 'Mínimo'],
     ['ideal', 'Ideal'],
+    ['location', 'Ubicación'],
     ['active', 'Activo'],
   ],
   stock: [
@@ -231,7 +267,8 @@ const columns: Record<string, [string, string, string?][]> = {
 };
 const descriptions: Record<string, string> = {
   dashboard: 'Una mirada clara a lo que está pasando en tu negocio.',
-  products: 'Tu colección, organizada hasta el último detalle.',
+  products:
+    'Productos, variantes, precios y existencias reunidos en un solo lugar.',
   stock: 'Cada talle y cada color, en su lugar.',
   replenishment: 'Detectá faltantes y prepará compras según la rotación real.',
   sales: 'El registro de cada buena experiencia.',
@@ -847,6 +884,15 @@ export default function Admin({ section }: { section: string }) {
         });
         return;
       }
+      if (modal === 'stock-adjust') {
+        await mutate('stock', {
+          variantId: selected?.id,
+          quantity: Number(form.quantity),
+          reason: form.reason,
+          notes: form.notes || '',
+        });
+        return;
+      }
       let payload: Row = {};
       if (section === 'products')
         payload = {
@@ -1010,6 +1056,7 @@ export default function Admin({ section }: { section: string }) {
       'customer-profile': 'Perfil del cliente',
       'purchase-detail': 'Orden de compra',
       'purchase-receipt': 'Recibir mercadería',
+      'stock-adjust': 'Ajustar stock',
     };
     return modal === 'create'
       ? `Agregar · ${title}`
@@ -1044,6 +1091,8 @@ export default function Admin({ section }: { section: string }) {
       'purchase-detail': 'Líneas, costos, estado y recepciones de la orden.',
       'purchase-receipt':
         'Registrá únicamente las unidades que llegaron. El resto quedará pendiente.',
+      'stock-adjust':
+        'El ajuste crea un movimiento trazable y conserva la cantidad anterior y posterior.',
     };
     return (
       descriptions[modal] ?? 'Los cambios quedarán registrados con tu usuario.'
@@ -1058,20 +1107,28 @@ export default function Admin({ section }: { section: string }) {
         <a className="new-sale-link" href="/pos">
           <Plus size={16} /> Nueva venta <ArrowUpRight size={15} />
         </a>
-        <p className="eyebrow">TU NEGOCIO</p>
-        <nav>
-          {navigation
-            .filter(([key]) => session?.permissions?.includes(key))
-            .map(([key, label, Icon]) => (
-              <a
-                key={key}
-                href={'/admin/' + key}
-                className={section === key ? 'active' : ''}
-              >
-                <Icon size={16} />
-                {label}
-              </a>
-            ))}
+        <nav aria-label="Áreas de administración">
+          {navigationGroups.map((group) => {
+            const items = group.items.filter(([key]) =>
+              session?.permissions?.includes(key),
+            );
+            if (!items.length) return null;
+            return (
+              <div className="nav-group" key={group.label}>
+                <p>{group.label}</p>
+                {items.map(([key, label, Icon]) => (
+                  <a
+                    key={key}
+                    href={'/admin/' + key}
+                    className={section === key ? 'active' : ''}
+                  >
+                    <Icon size={17} />
+                    {label}
+                  </a>
+                ))}
+              </div>
+            );
+          })}
         </nav>
         <div className="sidebar-bottom">
           <span className="avatar">{session?.user?.name?.[0] ?? 'F'}</span>
@@ -2443,12 +2500,22 @@ export default function Admin({ section }: { section: string }) {
                                 </Button>
                               )}
                             {section === 'products' && r.active && (
-                              <Button
-                                variant="ghost"
-                                onClick={() => openForm('labels', r)}
-                              >
-                                <Printer size={14} /> Etiquetas
-                              </Button>
+                              <>
+                                {session?.permissions?.includes('stock') && (
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => openForm('stock-adjust', r)}
+                                  >
+                                    Ajustar stock
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => openForm('labels', r)}
+                                >
+                                  <Printer size={14} /> Etiquetas
+                                </Button>
+                              </>
                             )}
                             {section === 'stock' && (
                               <Button
@@ -4295,6 +4362,22 @@ export default function Admin({ section }: { section: string }) {
                       />
                     </>
                   )}
+                </>
+              )}
+              {modal === 'stock-adjust' && selected && (
+                <>
+                  <div className="stock-adjust-summary">
+                    <strong>{selected.name}</strong>
+                    <span>
+                      {selected.color} · {selected.size} · SKU {selected.sku}
+                    </span>
+                    <span>Stock actual: {selected.stock}</span>
+                  </div>
+                  {field('quantity', 'Unidades a sumar o restar', {
+                    type: 'number',
+                  })}
+                  {field('reason', 'Motivo del ajuste (mín. 5 caracteres)')}
+                  {field('notes', 'Observaciones', { optional: true })}
                 </>
               )}
               <Button

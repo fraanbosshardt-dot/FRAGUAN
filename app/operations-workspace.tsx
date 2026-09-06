@@ -56,6 +56,11 @@ const labels: Record<string, string> = {
   'customer-intelligence': 'Inteligencia de clientes',
   'customer-credits': 'Saldos a favor',
 };
+const operationAreas = [
+  { label: 'Clientes', items: ['club-rewards', 'communications'] },
+  { label: 'Dinero', items: ['banking'] },
+  { label: 'Equipo', items: ['seller-commissions', 'access'] },
+];
 export default function Operations({ section }: { section: string }) {
   const { session } = useSession();
   const [data, setData] = useState<Row | null>(null),
@@ -219,21 +224,32 @@ export default function Operations({ section }: { section: string }) {
           <ThemeToggle />
         </div>
       </header>
-      <nav className="heading-actions" aria-label="Operaciones">
-        {[
-          'banking',
-          'club-rewards',
-          'access',
-          'communications',
-          'seller-commissions',
-        ]
-          .filter((s) => session?.permissions?.includes(s))
-          .map((s) => (
-            <a key={s} href={`/admin/${s}`}>
-              {labels[s]}
-            </a>
-          ))}
-        <a href="/pos">Punto de venta</a>
+      <nav className="operations-area-nav" aria-label="Áreas relacionadas">
+        {operationAreas.map((area) => {
+          const items = area.items.filter((item) =>
+            session?.permissions?.includes(item),
+          );
+          if (!items.length) return null;
+          return (
+            <div key={area.label}>
+              <span>{area.label}</span>
+              {items.map((item) => (
+                <a
+                  className={section === item ? 'active' : ''}
+                  key={item}
+                  href={`/admin/${item}`}
+                >
+                  {labels[item]}
+                </a>
+              ))}
+            </div>
+          );
+        })}
+        <div>
+          <span>Navegación</span>
+          <a href="/admin/dashboard">Todas las áreas</a>
+          <a href="/pos">Punto de venta</a>
+        </div>
       </nav>
       <h1>{labels[section]}</h1>
       {error && !dialog && (

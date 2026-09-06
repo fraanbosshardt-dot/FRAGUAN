@@ -14,7 +14,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | POS                     | Búsqueda, SKU y código de barras por teclado, categorías, variantes, stock, carrito, cliente básico, promociones autorizadas, cuotas, pago dividido, cotización en servidor y venta atómica.                                                                                                                                         |
 | Vendedor                | Entrada directa al POS. Solo campos comerciales en APIs, ventas propias recientes y devoluciones autorizadas. Sin costos, margen, markup ni finanzas.                                                                                                                                                                                |
-| Productos               | Datos de producto y variantes, edición, archivo/reactivación, costo administrativo, precio, margen y markup, mínimos/ideales, ubicación e importación CSV con vista previa.                                                                                                                                                          |
+| Productos y stock       | Pantalla unificada con ficha, variantes, edición, archivo/reactivación, costo administrativo, precio, margen, markup, existencias, mínimos/ideales, ubicación, ajuste trazable, etiquetas e importación CSV con vista previa.                                                                                                         |
 | Stock                   | Movimientos trazables con historial exportable, motivo, observaciones, usuario, referencia y cantidades anterior/posterior. Reposición sugerida y alertas por demanda/disponibilidad. Conteos multilínea, diferencias y exportación. Aprobación con cantidades vigentes dentro de transacción; la base congela las líneas aprobadas. |
 | Precios y medios        | Precio de variante, promociones por medio, recargos configurables, alta/pausa/reactivación de medios y planes de cuotas, comisiones y acreditación estimada. Importes enteros en centavos; visualización sin perder centavos.                                                                                                        |
 | Ventas y devoluciones   | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde.                                                                                                                                                   |
@@ -31,7 +31,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 | Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales.                                                                                                                                                             |
 | Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
 | Comunicación            | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático.                                                                                                                                                                                                                                               |
-| Administración          | Roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                                                                                                                        |
+| Administración          | Acceso protegido por PIN de seis dígitos y sesión HttpOnly de ocho horas. Menú segmentado por áreas, roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                    |
 | Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4.                                                                                                                                                                                               |
 | Recuperación            | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md.                                                                                                                                                              |
 
@@ -62,13 +62,12 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 
 ## Lo que falta para operar
 
-1. Unificar en la interfaz las secciones Productos y Stock bajo “Productos y stock”. Cada producto debe mostrar sus datos generales, variantes, precio, SKU/código de barras, existencias, mínimos, ideal y ubicación. Mantener internamente producto, variante y stock separados, y conservar “Movimientos de stock” como historial independiente.
-2. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
-3. Conectar base definitiva y autenticación Google con identidades/roles reales.
-4. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-5. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0013_stock_notes.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
-6. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
-7. Conectar factura fiscal, cobros, bancos y WhatsApp/email si se decide integrarlos. Actualmente no hay envíos ni movimientos externos.
+1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
+2. Conectar base definitiva y autenticación Google con identidades/roles reales.
+3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
+4. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0013_stock_notes.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
+6. Conectar factura fiscal, cobros, bancos y WhatsApp/email si se decide integrarlos. Actualmente no hay envíos ni movimientos externos.
 
 ## Continuidad
 

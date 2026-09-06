@@ -82,6 +82,11 @@ import {
   updateVariant,
 } from '@/lib/master-data';
 import { importProducts, productImportTemplate } from '@/lib/product-import';
+import {
+  adminPinSetCookie,
+  adminPinToken,
+  verifyAdminPin,
+} from '@/lib/admin-pin';
 export const dynamic = 'force-dynamic';
 function promotionRule(value: unknown) {
   if (typeof value !== 'string' || !value) return {} as Record<string, any>;
@@ -515,6 +520,25 @@ export async function POST(
     if (resource === 'setup') {
       const x = z.object({ demo: z.boolean() }).strict().parse(body);
       return reply(await setup(x.demo), 201);
+    }
+    if (resource === 'admin-pin') {
+      const a = await actor();
+      requirePermission(a, 'dashboard');
+      const x = z
+        .object({ pin: z.string().regex(/^\d{6}$/) })
+        .strict()
+        .parse(body);
+      if (!(await verifyAdminPin(x.pin)))
+        throw new AppError(403, 'PIN incorrecto.');
+      const response = reply({ ok: true });
+      response.headers.append(
+        'Set-Cookie',
+        adminPinSetCookie(
+          await adminPinToken(),
+          new URL(req.url).protocol === 'https:',
+        ),
+      );
+      return response;
     }
     const a = await actor();
     if (resource === 'customers') {

@@ -1920,3 +1920,257 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+/* Usabilidad general: tipografía cómoda, navegación por áreas y catálogo
+   compacto sin fotografías. */
+body {
+  font-family:
+    'Segoe UI Variable', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.005em;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+.admin-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 650;
+}
+.admin-entry:hover {
+  background: var(--secondary);
+}
+.product-grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 260px));
+  gap: 11px;
+  align-items: stretch;
+}
+.product-card {
+  min-height: 126px;
+  border-radius: 12px;
+}
+.product-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px #25311a12;
+}
+.product-text-header {
+  padding: 11px 13px 0;
+  font-size: 10px;
+}
+.product-text-header > svg {
+  padding: 4px;
+}
+.product-copy {
+  padding: 8px 13px 13px;
+}
+.product-copy h3 {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 4px 0 5px;
+}
+.product-availability {
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+.product-meta strong {
+  font-size: 16px;
+}
+.sidebar {
+  width: 272px;
+  padding: 25px 16px 14px;
+}
+.admin-main {
+  margin-left: 272px;
+  width: calc(100% - 272px);
+}
+.new-sale-link {
+  margin: 22px 0 14px;
+  font-size: 14px;
+}
+.sidebar nav {
+  gap: 13px;
+}
+.nav-group {
+  display: grid;
+  gap: 3px;
+}
+.nav-group > p {
+  margin: 0 10px 4px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sidebar nav a {
+  min-height: 38px;
+  padding: 9px 10px;
+  font-size: 13px;
+}
+.sidebar nav a svg {
+  flex: 0 0 auto;
+}
+.admin-top,
+.sidebar-bottom,
+.admin-heading p:not(.eyebrow) {
+  font-size: 14px;
+}
+.stock-adjust-summary {
+  display: grid;
+  gap: 4px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--secondary);
+}
+.stock-adjust-summary span {
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.operations-area-nav {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0 28px;
+}
+.operations-area-nav > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.operations-area-nav span {
+  padding: 0 7px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.operations-area-nav a {
+  padding: 7px 9px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+.operations-area-nav a:hover,
+.operations-area-nav a.active {
+  background: var(--secondary);
+  color: var(--primary);
+}
+.admin-access-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 15% 15%, #dfe9d5 0, transparent 30%),
+    var(--background);
+}
+.admin-access-card {
+  width: min(100%, 440px);
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 22px 60px #23311f18;
+}
+.admin-access-card .wordmark {
+  display: inline-block;
+  margin-bottom: 32px;
+}
+.admin-access-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 22px;
+  border-radius: 14px;
+  background: var(--secondary);
+  color: var(--primary);
+}
+.admin-access-card h1 {
+  margin: 4px 0 10px;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.admin-access-copy {
+  margin: 0 0 24px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.admin-access-card form {
+  display: grid;
+  gap: 12px;
+}
+.admin-access-card form label {
+  font-size: 14px;
+  font-weight: 650;
+}
+.admin-access-card form input {
+  height: 52px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+}
+.admin-access-card form button {
+  height: 46px;
+  margin-top: 4px;
+}
+.admin-access-back {
+  display: block;
+  margin-top: 20px;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 232px;
+  }
+  .admin-main {
+    margin-left: 232px;
+    width: calc(100% - 232px);
+  }
+}
+@media (max-width: 740px) {
+  .admin-entry span {
+    display: none;
+  }
+  .sidebar {
+    width: 68px;
+  }
+  .admin-main {
+    margin-left: 68px;
+    width: calc(100% - 68px);
+  }
+  .nav-group > p {
+    display: none;
+  }
+  .sidebar nav {
+    gap: 8px;
+  }
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-access-card {
+    padding: 26px 22px;
+  }
+}
+@media (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}

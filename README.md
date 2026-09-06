@@ -8,7 +8,7 @@ Node.js >=22.13. Instalar con `npm install`. Aplicar la migración local a una b
 
 Las migraciones existentes son inmutables después de publicar. Generar nuevas con `npm run db:generate` y conservar los triggers de seguridad.
 
-En producción, Sites autentica la identidad. `BOOTSTRAP_OWNER_EMAIL` debe coincidir con el propietario para permitir la primera activación. `SITE_ORIGIN` establece el origen absoluto de las vistas previas sociales. Copiar `.env.example` a `.env` únicamente para desarrollo; no subir secretos.
+En producción, Sites autentica la identidad. `BOOTSTRAP_OWNER_EMAIL` debe coincidir con el propietario para permitir la primera activación. `ADMIN_PIN` configura el PIN administrativo; el entorno local usa `197313` como valor solicitado. `SITE_ORIGIN` establece el origen absoluto de las vistas previas sociales. Copiar `.env.example` a `.env` únicamente para desarrollo; no subir secretos.
 
 La primera activación permite cargar demostración o comenzar vacío. El servidor local admite la identidad de prueba de Sites. La aplicación no define contraseñas ni roles en el navegador.
 

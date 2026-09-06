@@ -445,6 +445,7 @@ try {
     ['promotions', {}],
     ['users', {}],
     ['inventory', {}],
+    ['admin-pin', { pin: '197313' }],
     ['create-method', {}],
     ['set-method-active', { id: 'debit', active: false }],
     ['recurring-expenses', {}],

@@ -23,6 +23,7 @@ async function request(path, body, extra = {}) {
     status: r.status,
     body: parsed,
     cache: r.headers.get('cache-control'),
+    setCookie: r.headers.get('set-cookie'),
   };
 }
 function sql(query) {
@@ -49,6 +50,25 @@ assert.equal(
   'local_seedy',
   'Only run against the local demo fixture.',
 );
+const wrongAdminPin = await request('admin-pin', { pin: '000000' });
+assert.equal(wrongAdminPin.status, 403);
+const correctAdminPin = await request('admin-pin', { pin: '197313' });
+assert.equal(correctAdminPin.status, 200);
+assert.match(correctAdminPin.setCookie, /fraguan_admin_access=/);
+assert.match(correctAdminPin.setCookie, /HttpOnly/i);
+assert.match(correctAdminPin.setCookie, /SameSite=Strict/i);
+const lockedAdminPage = await fetch(origin + '/admin/dashboard', {
+  headers: { Cookie: headers.Cookie },
+  redirect: 'manual',
+});
+assert([302, 307, 308].includes(lockedAdminPage.status));
+assert.match(lockedAdminPage.headers.get('location'), /admin-access/);
+const adminCookie = correctAdminPin.setCookie.split(';', 1)[0];
+const unlockedAdminPage = await fetch(origin + '/admin/dashboard', {
+  headers: { Cookie: `${headers.Cookie}; ${adminCookie}` },
+});
+assert.equal(unlockedAdminPage.status, 200);
+assert.match(await unlockedAdminPage.text(), /Vista general/);
 const products = await request('catalog');
 assert.equal(products.status, 200);
 const allowed = [

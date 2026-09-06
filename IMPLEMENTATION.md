@@ -6,11 +6,11 @@ Consultar `ESTADO-FRAGUAN.md` para la matriz completa, las verificaciones y pend
 
 Aplicación React/Vinext con rutas de servidor, Drizzle y SQLite/D1 local. Ejecutar `npm run dev -- --host 127.0.0.1`. Sin fotos. Autenticación temporal del entorno; Google Login y base definitiva pendientes.
 
-POS con variantes, pago dividido, promociones avanzadas, ventas atómicas, devoluciones autorizadas, cashback y ticket interno. Administración con datos maestros, importación CSV, compras multilínea y recepciones parciales, inventario editable antes de aprobar, caja, gastos, planes financieros, cheques, bancos, reportes, búsqueda global y exportaciones CSV/XLSX/impresión PDF. Club con canje de puntos y sugerencias de comunicación; proveedores con historial, cumplimiento de entrega y comisiones estimadas por vendedor. Reportes incluyen atribución por promoción; compras separan estado logístico, pago y finalización. Configuración permite crear medios y planes de cuotas, pausarlos y reactivarlos.
+POS con catálogo textual compacto, variantes, pago dividido, promociones avanzadas, ventas atómicas, devoluciones autorizadas, cashback y ticket interno. Administración protegida por PIN y segmentada por áreas. Productos, variantes, precios y stock comparten una pantalla con ajuste trazable; importación CSV, compras multilínea y recepciones parciales, inventario editable antes de aprobar, caja, gastos, planes financieros, cheques, bancos, reportes, búsqueda global y exportaciones CSV/XLSX/impresión PDF. Club con canje de puntos y sugerencias de comunicación; proveedores con historial, cumplimiento de entrega y comisiones estimadas por vendedor. Reportes incluyen atribución por promoción; compras separan estado logístico, pago y finalización. Configuración permite crear medios y planes de cuotas, pausarlos y reactivarlos.
 
 ## Seguridad
 
-Capacidades validadas en servidor. Respuestas del vendedor con lista explícita de campos comerciales; no incluyen costos ni márgenes. Ventas propias y recursos administrativos separados. Restricciones individuales solo quitan capacidades. Operaciones monetarias importantes cuentan con idempotencia, restricciones y auditoría.
+Capacidades validadas en servidor. Respuestas del vendedor con lista explícita de campos comerciales; no incluyen costos ni márgenes. Ventas propias y recursos administrativos separados. El ingreso administrativo requiere el PIN configurado y guarda una cookie HttpOnly, SameSite Strict, con vigencia de ocho horas. Restricciones individuales solo quitan capacidades. Operaciones monetarias importantes cuentan con idempotencia, restricciones y auditoría.
 
 ## Comprobaciones
 
