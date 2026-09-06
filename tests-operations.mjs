@@ -641,3 +641,29 @@ test('supplier fulfillment separates late open orders and on-time completed orde
   assert.equal(result.fulfillment.onTime, 1);
   assert.equal(result.fulfillment.overdue, 1);
 });
+
+test('manual stock adjustments preserve observations and exact before/after values', async (t) => {
+  const f = fixture(t),
+    { adminWrite } = f.load('lib/admin.ts');
+  await adminWrite('stock', actor, {
+    variantId: 'variant',
+    quantity: -3,
+    reason: 'Prenda dañada',
+    notes: 'Costura abierta detectada durante el control',
+  });
+  const movement = f.database
+    .prepare(
+      "SELECT quantity,before,after,reason,notes FROM stock_movements WHERE variantId='variant' ORDER BY rowid DESC LIMIT 1",
+    )
+    .get();
+  assert.equal(movement.quantity, -3);
+  assert.equal(movement.before, 100);
+  assert.equal(movement.after, 97);
+  assert.equal(movement.reason, 'Prenda dañada');
+  assert.match(movement.notes, /Costura abierta/);
+  assert.equal(
+    f.database.prepare("SELECT stock FROM variants WHERE id='variant'").get()
+      .stock,
+    97,
+  );
+});

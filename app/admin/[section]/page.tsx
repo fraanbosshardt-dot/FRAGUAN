@@ -11,7 +11,8 @@ export default async function AdminPage({
   const { section } = await params;
   try {
     const a = await actor();
-    if (!can(a, section))
+    const permission = section === 'stock-movements' ? 'stock' : section;
+    if (!can(a, permission))
       return (
         <main className="empty-state">
           <h1>Acceso denegado</h1>

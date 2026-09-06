@@ -17,7 +17,11 @@ export function ExportActions({
       let text =
         typeof value === 'number'
           ? String(value).replace('.', ',')
-          : String(value ?? '');
+          : value == null
+            ? ''
+            : typeof value === 'string' || typeof value === 'boolean'
+              ? String(value)
+              : JSON.stringify(value);
       if (typeof value !== 'number' && /^\s*[=+\-@]/.test(text))
         text = "'" + text;
       return '"' + text.replaceAll('"', '""') + '"';
@@ -73,7 +77,14 @@ export function ExportActions({
       sheet.rows.forEach((row) => {
         const tr = body.insertRow();
         row.forEach((value) => {
-          tr.insertCell().textContent = String(value ?? '');
+          tr.insertCell().textContent =
+            value == null
+              ? ''
+              : typeof value === 'string' ||
+                  typeof value === 'number' ||
+                  typeof value === 'boolean'
+                ? String(value)
+                : JSON.stringify(value);
         });
       });
       doc.body.appendChild(table);

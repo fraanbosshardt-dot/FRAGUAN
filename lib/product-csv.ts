@@ -231,7 +231,14 @@ export function parseProductCsv(source: string): ProductImportClientRow[] {
 }
 
 export function csvCell(value: unknown) {
-  const text = String(value ?? '');
+  const text =
+    value == null
+      ? ''
+      : typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean'
+        ? String(value)
+        : JSON.stringify(value);
   return `"${text.replaceAll('"', '""')}"`;
 }
 

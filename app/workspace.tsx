@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
   ShoppingBag,
@@ -10,7 +10,6 @@ import {
   UserRound,
   ScanBarcode,
   Clock3,
-  ArrowLeft,
   Check,
   Printer,
   LayoutDashboard,
@@ -135,7 +134,7 @@ export default function Workspace() {
         setCreditBalance(0);
         setCashbackBalance(0);
       });
-  }, [customer?.id]);
+  }, [customer?.id, method]);
   const groups = useMemo(() => {
     const map = new Map<string, Row>();
     for (const v of catalog) {
@@ -196,14 +195,14 @@ export default function Workspace() {
     setSearch('');
     searchRef.current?.focus();
   };
-  const openPayment = () => {
+  const openPayment = useCallback(() => {
     if (cart.length) {
       setQuote(null);
       setReceived('');
       setError('');
       setModal('payment');
     }
-  };
+  }, [cart.length]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -224,7 +223,7 @@ export default function Workspace() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [cart]);
+  }, [openPayment]);
   useEffect(() => {
     const context = (document as any).modelContext;
     if (!context?.registerTool) return;

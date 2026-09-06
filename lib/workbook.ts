@@ -5,9 +5,22 @@ export type Sheet = {
   columns: string[];
   rows: (string | number | null)[][];
 };
+const scalarText = (value: unknown) =>
+  value == null
+    ? ''
+    : typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ? String(value)
+      : JSON.stringify(value);
 const xml = (value: unknown) =>
-  String(value ?? '')
-    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '')
+  scalarText(value)
+    .split('')
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code === 9 || code === 10 || code === 13 || code >= 32;
+    })
+    .join('')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -91,7 +104,7 @@ export function workbook(sheets: Sheet[]) {
   const names = sheets.map((sheet, index) => {
     let name =
       sheet.name
-        .replace(/[\[\]:*?/\\]/g, ' ')
+        .replace(/[[\]:*?/\\]/g, ' ')
         .slice(0, 26)
         .trim() || `Hoja ${index + 1}`;
     if (used.has(name.toLowerCase())) name += ` ${index + 1}`;

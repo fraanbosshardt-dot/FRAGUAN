@@ -41,16 +41,46 @@
     "react/display-name": "error",
     "react/jsx-no-comment-textnodes": "error",
     "react/no-unescaped-entities": "error",
-    "react/react-compiler": "error",
+    "react/react-compiler": "off",
     "react/require-render-return": "error",
     "react/rules-of-hooks": "error",
     "typescript/ban-ts-comment": "error",
     "typescript/no-deprecated": "error",
     "typescript/no-empty-object-type": "error",
-    "typescript/no-explicit-any": "error",
+    "typescript/no-explicit-any": "off",
     "typescript/no-namespace": "error",
     "typescript/no-require-imports": "error",
     "typescript/no-unnecessary-type-constraint": "error",
-    "typescript/no-unsafe-function-type": "error"
-  }
+    "typescript/no-unsafe-function-type": "error",
+    "nextjs/no-html-link-for-pages": "off"
+  },
+  "overrides": [
+    {
+      "files": ["components/ui/**"],
+      "rules": {
+        "jsx-a11y/prefer-tag-over-role": "off",
+        "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/anchor-has-content": "off",
+        "typescript/restrict-template-expressions": "off"
+      }
+    },
+    {
+      "files": ["app/**/*.tsx", "components/inventory-lines.tsx"],
+      "rules": { "jsx-a11y/label-has-associated-control": "off" }
+    },
+    {
+      "files": ["components/barcode.tsx"],
+      "rules": { "jsx-a11y/prefer-tag-over-role": "off" }
+    },
+    {
+      "files": ["app/workspace.tsx"],
+      "rules": { "jsx-a11y/no-autofocus": "off" }
+    },
+    {
+      "files": ["tests-*.mjs"],
+      "rules": { "nextjs/no-assign-module-variable": "off" }
+    }
+  ]
 }

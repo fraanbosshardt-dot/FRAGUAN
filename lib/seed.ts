@@ -69,7 +69,7 @@ export async function setup(demo: boolean) {
         installments,
       ),
     );
-  for (const c of [...new Set(collection.map((p) => p[1]))])
+  for (const c of new Set(collection.map((p) => p[1])))
     commands.push(
       statement('INSERT INTO categories(id,name) VALUES (?,?)', id(), c),
     );

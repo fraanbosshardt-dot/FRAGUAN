@@ -48,7 +48,6 @@ import {
   setMethodActive,
   addVariant,
 } from '@/lib/configuration';
-import { getCashFlow } from '@/lib/cashflow';
 import { consolidatedCashFlow } from '@/lib/consolidated-cashflow';
 import {
   getCustomerInsights,
@@ -369,6 +368,18 @@ export async function GET(
             url.searchParams.get('includeArchived') === '1',
         ),
       );
+    if (resource === 'stock-movements') {
+      requirePermission(a, 'stock');
+      return reply(
+        await rows(
+          `SELECT m.id,m.createdAt,p.name,v.sku,v.color,v.size,m.quantity,m.before,m.after,
+                m.reason,m.notes,m.reference,u.name AS actor
+           FROM stock_movements m JOIN variants v ON v.id=m.variantId
+           JOIN products p ON p.id=v.productId JOIN users u ON u.id=m.actorId
+          ORDER BY m.createdAt DESC LIMIT 1000`,
+        ),
+      );
+    }
     if (resource === 'suppliers')
       return reply(
         await listAdminSuppliers(

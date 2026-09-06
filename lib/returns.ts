@@ -27,7 +27,7 @@ const refundRequest = z
       )
       .max(100)
       .optional(),
-    authorizationToken: z.string().uuid().optional(),
+    authorizationToken: z.uuid().optional(),
   })
   .strict();
 

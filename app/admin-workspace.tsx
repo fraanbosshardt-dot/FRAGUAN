@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -17,7 +17,6 @@ import {
   RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
-  ArrowLeft,
   Tag,
   ClipboardList,
   Sparkles,
@@ -77,6 +76,7 @@ const navigation = [
   ['dashboard', 'Vista general', LayoutDashboard],
   ['products', 'Productos', Package],
   ['stock', 'Stock y variantes', Boxes],
+  ['stock-movements', 'Movimientos de stock', ArrowUpRight],
   ['replenishment', 'Reposición sugerida', RefreshCw],
   ['sales', 'Ventas', ShoppingBag],
   ['customers', 'Clientes & Club', Users],
@@ -124,6 +124,20 @@ const columns: Record<string, [string, string, string?][]> = {
     ['stock', 'Disponible'],
     ['minimum', 'Mínimo'],
     ['sku', 'SKU'],
+  ],
+  'stock-movements': [
+    ['createdAt', 'Fecha', 'date'],
+    ['name', 'Producto'],
+    ['sku', 'SKU'],
+    ['color', 'Color'],
+    ['size', 'Talle'],
+    ['quantity', 'Movimiento'],
+    ['before', 'Anterior'],
+    ['after', 'Posterior'],
+    ['reason', 'Motivo'],
+    ['notes', 'Observaciones'],
+    ['actor', 'Usuario'],
+    ['reference', 'Referencia'],
   ],
   sales: [
     ['ticket', 'Ticket'],
@@ -288,7 +302,7 @@ export default function Admin({ section }: { section: string }) {
       obligations: [],
     });
   const title = navigation.find((n) => n[0] === section)?.[1] ?? 'FRAGUAN';
-  const load = async () => {
+  const load = useCallback(async () => {
     if (section === 'financial-calendar') {
       const [calendar, plans] = await Promise.all([
         api('financial-calendar'),
@@ -307,10 +321,10 @@ export default function Admin({ section }: { section: string }) {
             : section,
       ),
     );
-  };
+  }, [section, reportFrom, reportTo]);
   useEffect(() => {
     load().catch((e) => setError(e.message));
-  }, [section]);
+  }, [load]);
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     setSearch(query.get('q') ?? '');
@@ -595,7 +609,7 @@ export default function Admin({ section }: { section: string }) {
       ),
     });
   }
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
       if (modal === 'loyalty-config') {
@@ -861,6 +875,7 @@ export default function Admin({ section }: { section: string }) {
           variantId: form.variantId || selected?.id,
           quantity: Number(form.quantity),
           reason: form.reason,
+          notes: form.notes || '',
         };
       if (section === 'customers')
         payload = { name: form.name, surname: form.surname, phone: form.phone };
@@ -1173,6 +1188,7 @@ export default function Admin({ section }: { section: string }) {
                 'customer-intelligence',
                 'replenishment',
                 'financial-calendar',
+                'stock-movements',
               ].includes(section) && (
                 <Button onClick={() => openForm()}>
                   <Plus size={16} />{' '}
@@ -1191,10 +1207,10 @@ export default function Admin({ section }: { section: string }) {
             </p>
           )}
           {success && (
-            <p className="success-notice" role="status">
+            <output className="success-notice">
               <Check size={15} />
               {success}
-            </p>
+            </output>
           )}
           {!data && !error && <LoadingState />}
           {['dashboard', 'insights'].includes(section) && data && (
@@ -2034,7 +2050,7 @@ export default function Admin({ section }: { section: string }) {
                   onClick={() => {
                     const through = new Date();
                     through.setDate(through.getDate() + 365);
-                    mutate('materialize-financial', {
+                    void mutate('materialize-financial', {
                       throughOn: through.toISOString().slice(0, 10),
                     });
                   }}
@@ -2624,10 +2640,10 @@ export default function Admin({ section }: { section: string }) {
                     >
                       Anterior
                     </Button>
-                    <span role="status">
+                    <output>
                       Página {currentPage + 1} de {pageCount} ·{' '}
                       {filtered.length} registros
-                    </span>
+                    </output>
                     <Button
                       variant="outline"
                       disabled={currentPage + 1 === pageCount}
@@ -3243,7 +3259,7 @@ export default function Admin({ section }: { section: string }) {
                 </ul>
               )}
               <h3>Acreditaciones de cashback</h3>
-              {!!selected.cashback?.length ? (
+              {selected.cashback?.length ? (
                 <div className="data-table profile-history">
                   <table>
                     <caption className="quiet">
@@ -3894,6 +3910,7 @@ export default function Admin({ section }: { section: string }) {
                         type: 'number',
                       })}
                       {field('reason', 'Motivo del ajuste (mín. 5 caracteres)')}
+                      {field('notes', 'Observaciones', { optional: true })}
                     </>
                   )}
                   {section === 'customers' && (

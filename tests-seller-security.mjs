@@ -84,8 +84,8 @@ function assertSellerSafe(label, value, path = '$') {
 function assertExactKeys(label, value, expected) {
   assert(value && typeof value === 'object' && !Array.isArray(value), label);
   assert.deepEqual(
-    Object.keys(value).sort(),
-    [...expected].sort(),
+    Object.keys(value).sort((a, b) => a.localeCompare(b)),
+    [...expected].sort((a, b) => a.localeCompare(b)),
     `${label}: cambió el contrato de campos`,
   );
 }
@@ -140,7 +140,10 @@ try {
   const session = await request('session');
   assert.equal(session.status, 200, JSON.stringify(session.body));
   assert.equal(session.body.user.role, 'VENDEDOR');
-  assert.deepEqual([...session.body.permissions].sort(), ['customers', 'pos']);
+  assert.deepEqual(
+    [...session.body.permissions].sort((a, b) => a.localeCompare(b)),
+    ['customers', 'pos'],
+  );
   assertSellerSafe('session', session.body);
   assertNoStore('session', session);
 
@@ -393,6 +396,7 @@ try {
     'dashboard',
     'products',
     'stock',
+    'stock-movements',
     'replenishment',
     'suppliers',
     'purchases',

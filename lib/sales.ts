@@ -63,10 +63,10 @@ function commercialPromotion(row: PromotionRow): CommercialPromotion {
     }
   }
   const conditions = {
-    ...(stored.conditions ?? {}),
+    ...stored.conditions,
     ...(row.methodId ? { paymentMethodIds: [row.methodId] } : {}),
     schedule: {
-      ...(stored.conditions?.schedule ?? {}),
+      ...stored.conditions?.schedule,
       startsAt: `${row.startsAt}T00:00:00-03:00`,
       endsAt: `${nextDate(row.endsAt)}T00:00:00-03:00`,
       timeZoneOffsetMinutes: -180,

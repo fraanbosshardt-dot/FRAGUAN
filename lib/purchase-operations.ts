@@ -9,7 +9,7 @@ import {
   statement,
 } from '@/db/queries';
 import { Actor, AppError, requirePermission } from './auth';
-import { money, positiveMoney, text } from './validation';
+import { money, text } from './validation';
 
 const purchaseLine = z
   .object({
@@ -40,7 +40,7 @@ const createInput = z
     deliveryAddress: z.string().trim().max(500).default(''),
     paymentTerms: z.string().trim().max(1000).default(''),
     notes: z.string().trim().max(1000).default(''),
-    idempotencyKey: z.string().uuid().optional(),
+    idempotencyKey: z.uuid().optional(),
   })
   .strict();
 const transitionInput = z
@@ -64,7 +64,7 @@ const receiptInput = z
       .min(1)
       .max(100),
     notes: z.string().trim().max(1000).default(''),
-    idempotencyKey: z.string().uuid(),
+    idempotencyKey: z.uuid(),
   })
   .strict();
 

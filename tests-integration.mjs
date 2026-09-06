@@ -208,7 +208,10 @@ const races = await Promise.all([
   request('sales', raceBody()),
   request('sales', raceBody()),
 ]);
-assert.deepEqual(races.map((x) => x.status).sort(), [201, 409]);
+assert.deepEqual(
+  races.map((x) => x.status).sort((a, b) => a - b),
+  [201, 409],
+);
 assert.equal(
   (await request('catalog')).body.find((x) => x.id === raceVariant.id).stock,
   0,

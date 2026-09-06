@@ -41,7 +41,7 @@ export async function clubRewardWrite(a: Actor, raw: unknown) {
           action: z.literal('redeem'),
           customerId: text,
           rewardId: text,
-          idempotencyKey: z.string().uuid(),
+          idempotencyKey: z.uuid(),
         })
         .strict(),
       z.object({ action: z.literal('deliver'), id: text }).strict(),

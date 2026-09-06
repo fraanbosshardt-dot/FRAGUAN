@@ -1,5 +1,6 @@
 # FRAGUAN — estado actual
-Actualizado: 5 de septiembre de 2026.
+
+Actualizado: 6 de septiembre de 2026.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -9,30 +10,30 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 
 ## Funciones implementadas
 
-| Área | Alcance local |
-| --- | --- |
-| POS | Búsqueda, SKU y código de barras por teclado, categorías, variantes, stock, carrito, cliente básico, promociones autorizadas, cuotas, pago dividido, cotización en servidor y venta atómica. |
-| Vendedor | Entrada directa al POS. Solo campos comerciales en APIs, ventas propias recientes y devoluciones autorizadas. Sin costos, margen, markup ni finanzas. |
-| Productos | Datos de producto y variantes, edición, archivo/reactivación, costo administrativo, precio, margen y markup, mínimos/ideales, ubicación e importación CSV con vista previa. |
-| Stock | Movimientos trazables, reposición sugerida y alertas por demanda/disponibilidad. Conteos multilínea, diferencias y exportación. Aprobación con cantidades vigentes dentro de transacción; la base congela las líneas aprobadas. |
-| Precios y medios | Precio de variante, promociones por medio, recargos configurables, alta/pausa/reactivación de medios y planes de cuotas, comisiones y acreditación estimada. Importes enteros en centavos; visualización sin perder centavos. |
-| Ventas y devoluciones | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde. |
-| Clientes | Perfil completo administrativo, historial, talles/preferencias, segmentos configurables, niveles del Club y saldos. |
-| Club | Puntos, cashback por nivel con vencimiento, catálogo de beneficios, reserva, entrega y cancelación de canjes con restitución única. |
-| Promociones | Porcentaje, monto fijo, 2x1, segunda unidad, categoría, marca, nivel, cumpleaños, cupones, prioridad y exclusividad. Vigencia hasta medianoche argentina. Reporte de resultado por promoción. |
-| Compras | Órdenes multilínea, impuestos, transporte, descuentos, vencimiento y condiciones. Entrega prevista, transportista, seguimiento y dirección. Recepción parcial/completa. Pago separado de recepción; una orden recibida y saldada se muestra pagada. Exportación de orden completa. |
-| Proveedores | Edición/archivo, historial, ventas netas, rentabilidad, capital actual en stock y cumplimiento de entregas con fecha pactada. |
-| Caja | Apertura/cierre, movimientos, efectivo esperado/contado y diferencias. |
-| Gastos y retiros | Gastos, planes recurrentes y retiros de propietarios separados de gastos operativos. |
-| Cuentas a pagar | Obligaciones, cuotas, vencimientos, calendario financiero y pagos registrados. |
-| Bancos y cheques | Cuentas y saldos contables, movimientos, conciliación manual, cheque/eCheq como registro local, depósito, acreditación/débito, rechazo, cancelación e historial. Cheque vinculado a deuda sin duplicar pago. |
-| Flujo de fondos | Caja, bancos registrados, cobros y obligaciones con proyecciones de 7/30/60/90 días. |
-| Reportes e Insights | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales. |
-| Comisiones | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período. |
-| Comunicación | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático. |
-| Administración | Roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga. |
-| Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4. |
-| Recuperación | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md. |
+| Área                    | Alcance local                                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POS                     | Búsqueda, SKU y código de barras por teclado, categorías, variantes, stock, carrito, cliente básico, promociones autorizadas, cuotas, pago dividido, cotización en servidor y venta atómica.                                                                                                                                         |
+| Vendedor                | Entrada directa al POS. Solo campos comerciales en APIs, ventas propias recientes y devoluciones autorizadas. Sin costos, margen, markup ni finanzas.                                                                                                                                                                                |
+| Productos               | Datos de producto y variantes, edición, archivo/reactivación, costo administrativo, precio, margen y markup, mínimos/ideales, ubicación e importación CSV con vista previa.                                                                                                                                                          |
+| Stock                   | Movimientos trazables con historial exportable, motivo, observaciones, usuario, referencia y cantidades anterior/posterior. Reposición sugerida y alertas por demanda/disponibilidad. Conteos multilínea, diferencias y exportación. Aprobación con cantidades vigentes dentro de transacción; la base congela las líneas aprobadas. |
+| Precios y medios        | Precio de variante, promociones por medio, recargos configurables, alta/pausa/reactivación de medios y planes de cuotas, comisiones y acreditación estimada. Importes enteros en centavos; visualización sin perder centavos.                                                                                                        |
+| Ventas y devoluciones   | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde.                                                                                                                                                   |
+| Clientes                | Perfil completo administrativo, historial, talles/preferencias, segmentos configurables, niveles del Club y saldos.                                                                                                                                                                                                                  |
+| Club                    | Puntos, cashback por nivel con vencimiento, catálogo de beneficios, reserva, entrega y cancelación de canjes con restitución única.                                                                                                                                                                                                  |
+| Promociones             | Porcentaje, monto fijo, 2x1, segunda unidad, categoría, marca, nivel, cumpleaños, cupones, prioridad y exclusividad. Vigencia hasta medianoche argentina. Reporte de resultado por promoción.                                                                                                                                        |
+| Compras                 | Órdenes multilínea, impuestos, transporte, descuentos, vencimiento y condiciones. Entrega prevista, transportista, seguimiento y dirección. Recepción parcial/completa. Pago separado de recepción; una orden recibida y saldada se muestra pagada. Exportación de orden completa.                                                   |
+| Proveedores             | Edición/archivo, historial, ventas netas, rentabilidad, capital actual en stock y cumplimiento de entregas con fecha pactada.                                                                                                                                                                                                        |
+| Caja                    | Apertura/cierre, movimientos, efectivo esperado/contado y diferencias.                                                                                                                                                                                                                                                               |
+| Gastos y retiros        | Gastos, planes recurrentes y retiros de propietarios separados de gastos operativos.                                                                                                                                                                                                                                                 |
+| Cuentas a pagar         | Obligaciones, cuotas, vencimientos, calendario financiero y pagos registrados.                                                                                                                                                                                                                                                       |
+| Bancos y cheques        | Cuentas y saldos contables, movimientos, conciliación manual, cheque/eCheq como registro local, depósito, acreditación/débito, rechazo, cancelación e historial. Cheque vinculado a deuda sin duplicar pago.                                                                                                                         |
+| Flujo de fondos         | Caja, bancos registrados, cobros y obligaciones con proyecciones de 7/30/60/90 días.                                                                                                                                                                                                                                                 |
+| Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales.                                                                                                                                                             |
+| Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
+| Comunicación            | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático.                                                                                                                                                                                                                                               |
+| Administración          | Roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                                                                                                                        |
+| Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4.                                                                                                                                                                                               |
+| Recuperación            | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md.                                                                                                                                                              |
 
 ## Reglas de negocio actuales
 
@@ -50,12 +51,13 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 
 ## Verificación
 
-- 23 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
+- 24 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, movimientos de stock, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
 - tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.
 - tests-reporting.mjs: totales netos, filtros, productos sin ventas y permisos.
 - tests-database-recovery.mjs: instalación limpia, repetición, detección de alteraciones, copia, restauración y conservación de datos.
-- TypeScript y compilación de producción verificados durante el cierre; detalles técnicos en IMPLEMENTATION.md.
-- XLSX contrastado con openpyxl y Code39 con ReportLab en el bloque anterior.
+- La batería completa `tests-*.mjs` pasa, incluidas integración, administración, reglas comerciales, caja, cashback, reportes, recuperación, stock y seguridad del vendedor.
+- Lint, TypeScript y compilación de producción pasan; detalles técnicos en IMPLEMENTATION.md.
+- XLSX contrastado con openpyxl y Code39 con ReportLab.
 - No se ha realizado QA visual con navegador ni prueba física de impresora/lector. La pregunta para incluir pruebas de navegador quedó planteada.
 
 ## Lo que falta para operar
@@ -63,7 +65,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
 2. Conectar base definitiva y autenticación Google con identidades/roles reales.
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0012_inventory_freeze.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+4. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0013_stock_notes.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
 6. Conectar factura fiscal, cobros, bancos y WhatsApp/email si se decide integrarlos. Actualmente no hay envíos ni movimientos externos.
 

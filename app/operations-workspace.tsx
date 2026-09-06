@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api, money, minor, date, Row, useSession } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,13 +72,16 @@ export default function Operations({ section }: { section: string }) {
     [denied, setDenied] = useState<string[]>([]);
   const [period, setPeriod] = useState({ from: '', to: '' });
   const [appliedPeriod, setAppliedPeriod] = useState('');
-  const load = () =>
-    api(section + (section === 'seller-commissions' ? appliedPeriod : '')).then(
-      setData,
-    );
+  const load = useCallback(
+    () =>
+      api(
+        section + (section === 'seller-commissions' ? appliedPeriod : ''),
+      ).then(setData),
+    [section, appliedPeriod],
+  );
   useEffect(() => {
     load().catch((e) => setError(e.message));
-  }, [section, appliedPeriod]);
+  }, [load]);
   const accounts: [string, string][] = (data?.accounts ?? []).map((r: Row) => [
     r.id,
     r.name,
@@ -111,7 +114,7 @@ export default function Operations({ section }: { section: string }) {
       setBusy(false);
     }
   }
-  function submit(e: React.FormEvent) {
+  function submit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!dialog) return;
     try {
@@ -238,7 +241,7 @@ export default function Operations({ section }: { section: string }) {
           {error}
         </p>
       )}
-      {success && <p role="status">{success}</p>}
+      {success && <output>{success}</output>}
       {!data && !error && <LoadingState />}
       {!data && error && (
         <Button

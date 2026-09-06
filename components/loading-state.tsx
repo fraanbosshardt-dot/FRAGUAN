@@ -6,7 +6,7 @@ export function LoadingState({
   label?: string;
 }) {
   return (
-    <section role="status" aria-live="polite" className="loading-state">
+    <output aria-live="polite" className="loading-state">
       <p>{label}</p>
       <div aria-hidden="true">
         <Skeleton className="h-8 w-48 mb-5" />
@@ -14,6 +14,6 @@ export function LoadingState({
           <Skeleton key={row} className="h-12 w-full mb-3" />
         ))}
       </div>
-    </section>
+    </output>
   );
 }

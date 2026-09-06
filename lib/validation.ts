@@ -32,7 +32,7 @@ export const saleInput = z
       )
       .min(1)
       .max(4),
-    idempotencyKey: z.string().uuid(),
+    idempotencyKey: z.uuid(),
   })
   .strict();
 export const quoteInput = saleInput.omit({ idempotencyKey: true });

@@ -222,6 +222,7 @@ export const stockMovements = table(
     before: integer().notNull(),
     after: integer().notNull(),
     reason: text().notNull(),
+    notes: text().notNull().default(''),
     actorId: text().notNull(),
     reference: text().notNull().default(''),
     createdAt: text().notNull(),

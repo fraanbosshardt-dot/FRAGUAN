@@ -110,6 +110,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
         variantId: v.text,
         quantity: z.number().int().min(-100000).max(100000),
         reason: z.string().trim().min(5).max(200),
+        notes: z.string().trim().max(1000).default(''),
       })
       .strict()
       .parse(raw);
@@ -117,7 +118,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
       throw new AppError(400, 'Ingresá una diferencia distinta de cero.');
     commands = [
       statement(
-        'INSERT INTO stock_movements(id,variantId,quantity,before,after,reason,actorId,reference,createdAt) SELECT ?,id,?,stock,stock+?,?,?,?,? FROM variants WHERE id=?',
+        'INSERT INTO stock_movements(id,variantId,quantity,before,after,reason,actorId,reference,createdAt,notes) SELECT ?,id,?,stock,stock+?,?,?,?,?,? FROM variants WHERE id=?',
         key,
         x.quantity,
         x.quantity,
@@ -125,6 +126,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
         a.id,
         key,
         date,
+        x.notes,
         x.variantId,
       ),
     ];

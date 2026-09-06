@@ -8,12 +8,9 @@ const encodings = [
   0x091, 0x190, 0x0d0, 0x085, 0x184, 0x0c4, 0x0a8, 0x0a2, 0x08a, 0x02a,
 ];
 export function code39(value: string) {
-  if (
-    !value ||
-    value.length > 24 ||
-    [...value].some((c) => !alphabet.includes(c))
-  )
-    return null;
+  if (!value || value.length > 24) return null;
+  for (let index = 0; index < value.length; index++)
+    if (!alphabet.includes(value[index])) return null;
   let x = 10;
   const bars: { x: number; width: number }[] = [];
   for (const symbol of `*${value}*`) {

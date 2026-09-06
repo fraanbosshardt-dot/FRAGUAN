@@ -52,7 +52,7 @@ export async function bankingWrite(a: Actor, raw: unknown) {
           amount: positiveMoney,
           description: text,
           occurredAt: z.iso.date(),
-          reference: z.string().uuid(),
+          reference: z.uuid(),
         })
         .strict(),
       z
@@ -95,7 +95,7 @@ export async function bankingWrite(a: Actor, raw: unknown) {
     .parse(raw);
   const key = id(),
     date = now();
-  let commands: D1PreparedStatement[] = [];
+  const commands: D1PreparedStatement[] = [];
   if (input.action === 'account')
     commands.push(
       statement(
