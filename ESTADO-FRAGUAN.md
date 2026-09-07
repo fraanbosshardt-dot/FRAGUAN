@@ -78,12 +78,26 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
 2. Conectar base definitiva y autenticación Google con identidades/roles reales.
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0017_online_sale_price_guard.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0018_email_newsletter.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
 6. Cargar credenciales productivas de Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos y probar cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
 
 ## Continuidad
 
-Repositorio: app/. Rama: codex/initial-platform.
-Inicio local: npm run dev -- --host 127.0.0.1.
+Repositorio: `https://github.com/fraanbosshardt-dot/FRAGUAN`.
+Rama publicada: `main` (commit de documentación actual: `18aed33`).
+Inicio local: `npm run dev -- --host 127.0.0.1`.
+Servidor local detenido al pausar la sesión.
 Mantener datos reales fuera del entorno demo hasta completar la puesta en producción.
+
+## Punto de reanudación
+
+Cuando se restablezca el límite diario, continuar en este orden: importar `main` en Vercel,
+decidir el runtime definitivo (D1/Cloudflare o una base compatible con Vercel), crear la
+base productiva y ejecutar las migraciones hasta `0018`, configurar Google Auth, Mercado
+Pago, Correo Argentino y Resend, cargar sus variables secretas, conectar `fraguan.com`,
+integrar el logo oficial en `public/` y ejecutar QA visual y pruebas de checkout/envío.
+
+El diseño de referencia queda registrado: inspiración conceptual COS, SSENSE, Zara,
+MILFSHAKES y Represent/Fear of God, con identidad propia FRAGUAN. Se mantiene la decisión
+posterior de no usar fotos de productos y de no incluir WhatsApp.
