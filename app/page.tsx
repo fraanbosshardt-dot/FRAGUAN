@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import ComingSoon from './coming-soon';
+import { isProductionComingSoon } from '@/lib/release-mode';
 
 export default function Home() {
+  if (isProductionComingSoon()) return <ComingSoon />;
   return (
     <main className="coming-soon">
       <div className="coming-soon-mark" aria-hidden="true">

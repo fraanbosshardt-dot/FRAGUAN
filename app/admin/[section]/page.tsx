@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Admin from '../../admin-workspace';
 import Operations from '../../operations-workspace';
+import ComingSoon from '../../coming-soon';
+import { isProductionComingSoon } from '@/lib/release-mode';
 export const dynamic = 'force-dynamic';
 export default async function AdminPage({
   params,
@@ -11,6 +13,7 @@ export default async function AdminPage({
   params: Promise<{ section: string }>;
 }) {
   const { section } = await params;
+  if (isProductionComingSoon()) return <ComingSoon area="FRAGUAN ADMIN" />;
   if (section === 'stock') redirect('/admin/products');
   let a: Awaited<ReturnType<typeof actor>>;
   try {

@@ -13,7 +13,7 @@ productos se mantiene; el logo es un activo de marca.
 
 ## Estado general
 
-Implementación local con datos de demostración. La portada `/` muestra temporalmente “Tienda próximamente disponible”; el ecommerce completo continúa accesible en `/tienda` para desarrollo. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
+Implementación local con datos de demostración. En producción, la tienda, el POS y la administración muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`). En local el ecommerce completo continúa accesible en `/tienda`, junto con POS y administración, para desarrollo. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
 
 ## Funciones implementadas
 
