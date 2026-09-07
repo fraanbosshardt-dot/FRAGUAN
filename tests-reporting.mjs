@@ -77,6 +77,10 @@ function createFixture() {
       ('report_fixture_stagnant_variant','report_fixture_stagnant','REPORT-FIXTURE-S','REPORT-FIXTURE-S','Único','U',3000,1000,20,1),
       ('report_fixture_other_variant','report_fixture_other','REPORT-FIXTURE-B','REPORT-FIXTURE-B','Único','U',5000,2000,20,1);
 
+    INSERT INTO variant_location_stock(variantId,locationId,quantity,updatedAt)
+    SELECT id,'loc-unassigned',stock,'2040-02-01T12:00:00.000Z'
+    FROM variants WHERE id LIKE 'report_fixture_%';
+
     INSERT INTO customers(id,name,surname,phone,email,points,createdAt)
     VALUES ('report_fixture_customer','Cliente','Reporte','1199990000','',0,'2040-02-01T12:00:00.000Z');
 

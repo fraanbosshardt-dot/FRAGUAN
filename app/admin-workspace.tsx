@@ -77,36 +77,42 @@ type NavigationItem = readonly [string, string, LucideIcon];
 type NavigationGroup = {
   label: string;
   items: readonly NavigationItem[];
+  primaryCount: number;
 };
 const navigationGroups: readonly NavigationGroup[] = [
   {
     label: 'Inicio',
+    primaryCount: 1,
     items: [['dashboard', 'Vista general', LayoutDashboard]],
   },
   {
     label: 'Ventas y clientes',
+    primaryCount: 3,
     items: [
       ['sales', 'Ventas y devoluciones', ShoppingBag],
       ['customers', 'Clientes y Club', Users],
+      ['promotions', 'Promociones', Tag],
       ['customer-intelligence', 'Segmentos y fidelización', Sparkles],
       ['club-rewards', 'Canjes del Club', Tag],
-      ['promotions', 'Promociones', Tag],
       ['communications', 'Comunicaciones', Users],
     ],
   },
   {
     label: 'Productos y compras',
+    primaryCount: 4,
     items: [
       ['products', 'Productos y stock', Package],
+      ['storage', 'Ubicaciones y depósito', Boxes],
+      ['purchases', 'Compras', ClipboardList],
+      ['suppliers', 'Proveedores', Truck],
       ['stock-movements', 'Movimientos de stock', ArrowUpRight],
       ['replenishment', 'Reposición sugerida', RefreshCw],
       ['inventory', 'Inventario físico', Boxes],
-      ['suppliers', 'Proveedores', Truck],
-      ['purchases', 'Compras', ClipboardList],
     ],
   },
   {
     label: 'Dinero y compromisos',
+    primaryCount: 4,
     items: [
       ['cash', 'Caja', Wallet],
       ['banking', 'Bancos y cheques', Wallet],
@@ -119,6 +125,7 @@ const navigationGroups: readonly NavigationGroup[] = [
   },
   {
     label: 'Análisis',
+    primaryCount: 3,
     items: [
       ['reports', 'Reportes', LayoutDashboard],
       ['insights', 'FRAGUAN Insights', Sparkles],
@@ -127,11 +134,12 @@ const navigationGroups: readonly NavigationGroup[] = [
   },
   {
     label: 'Sistema',
+    primaryCount: 2,
     items: [
       ['users', 'Equipo', Users],
+      ['settings', 'Configuración', SlidersHorizontal],
       ['access', 'Permisos por usuario', ShieldCheck],
       ['audit', 'Auditoría', ShieldCheck],
-      ['settings', 'Configuración', SlidersHorizontal],
     ],
   },
 ];
@@ -161,6 +169,16 @@ const columns: Record<string, [string, string, string?][]> = {
     ['minimum', 'Mínimo'],
     ['sku', 'SKU'],
   ],
+  storage: [
+    ['name', 'Producto'],
+    ['sku', 'SKU'],
+    ['color', 'Color'],
+    ['size', 'Talle'],
+    ['location', 'Ubicación'],
+    ['detail', 'Detalle'],
+    ['quantity', 'Unidades'],
+    ['totalStock', 'Stock total'],
+  ],
   'stock-movements': [
     ['createdAt', 'Fecha', 'date'],
     ['name', 'Producto'],
@@ -172,6 +190,7 @@ const columns: Record<string, [string, string, string?][]> = {
     ['after', 'Posterior'],
     ['reason', 'Motivo'],
     ['notes', 'Observaciones'],
+    ['location', 'Ubicación indicada'],
     ['actor', 'Usuario'],
     ['reference', 'Referencia'],
   ],
@@ -266,30 +285,32 @@ const columns: Record<string, [string, string, string?][]> = {
   ],
 };
 const descriptions: Record<string, string> = {
-  dashboard: 'Una mirada clara a lo que está pasando en tu negocio.',
+  dashboard: 'Resumen del negocio y accesos a las tareas más frecuentes.',
   products:
     'Productos, variantes, precios y existencias reunidos en un solo lugar.',
-  stock: 'Cada talle y cada color, en su lugar.',
+  stock: 'Consultá y ajustá las unidades de cada variante.',
+  storage:
+    'Encontrá cada prenda y mové unidades entre salón, depósito, estantes y cajas.',
   replenishment: 'Detectá faltantes y prepará compras según la rotación real.',
-  sales: 'El registro de cada buena experiencia.',
-  customers: 'Conocé a quienes eligen FRAGUAN.',
+  sales: 'Consultá ventas, tickets y devoluciones autorizadas.',
+  customers: 'Datos, compras, puntos y beneficios de cada cliente.',
   'customer-intelligence':
     'Segmentos, niveles e historial para construir relaciones duraderas.',
-  suppliers: 'Las relaciones detrás de tu colección.',
-  purchases: 'De la orden al perchero, con trazabilidad.',
+  suppliers: 'Datos de contacto, condiciones e historial de proveedores.',
+  purchases: 'Creá órdenes y registrá recepciones parciales o completas.',
   cash: 'Apertura, movimientos y cierre en un solo lugar.',
   'cash-flow': 'Proyectá cobros y compromisos registrados antes de decidir.',
   'financial-calendar': 'Ordená vencimientos por fecha y nivel de urgencia.',
-  expenses: 'Cada gasto, registrado y a la vista.',
+  expenses: 'Registrá y consultá los gastos del negocio.',
   payables: 'Anticipate a tus próximos compromisos.',
   withdrawals: 'Retiros separados de los gastos operativos.',
-  promotions: 'Beneficios autorizados para vender mejor.',
+  promotions: 'Definí los descuentos y beneficios que puede aplicar el POS.',
   inventory: 'Contá, compará y aprobá los ajustes.',
-  reports: 'Decisiones respaldadas por tus datos.',
-  insights: 'Señales útiles que surgen de tu operación.',
+  reports: 'Ventas, costos, márgenes y resultados para analizar el negocio.',
+  insights: 'Alertas y oportunidades detectadas en la operación.',
   users: 'Cada persona, con el acceso que necesita.',
   audit: 'El historial de las acciones importantes.',
-  settings: 'Las reglas de tu negocio.',
+  settings: 'Medios de pago, cuotas y reglas generales del sistema.',
 };
 const labels: Record<string, string> = {
   confirmed: 'Completada',
@@ -386,13 +407,20 @@ export default function Admin({ section }: { section: string }) {
           }
         : type === 'labels'
           ? { labelCount: 1 }
+          : type === 'storage-transfer' && row
+            ? {
+                variantId: row.id,
+                fromLocationId: row.locationId,
+                toLocationId: row.toLocationId || '',
+                quantity: row.suggested || 1,
+              }
           : {},
     );
     setSelected(row);
     setError('');
     setModal(type);
     try {
-      const next: Row = { variants: [], suppliers: [] };
+      const next: Row = { variants: [], suppliers: [], locations: [] };
       if (['purchases', 'inventory', 'stock'].includes(section))
         next.variants = await api('products');
       if (
@@ -401,6 +429,8 @@ export default function Admin({ section }: { section: string }) {
         )
       )
         next.suppliers = await api('suppliers');
+      if (type === 'stock-adjust')
+        next.locations = (await api('storage')).locations;
       setAux(next);
     } catch (e: any) {
       setError(e.message);
@@ -526,6 +556,8 @@ export default function Admin({ section }: { section: string }) {
     ? data
     : section === 'cash'
       ? (data?.movements ?? [])
+      : section === 'storage'
+        ? (data?.inventory ?? [])
       : [];
   const filtered = list.filter((r) =>
     Object.values(r).join(' ').toLowerCase().includes(search.toLowerCase()),
@@ -635,6 +667,14 @@ export default function Admin({ section }: { section: string }) {
     s.id,
     s.name,
   ]);
+  const locationChoices: [string, string][] = (
+    section === 'storage' ? (data?.locations ?? []) : (aux.locations ?? [])
+  )
+    .filter((location: Row) => location.active)
+    .map((location: Row) => [
+      location.id,
+      `${location.name}${location.detail ? ` · ${location.detail}` : ''}`,
+    ]);
   const purchaseLines: Row[] = form.purchaseLines ?? [
     { variantId: '', quantity: '', cost: '', discount: '' },
   ];
@@ -890,6 +930,28 @@ export default function Admin({ section }: { section: string }) {
           quantity: Number(form.quantity),
           reason: form.reason,
           notes: form.notes || '',
+          locationId: form.locationId || null,
+        });
+        return;
+      }
+      if (modal === 'storage-location') {
+        await mutate('storage', {
+          action: 'location',
+          name: form.name,
+          code: form.code,
+          kind: form.kind,
+          detail: form.detail || '',
+        });
+        return;
+      }
+      if (modal === 'storage-transfer') {
+        await mutate('storage', {
+          action: 'transfer',
+          variantId: form.variantId,
+          fromLocationId: form.fromLocationId,
+          toLocationId: form.toLocationId,
+          quantity: Number(form.quantity),
+          notes: form.notes || '',
         });
         return;
       }
@@ -1057,6 +1119,8 @@ export default function Admin({ section }: { section: string }) {
       'purchase-detail': 'Orden de compra',
       'purchase-receipt': 'Recibir mercadería',
       'stock-adjust': 'Ajustar stock',
+      'storage-location': 'Nueva ubicación',
+      'storage-transfer': 'Mover mercadería',
     };
     return modal === 'create'
       ? `Agregar · ${title}`
@@ -1093,6 +1157,10 @@ export default function Admin({ section }: { section: string }) {
         'Registrá únicamente las unidades que llegaron. El resto quedará pendiente.',
       'stock-adjust':
         'El ajuste crea un movimiento trazable y conserva la cantidad anterior y posterior.',
+      'storage-location':
+        'Creá un sector, estante, módulo, perchero o caja para ubicar mercadería.',
+      'storage-transfer':
+        'Mové unidades sin alterar el stock total. La transferencia quedará registrada.',
     };
     return (
       descriptions[modal] ?? 'Los cambios quedarán registrados con tu usuario.'
@@ -1102,7 +1170,7 @@ export default function Admin({ section }: { section: string }) {
     <div className="admin-shell">
       <aside className="sidebar">
         <a className="wordmark" href="/admin/dashboard">
-          FRAGUAN<span>BUSINESS STUDIO</span>
+          FRAGUAN<span>ADMINISTRACIÓN</span>
         </a>
         <a className="new-sale-link" href="/pos">
           <Plus size={16} /> Nueva venta <ArrowUpRight size={15} />
@@ -1113,10 +1181,12 @@ export default function Admin({ section }: { section: string }) {
               session?.permissions?.includes(key),
             );
             if (!items.length) return null;
+            const primary = items.slice(0, group.primaryCount);
+            const secondary = items.slice(group.primaryCount);
             return (
               <div className="nav-group" key={group.label}>
                 <p>{group.label}</p>
-                {items.map(([key, label, Icon]) => (
+                {primary.map(([key, label, Icon]) => (
                   <a
                     key={key}
                     href={'/admin/' + key}
@@ -1126,6 +1196,24 @@ export default function Admin({ section }: { section: string }) {
                     {label}
                   </a>
                 ))}
+                {!!secondary.length && (
+                  <details
+                    className="nav-more"
+                    open={secondary.some(([key]) => key === section)}
+                  >
+                    <summary>Más herramientas</summary>
+                    {secondary.map(([key, label, Icon]) => (
+                      <a
+                        key={key}
+                        href={'/admin/' + key}
+                        className={section === key ? 'active' : ''}
+                      >
+                        <Icon size={17} />
+                        {label}
+                      </a>
+                    ))}
+                  </details>
+                )}
               </div>
             );
           })}
@@ -1163,7 +1251,7 @@ export default function Admin({ section }: { section: string }) {
         <div className="admin-content">
           <div className="admin-heading">
             <div>
-              <p className="eyebrow">MENOS RUIDO. MÁS CLARIDAD.</p>
+              <p className="eyebrow">ADMINISTRACIÓN</p>
               <h1>
                 {title}
                 <span>.</span>
@@ -1228,6 +1316,11 @@ export default function Admin({ section }: { section: string }) {
                   <Download size={15} /> Importar CSV
                 </Button>
               )}
+              {section === 'storage' && (
+                <Button onClick={() => openForm('storage-location')}>
+                  <Plus size={16} /> Nueva ubicación
+                </Button>
+              )}
               {section === 'customer-intelligence' && (
                 <Button variant="outline" onClick={openLoyaltyConfig}>
                   <SlidersHorizontal size={15} /> Configurar Club
@@ -1246,6 +1339,7 @@ export default function Admin({ section }: { section: string }) {
                 'replenishment',
                 'financial-calendar',
                 'stock-movements',
+                'storage',
               ].includes(section) && (
                 <Button onClick={() => openForm()}>
                   <Plus size={16} />{' '}
@@ -1270,6 +1364,76 @@ export default function Admin({ section }: { section: string }) {
             </output>
           )}
           {!data && !error && <LoadingState />}
+          {section === 'dashboard' && data && (
+            <section className="task-launcher" aria-label="Accesos rápidos">
+              <div className="task-launcher-heading">
+                <div>
+                  <h2>¿Qué necesitás hacer?</h2>
+                  <p>Entrá directo a las tareas de uso diario.</p>
+                </div>
+              </div>
+              <div className="task-launcher-grid">
+                <a href="/pos">
+                  <ShoppingBag size={20} />
+                  <span>
+                    <strong>Nueva venta</strong>
+                    <small>Abrir el POS</small>
+                  </span>
+                  <ArrowUpRight size={16} />
+                </a>
+                {session?.permissions?.includes('products') && (
+                  <a href="/admin/products">
+                    <Package size={20} />
+                    <span>
+                      <strong>Producto y stock</strong>
+                      <small>Precio, variantes y existencias</small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </a>
+                )}
+                {session?.permissions?.includes('storage') && (
+                  <a href="/admin/storage">
+                    <Boxes size={20} />
+                    <span>
+                      <strong>Buscar en depósito</strong>
+                      <small>Ubicar o mover una prenda</small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </a>
+                )}
+                {session?.permissions?.includes('customers') && (
+                  <a href="/admin/customers">
+                    <Users size={20} />
+                    <span>
+                      <strong>Clientes y Club</strong>
+                      <small>Perfil, compras y puntos</small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </a>
+                )}
+                {session?.permissions?.includes('cash') && (
+                  <a href="/admin/cash">
+                    <Wallet size={20} />
+                    <span>
+                      <strong>Caja</strong>
+                      <small>Abrir, mover o cerrar</small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </a>
+                )}
+                {session?.permissions?.includes('purchases') && (
+                  <a href="/admin/purchases">
+                    <ClipboardList size={20} />
+                    <span>
+                      <strong>Compras</strong>
+                      <small>Ordenar y recibir mercadería</small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </a>
+                )}
+              </div>
+            </section>
+          )}
           {['dashboard', 'insights'].includes(section) && data && (
             <>
               <div className="metric-grid">
@@ -2348,6 +2512,93 @@ export default function Admin({ section }: { section: string }) {
               </p>
             </section>
           )}
+          {section === 'storage' && data && (
+            <>
+              {!!data.salonShortages?.length && (
+                <section className="panel salon-replenishment">
+                  <div className="panel-heading">
+                    <div>
+                      <h2>Reponer el salón</h2>
+                      <span>
+                        Hay mercadería en depósito para estas variantes con
+                        poco stock en el área de venta.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="salon-replenishment-list">
+                    {data.salonShortages.slice(0, 12).map((item: Row) => (
+                      <div key={`${item.id}-${item.locationId}`}>
+                        <span>
+                          <strong>{item.name}</strong> · {item.color} ·{' '}
+                          {item.size}
+                        </span>
+                        <span>
+                          Salón {item.salonStock} · {item.location}{' '}
+                          {item.warehouseStock}
+                        </span>
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            openForm('storage-transfer', {
+                              ...item,
+                              quantity: item.warehouseStock,
+                              toLocationId: 'loc-salon',
+                            })
+                          }
+                        >
+                          Mover {item.suggested} al salón
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+              <section className="storage-location-grid" aria-label="Ubicaciones">
+                {(data.locations ?? []).map((location: Row) => (
+                  <article className="storage-location-card" key={location.id}>
+                    <div>
+                      <span className={`location-kind ${location.kind}`}>
+                        {location.kind === 'store'
+                          ? 'Salón'
+                          : location.kind === 'warehouse'
+                            ? 'Depósito'
+                            : 'Otro'}
+                      </span>
+                      <strong>{location.name}</strong>
+                      <small>{location.detail || location.code}</small>
+                    </div>
+                    <div>
+                      <strong>{location.units}</strong>
+                      <span>{location.variants} variantes</span>
+                    </div>
+                  </article>
+                ))}
+              </section>
+              {!!data.transfers?.length && (
+                <section className="panel storage-recent">
+                  <div className="panel-heading">
+                    <h2>Transferencias recientes</h2>
+                    <span>Últimos movimientos entre ubicaciones</span>
+                  </div>
+                  <div className="storage-transfer-list">
+                    {data.transfers.slice(0, 8).map((transfer: Row) => (
+                      <div key={transfer.id}>
+                        <span>
+                          <strong>{transfer.name}</strong> · {transfer.color} ·{' '}
+                          {transfer.size}
+                        </span>
+                        <span>
+                          {transfer.source} → {transfer.destination}
+                        </span>
+                        <strong>{transfer.quantity} u.</strong>
+                        <small>{date(transfer.createdAt)}</small>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
+          )}
           {columns[section] && data && (
             <section className="panel table-panel">
               <div className="table-toolbar">
@@ -2523,6 +2774,14 @@ export default function Admin({ section }: { section: string }) {
                                 onClick={() => openForm('create', r)}
                               >
                                 Ajustar
+                              </Button>
+                            )}
+                            {section === 'storage' && (
+                              <Button
+                                variant="ghost"
+                                onClick={() => openForm('storage-transfer', r)}
+                              >
+                                Mover
                               </Button>
                             )}
                             {section === 'suppliers' &&
@@ -2724,8 +2983,7 @@ export default function Admin({ section }: { section: string }) {
             </section>
           )}
           <footer className="admin-footer">
-            FRAGUAN BUSINESS STUDIO{' '}
-            <span>Claridad para decidir. Tiempo para crecer.</span>
+            FRAGUAN <span>Sistema de gestión</span>
           </footer>
         </div>
       </main>
@@ -4377,6 +4635,51 @@ export default function Admin({ section }: { section: string }) {
                     type: 'number',
                   })}
                   {field('reason', 'Motivo del ajuste (mín. 5 caracteres)')}
+                  {field('notes', 'Observaciones', { optional: true })}
+                  {field('locationId', 'Ubicación específica', {
+                    choices: locationChoices,
+                    optional: true,
+                  })}
+                </>
+              )}
+              {modal === 'storage-location' && (
+                <>
+                  {field('name', 'Nombre de la ubicación')}
+                  {field('code', 'Código corto')}
+                  {field('kind', 'Tipo', {
+                    choices: [
+                      ['store', 'Salón / área de venta'],
+                      ['warehouse', 'Depósito'],
+                      ['other', 'Otro sector'],
+                    ],
+                    value: 'warehouse',
+                  })}
+                  {field('detail', 'Detalle: estante, módulo, caja o perchero', {
+                    optional: true,
+                  })}
+                </>
+              )}
+              {modal === 'storage-transfer' && selected && (
+                <>
+                  <div className="stock-adjust-summary">
+                    <strong>{selected.name}</strong>
+                    <span>
+                      {selected.color} · {selected.size} · SKU {selected.sku}
+                    </span>
+                    <span>
+                      Origen: {selected.location} · Disponible:{' '}
+                      {selected.quantity}
+                    </span>
+                  </div>
+                  {field('toLocationId', 'Mover hacia', {
+                    choices: locationChoices.filter(
+                      ([locationId]) => locationId !== selected.locationId,
+                    ),
+                  })}
+                  {field('quantity', 'Cantidad', {
+                    type: 'number',
+                    value: 1,
+                  })}
                   {field('notes', 'Observaciones', { optional: true })}
                 </>
               )}

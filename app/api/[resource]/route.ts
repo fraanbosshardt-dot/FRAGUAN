@@ -87,6 +87,7 @@ import {
   adminPinToken,
   verifyAdminPin,
 } from '@/lib/admin-pin';
+import { storageOverview, storageWrite } from '@/lib/storage';
 export const dynamic = 'force-dynamic';
 function promotionRule(value: unknown) {
   if (typeof value !== 'string' || !value) return {} as Record<string, any>;
@@ -134,6 +135,7 @@ export async function GET(
           'dashboard',
           'products',
           'stock',
+          'storage',
           'replenishment',
           'customers',
           'sales',
@@ -166,6 +168,7 @@ export async function GET(
     if (resource === 'global-search')
       return reply(await globalSearch(a, url.searchParams.get('q') ?? ''));
     if (resource === 'access') return reply(await listAccess(a));
+    if (resource === 'storage') return reply(await storageOverview(a));
     if (resource === 'communications')
       return reply(await communicationSuggestions(a));
     if (resource === 'supplier-history')
@@ -378,9 +381,10 @@ export async function GET(
       return reply(
         await rows(
           `SELECT m.id,m.createdAt,p.name,v.sku,v.color,v.size,m.quantity,m.before,m.after,
-                m.reason,m.notes,m.reference,u.name AS actor
+                m.reason,m.notes,m.reference,u.name AS actor,l.name AS location
            FROM stock_movements m JOIN variants v ON v.id=m.variantId
            JOIN products p ON p.id=v.productId JOIN users u ON u.id=m.actorId
+           LEFT JOIN stock_locations l ON l.id=m.locationId
           ORDER BY m.createdAt DESC LIMIT 1000`,
         ),
       );
@@ -541,6 +545,7 @@ export async function POST(
       return response;
     }
     const a = await actor();
+    if (resource === 'storage') return reply(await storageWrite(a, body), 201);
     if (resource === 'customers') {
       requirePermission(a, 'customers');
       const x = customerInput.parse(body),

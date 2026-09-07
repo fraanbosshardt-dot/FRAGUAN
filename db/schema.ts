@@ -223,12 +223,71 @@ export const stockMovements = table(
     after: integer().notNull(),
     reason: text().notNull(),
     notes: text().notNull().default(''),
+    locationId: text(),
     actorId: text().notNull(),
     reference: text().notNull().default(''),
     createdAt: text().notNull(),
   },
   (t) => [index('movements_variant_date').on(t.variantId, t.createdAt)],
 );
+export const stockLocations = table('stock_locations', {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  code: text().notNull().unique(),
+  kind: text().notNull(),
+  detail: text().notNull().default(''),
+  priority: integer().notNull().default(100),
+  active: integer().notNull().default(1),
+  createdAt: text().notNull(),
+});
+export const variantLocationStock = table(
+  'variant_location_stock',
+  {
+    variantId: text()
+      .notNull()
+      .references(() => variants.id),
+    locationId: text()
+      .notNull()
+      .references(() => stockLocations.id),
+    quantity: integer().notNull().default(0),
+    updatedAt: text().notNull(),
+  },
+  (t) => [uniqueIndex('variant_location_unique').on(t.variantId, t.locationId)],
+);
+export const stockLocationMovements = table('stock_location_movements', {
+  id: text().primaryKey(),
+  stockMovementId: text()
+    .notNull()
+    .references(() => stockMovements.id),
+  variantId: text()
+    .notNull()
+    .references(() => variants.id),
+  locationId: text()
+    .notNull()
+    .references(() => stockLocations.id),
+  quantity: integer().notNull(),
+  before: integer().notNull(),
+  after: integer().notNull(),
+  createdAt: text().notNull(),
+});
+export const stockTransfers = table('stock_transfers', {
+  id: text().primaryKey(),
+  variantId: text()
+    .notNull()
+    .references(() => variants.id),
+  fromLocationId: text()
+    .notNull()
+    .references(() => stockLocations.id),
+  toLocationId: text()
+    .notNull()
+    .references(() => stockLocations.id),
+  quantity: integer().notNull(),
+  actorId: text()
+    .notNull()
+    .references(() => users.id),
+  notes: text().notNull().default(''),
+  createdAt: text().notNull(),
+});
 export const cashSessions = table('cash_sessions', {
   id: text().primaryKey(),
   openedBy: text().notNull(),

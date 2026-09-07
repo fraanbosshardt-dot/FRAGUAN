@@ -396,6 +396,7 @@ try {
     'dashboard',
     'products',
     'stock',
+    'storage',
     'stock-movements',
     'replenishment',
     'suppliers',
@@ -435,6 +436,16 @@ try {
   for (const [resource, body] of [
     ['products', {}],
     ['stock', {}],
+    [
+      'storage',
+      {
+        action: 'transfer',
+        variantId: sellableVariant.id,
+        fromLocationId: 'loc-deposito',
+        toLocationId: 'loc-salon',
+        quantity: 1,
+      },
+    ],
     ['suppliers', {}],
     ['purchases', {}],
     ['purchase-transitions', {}],

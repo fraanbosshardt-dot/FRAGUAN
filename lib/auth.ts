@@ -59,6 +59,7 @@ const grants: Record<string, string[]> = {
     'dashboard',
     'products',
     'stock',
+    'storage',
     'replenishment',
     'suppliers',
     'purchases',
@@ -81,7 +82,14 @@ const grants: Record<string, string[]> = {
   ],
   VENDEDOR: ['pos', 'customers', 'own-sales'],
   CAJA: ['pos', 'customers', 'own-sales', 'cash'],
-  STOCK: ['stock', 'products', 'suppliers', 'purchases', 'inventory'],
+  STOCK: [
+    'stock',
+    'storage',
+    'products',
+    'suppliers',
+    'purchases',
+    'inventory',
+  ],
 };
 export function can(a: Actor, resource: string) {
   if (a.denied?.includes(resource)) return false;

@@ -667,3 +667,47 @@ test('manual stock adjustments preserve observations and exact before/after valu
     97,
   );
 });
+
+test('storage locations track transfers and sales consume the nearest stock first', async (t) => {
+  const f = fixture(t),
+    { storageWrite, storageOverview } = f.load('lib/storage.ts');
+  let overview = await storageWrite(actor, {
+    action: 'location',
+    name: 'Estante B3',
+    code: 'B3',
+    kind: 'warehouse',
+    detail: 'Depósito principal · módulo 3',
+  });
+  const shelf = overview.locations.find((location) => location.code === 'B3');
+  await storageWrite(actor, {
+    action: 'transfer',
+    variantId: 'variant',
+    fromLocationId: 'loc-unassigned',
+    toLocationId: shelf.id,
+    quantity: 10,
+    notes: 'Ubicación inicial',
+  });
+  await storageWrite(actor, {
+    action: 'transfer',
+    variantId: 'variant',
+    fromLocationId: shelf.id,
+    toLocationId: 'loc-salon',
+    quantity: 4,
+    notes: 'Reposición del salón',
+  });
+  await f.sell(5);
+  overview = await storageOverview(actor);
+  const quantities = new Map(
+    overview.inventory.map((row) => [row.locationId, row.quantity]),
+  );
+  assert.equal(quantities.get('loc-salon') ?? 0, 0);
+  assert.equal(quantities.get(shelf.id), 5);
+  assert.equal(quantities.get('loc-unassigned'), 90);
+  assert.equal(
+    [...quantities.values()].reduce((total, quantity) => total + quantity, 0),
+    95,
+  );
+  assert.equal(overview.transfers.length, 2);
+  assert.equal(overview.salonShortages[0].location, 'Estante B3');
+  assert.equal(overview.salonShortages[0].suggested, 5);
+});

@@ -103,6 +103,8 @@ export function fixture(t, { rate = 100, expiry = 30, timestamp } = {}) {
     INSERT INTO products(id,name,category) VALUES ('product','Camisa','Camisas');
     INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,stock,minimum)
       VALUES ('variant','product','TEST','TEST','Azul','L',10000,4000,100,1);
+    INSERT INTO variant_location_stock(variantId,locationId,quantity,updatedAt)
+      VALUES ('variant','loc-unassigned',100,'2026-01-01T12:00:00Z');
     INSERT INTO payment_methods(id,name) VALUES ('cash','Efectivo');
     INSERT INTO cash_sessions(id,openedBy,opening,openedAt) VALUES ('session','admin',0,'2026-01-01T12:00:00Z');
   `);

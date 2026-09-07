@@ -493,11 +493,11 @@ export default function Workspace() {
         <main className="catalog">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">EL BUEN ESTILO EMPIEZA ACÁ</p>
+              <p className="eyebrow">PUNTO DE VENTA</p>
               <h1>
                 Nueva venta<span>.</span>
               </h1>
-              <p>Encontrá la prenda. Elegí la variante. Listo.</p>
+              <p>Buscá por nombre o SKU, o escaneá el código de barras.</p>
             </div>
             <Button variant="outline" onClick={showRecent}>
               <Clock3 /> Ventas recientes
@@ -547,8 +547,8 @@ export default function Workspace() {
             ))}
           </div>
           <div className="catalog-caption">
-            <span>{filtered.length} prendas · Selección FRAGUAN</span>
-            <span>COLECCIÓN ESENCIAL / 2026</span>
+            <span>{filtered.length} productos disponibles</span>
+            <span>Elegí un producto para seleccionar color y talle</span>
           </div>
           <div className="product-grid">
             {filtered.map((p) => (
@@ -690,12 +690,8 @@ export default function Workspace() {
               <div className="bag-circle">
                 <ShoppingBag size={34} strokeWidth={1.2} />
               </div>
-              <h3>Todo empieza con una prenda</h3>
-              <p>
-                Buscá o escaneá un producto
-                <br />
-                para agregarlo a esta venta.
-              </p>
+              <h3>La venta está vacía</h3>
+              <p>Buscá o escaneá un producto para agregarlo.</p>
             </div>
           )}
           <div className="cart-bottom">
@@ -718,7 +714,7 @@ export default function Workspace() {
             >
               Cobrar <ArrowUpRight size={20} />
             </Button>
-            <p className="quiet">Una buena experiencia, de principio a fin.</p>
+            <p className="quiet">F8 para cobrar</p>
           </div>
         </aside>
       </div>
