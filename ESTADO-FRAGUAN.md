@@ -13,7 +13,7 @@ productos se mantiene; el logo es un activo de marca.
 
 ## Estado general
 
-Implementación local con datos de demostración. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
+Implementación local con datos de demostración. La portada `/` muestra temporalmente “Tienda próximamente disponible”; el ecommerce completo continúa accesible en `/tienda` para desarrollo. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
 
 ## Funciones implementadas
 
