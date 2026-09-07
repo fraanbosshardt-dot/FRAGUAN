@@ -14,6 +14,8 @@ export default function Storefront() {
   const [section, setSection] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterState, setNewsletterState] = useState('');
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     setSection(params.get('section') || '');
@@ -47,6 +49,22 @@ export default function Storefront() {
     );
     return () => clearTimeout(timer);
   }, [query, section]);
+  async function subscribe(event: React.SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNewsletterState('Enviando…');
+    try {
+      await storeApi('store-newsletter', {
+        method: 'POST',
+        body: JSON.stringify({ email: newsletterEmail, source: 'storefront' }),
+      });
+      setNewsletterEmail('');
+      setNewsletterState(
+        'Listo. Te avisamos cuando haya algo que valga la pena.',
+      );
+    } catch (cause: any) {
+      setNewsletterState(cause.message || 'No pudimos suscribirte.');
+    }
+  }
   const featured = useMemo(
     () => products.filter((product) => product.featured).slice(0, 6),
     [products],
@@ -183,6 +201,24 @@ export default function Storefront() {
           Buenos Aires · Argentina
           <br />© 2026 FRAGUAN
         </p>
+        <div className="store-newsletter">
+          <span>NEWSLETTER FRAGUAN</span>
+          <strong>Novedades, drops y beneficios.</strong>
+          <form onSubmit={subscribe}>
+            <input
+              type="email"
+              value={newsletterEmail}
+              onChange={(event) => setNewsletterEmail(event.target.value)}
+              placeholder="Tu email"
+              required
+              aria-label="Email para newsletter"
+            />
+            <button type="submit">
+              Unirme <ArrowRight />
+            </button>
+          </form>
+          {newsletterState && <small>{newsletterState}</small>}
+        </div>
       </footer>
     </div>
   );

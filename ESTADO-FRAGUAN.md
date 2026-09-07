@@ -32,7 +32,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 | Flujo de fondos         | Caja, bancos registrados, cobros y obligaciones con proyecciones de 7/30/60/90 días.                                                                                                                                                                                                                                                 |
 | Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales.                                                                                                                                                             |
 | Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
-| Comunicación            | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático.                                                                                                                                                                                                                                               |
+| Email y newsletter      | Suscripción pública, bajas, campañas para suscriptores activos y notificaciones transaccionales de pedidos con Resend. Sin WhatsApp.                                                                                                                                                                                                 |
 | Administración          | Acceso protegido por PIN de seis dígitos y sesión HttpOnly de ocho horas. Menú segmentado por áreas, roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                   |
 | Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4.                                                                                                                                                                                               |
 | Recuperación            | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md.                                                                                                                                                              |
@@ -57,7 +57,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 ## Verificación
 
 - 25 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, movimientos de stock, ubicaciones, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
-- 10 escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, stock y permisos.
+- 11 escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, newsletter, stock y permisos.
 - tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.
 - tests-reporting.mjs: totales netos, filtros, productos sin ventas y permisos.
 - tests-database-recovery.mjs: instalación limpia, repetición, detección de alteraciones, copia, restauración y conservación de datos.
@@ -73,7 +73,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
 4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0017_online_sale_price_guard.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
-6. Cargar credenciales productivas de Mercado Pago y MiCorreo, configurar el webhook público y probar cobros/envíos reales. Conectar factura fiscal, banco directo y WhatsApp/email si se decide integrarlos.
+6. Cargar credenciales productivas de Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos y probar cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
 
 ## Continuidad
 

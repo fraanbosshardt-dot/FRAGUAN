@@ -78,6 +78,7 @@ const grants: Record<string, string[]> = {
     'banking',
     'club-rewards',
     'communications',
+    'newsletter',
     'seller-commissions',
     'online-orders',
     'online-catalog',

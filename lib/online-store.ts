@@ -14,6 +14,7 @@ import {
   calculateLoyaltyLevel,
   readCustomerIntelligenceConfig,
 } from './customer-intelligence';
+import { sendOrderEmails } from './email';
 
 const SESSION_COOKIE = 'fraguan_customer';
 const encoder = new TextEncoder();
@@ -806,6 +807,7 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
     input.paymentMethod === 'card'
       ? await createMercadoPagoPreference(detail)
       : null;
+  await sendOrderEmails(orderId, 'created').catch(() => undefined);
   return { ...detail, accessToken: input.accessToken, paymentUrl };
 }
 
@@ -1164,6 +1166,7 @@ export async function confirmOnlinePayment(
       now(),
     ).run();
   });
+  await sendOrderEmails(orderId, 'paid').catch(() => undefined);
   return onlineOrderDetail(orderId);
 }
 
@@ -1272,6 +1275,7 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
       ),
     ]);
     await importCorreoOrder(input.orderId, actor.id).catch(() => undefined);
+    await sendOrderEmails(input.orderId, 'preparing').catch(() => undefined);
   } else if (input.action === 'ship') {
     if (order.paymentStatus !== 'paid')
       throw new AppError(409, 'Confirmá el pago antes de despachar.');
@@ -1292,6 +1296,7 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
         timestamp,
       ),
     ]);
+    await sendOrderEmails(input.orderId, 'shipped').catch(() => undefined);
   } else {
     if (order.paymentStatus === 'paid')
       throw new AppError(

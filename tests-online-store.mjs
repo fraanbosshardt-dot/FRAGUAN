@@ -230,3 +230,25 @@ test('signed-provider callback reconciles a transfer once by reference and amoun
     1,
   );
 });
+
+test('newsletter subscription is idempotent and supports unsubscribe', async (t) => {
+  const f = fixture(t);
+  const email = f.load('lib/email.ts');
+  await email.subscribeNewsletter({ email: 'club@example.com', name: 'Club' });
+  await email.subscribeNewsletter({
+    email: 'CLUB@example.com',
+    name: 'Club actualizado',
+  });
+  const subscriber = f.database
+    .prepare('SELECT * FROM newsletter_subscribers WHERE email=?')
+    .get('club@example.com');
+  assert.equal(subscriber.status, 'active');
+  assert.equal(subscriber.name, 'Club actualizado');
+  await email.unsubscribeNewsletter(subscriber.unsubscribeToken);
+  assert.equal(
+    f.database
+      .prepare('SELECT status FROM newsletter_subscribers WHERE id=?')
+      .get(subscriber.id).status,
+    'unsubscribed',
+  );
+});

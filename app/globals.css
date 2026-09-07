@@ -3014,6 +3014,41 @@ textarea {
   font-size: 13px;
   line-height: 1.6;
 }
+.store-newsletter {
+  display: grid;
+  gap: 7px;
+  max-width: 360px;
+  margin-left: auto;
+}
+.store-newsletter > span,
+.store-newsletter > small {
+  color: #4c4a41;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.store-newsletter > strong {
+  font-size: 18px;
+}
+.store-newsletter form {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.store-newsletter input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid rgba(17, 17, 17, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.38);
+  padding: 11px 12px;
+}
+.store-newsletter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
 .store-cart-sheet {
   width: min(100%, 480px) !important;
   max-width: none !important;
@@ -3230,6 +3265,10 @@ textarea {
   }
   .store-footer p {
     text-align: left;
+  }
+  .store-newsletter {
+    margin-left: 0;
+    max-width: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4262,6 +4301,35 @@ textarea {
 .online-price-editor > small {
   color: var(--muted-foreground);
   line-height: 1.45;
+}
+.newsletter-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.newsletter-subscriber-list {
+  display: grid;
+  gap: 0;
+}
+.newsletter-subscriber-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.newsletter-subscriber-list > div > span:first-child {
+  display: grid;
+  gap: 3px;
+}
+.newsletter-subscriber-list small {
+  color: var(--muted-foreground);
+}
+@media (max-width: 800px) {
+  .newsletter-admin-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .admin-check-line {
   display: flex !important;

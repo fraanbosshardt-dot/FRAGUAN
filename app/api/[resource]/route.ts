@@ -102,6 +102,12 @@ import {
   storeCatalog,
   storeProduct,
 } from '@/lib/online-store';
+import {
+  newsletterOverview,
+  sendNewsletterCampaign,
+  subscribeNewsletter,
+  unsubscribeNewsletter,
+} from '@/lib/email';
 export const dynamic = 'force-dynamic';
 function promotionRule(value: unknown) {
   if (typeof value !== 'string' || !value) return {} as Record<string, any>;
@@ -138,6 +144,10 @@ export async function GET(
           url.searchParams.get('id') ?? '',
           req.headers.get('x-order-token') ?? '',
         ),
+      );
+    if (resource === 'store-newsletter' && url.searchParams.has('unsubscribe'))
+      return reply(
+        await unsubscribeNewsletter(url.searchParams.get('unsubscribe') ?? ''),
       );
     if (resource === 'session') {
       const u = await identity();
@@ -192,6 +202,7 @@ export async function GET(
           'banking',
           'club-rewards',
           'communications',
+          'newsletter',
           'seller-commissions',
           'online-orders',
           'online-catalog',
@@ -206,6 +217,7 @@ export async function GET(
     if (resource === 'online-orders')
       return reply(await listOnlineOrders(a, url.searchParams.get('id') ?? ''));
     if (resource === 'online-catalog') return reply(await listOnlineCatalog(a));
+    if (resource === 'newsletter') return reply(await newsletterOverview(a));
     if (resource === 'communications')
       return reply(await communicationSuggestions(a));
     if (resource === 'supplier-history')
@@ -568,6 +580,8 @@ export async function POST(
       return reply(await createOnlineOrder(req, body), 201);
     if (resource === 'store-transfer')
       return reply(await reportTransfer(req, body));
+    if (resource === 'store-newsletter')
+      return reply(await subscribeNewsletter(body), 201);
     if (resource === 'store-shipping') {
       const input = z
         .object({
@@ -610,6 +624,8 @@ export async function POST(
       return reply(await onlineOrderWrite(a, body));
     if (resource === 'online-catalog')
       return reply(await onlineCatalogWrite(a, body));
+    if (resource === 'newsletter')
+      return reply(await sendNewsletterCampaign(a, body));
     if (resource === 'customers') {
       requirePermission(a, 'customers');
       const x = customerInput.parse(body),

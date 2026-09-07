@@ -411,6 +411,46 @@ export const onlinePaymentEvents = table('online_payment_events', {
   payload: text().notNull().default(''),
   createdAt: text().notNull(),
 });
+
+export const newsletterSubscribers = table('newsletter_subscribers', {
+  id: text().primaryKey(),
+  email: text().notNull().unique(),
+  name: text().notNull().default(''),
+  status: text().notNull().default('active'),
+  source: text().notNull().default('storefront'),
+  unsubscribeToken: text().notNull().unique(),
+  createdAt: text().notNull(),
+  updatedAt: text().notNull(),
+  unsubscribedAt: text(),
+});
+export const newsletterCampaigns = table('newsletter_campaigns', {
+  id: text().primaryKey(),
+  subject: text().notNull(),
+  preheader: text().notNull().default(''),
+  content: text().notNull(),
+  ctaLabel: text().notNull().default(''),
+  ctaUrl: text().notNull().default(''),
+  status: text().notNull().default('draft'),
+  recipientCount: integer().notNull().default(0),
+  sentCount: integer().notNull().default(0),
+  failedCount: integer().notNull().default(0),
+  createdBy: text()
+    .notNull()
+    .references(() => users.id),
+  createdAt: text().notNull(),
+  sentAt: text(),
+});
+export const emailDeliveries = table('email_deliveries', {
+  id: text().primaryKey(),
+  kind: text().notNull(),
+  recipient: text().notNull(),
+  orderId: text().references(() => onlineOrders.id),
+  campaignId: text().references(() => newsletterCampaigns.id),
+  providerId: text().notNull().default(''),
+  status: text().notNull(),
+  error: text().notNull().default(''),
+  createdAt: text().notNull(),
+});
 export const cashSessions = table('cash_sessions', {
   id: text().primaryKey(),
   openedBy: text().notNull(),

@@ -105,6 +105,7 @@ const navigationGroups: readonly NavigationGroup[] = [
       ['customer-intelligence', 'Segmentos y fidelización', Sparkles],
       ['club-rewards', 'Canjes del Club', Tag],
       ['communications', 'Comunicaciones', Users],
+      ['newsletter', 'Email y newsletter', Sparkles],
     ],
   },
   {
@@ -332,6 +333,7 @@ const descriptions: Record<string, string> = {
   customers: 'Datos, compras, puntos y beneficios de cada cliente.',
   'customer-intelligence':
     'Segmentos, niveles e historial para construir relaciones duraderas.',
+  newsletter: 'Suscriptores, campañas y notificaciones de pedidos por email.',
   suppliers: 'Datos de contacto, condiciones e historial de proveedores.',
   purchases: 'Creá órdenes y registrá recepciones parciales o completas.',
   cash: 'Apertura, movimientos y cierre en un solo lugar.',
@@ -851,7 +853,6 @@ export default function Admin({ section }: { section: string }) {
           name: form.name,
           surname: form.surname,
           phone: form.phone,
-          whatsapp: form.whatsapp || '',
           email: form.email || '',
           birthday: form.birthday || null,
           locality: form.locality || '',
@@ -867,7 +868,6 @@ export default function Admin({ section }: { section: string }) {
           company: form.company || '',
           contact: form.contact || '',
           phone: form.phone || '',
-          whatsapp: form.whatsapp || '',
           email: form.email || '',
           brands: form.brands || '',
           terms: form.terms || '',
@@ -1020,6 +1020,16 @@ export default function Admin({ section }: { section: string }) {
         });
         return;
       }
+      if (modal === 'newsletter-campaign') {
+        await mutate('newsletter', {
+          subject: form.subject,
+          preheader: form.preheader || '',
+          content: form.content,
+          ctaLabel: form.ctaLabel || '',
+          ctaUrl: form.ctaUrl || '',
+        });
+        return;
+      }
       if (modal === 'edit-online-product') {
         await mutate('online-catalog', {
           productId: selected?.id,
@@ -1075,7 +1085,6 @@ export default function Admin({ section }: { section: string }) {
           company: form.company || '',
           contact: form.contact || '',
           phone: form.phone || '',
-          whatsapp: form.whatsapp || '',
           email: form.email || '',
           brands: form.brands || '',
           terms: form.terms || '',
@@ -1205,6 +1214,7 @@ export default function Admin({ section }: { section: string }) {
       'storage-transfer': 'Mover mercadería',
       'edit-online-product': 'Publicación online',
       'online-order': `Pedido #${selected?.orderNumber ?? ''}`,
+      'newsletter-campaign': 'Nueva campaña de email',
     };
     return modal === 'create'
       ? `Agregar · ${title}`
@@ -1414,6 +1424,11 @@ export default function Admin({ section }: { section: string }) {
                   <SlidersHorizontal size={15} /> Configurar Club
                 </Button>
               )}
+              {section === 'newsletter' && (
+                <Button onClick={() => openForm('newsletter-campaign')}>
+                  <Plus size={16} /> Nueva campaña
+                </Button>
+              )}
               {![
                 'dashboard',
                 'reports',
@@ -1430,6 +1445,7 @@ export default function Admin({ section }: { section: string }) {
                 'storage',
                 'online-orders',
                 'online-catalog',
+                'newsletter',
               ].includes(section) && (
                 <Button onClick={() => openForm()}>
                   <Plus size={16} />{' '}
@@ -2702,6 +2718,61 @@ export default function Admin({ section }: { section: string }) {
               )}
             </>
           )}
+          {section === 'newsletter' && data && (
+            <div className="newsletter-admin-grid">
+              <section className="panel">
+                <div className="panel-heading">
+                  <h2>Suscriptores activos</h2>
+                  <span>
+                    {data.configured
+                      ? 'Resend configurado'
+                      : 'Falta configurar Resend'}
+                  </span>
+                </div>
+                <div className="newsletter-subscriber-list">
+                  {(data.subscribers ?? []).map((subscriber: Row) => (
+                    <div key={subscriber.id}>
+                      <span>
+                        <strong>{subscriber.name || 'Sin nombre'}</strong>
+                        <small>{subscriber.email}</small>
+                      </span>
+                      <span className={'status ' + subscriber.status}>
+                        {subscriber.status === 'active' ? 'Activo' : 'Baja'}
+                      </span>
+                    </div>
+                  ))}
+                  {!data.subscribers?.length && (
+                    <p className="quiet">Todavía no hay suscriptores.</p>
+                  )}
+                </div>
+              </section>
+              <section className="panel">
+                <div className="panel-heading">
+                  <h2>Campañas enviadas</h2>
+                  <span>Historial Resend</span>
+                </div>
+                <div className="newsletter-subscriber-list">
+                  {(data.campaigns ?? []).map((campaign: Row) => (
+                    <div key={campaign.id}>
+                      <span>
+                        <strong>{campaign.subject}</strong>
+                        <small>
+                          {campaign.sentCount}/{campaign.recipientCount}{' '}
+                          enviados
+                        </small>
+                      </span>
+                      <span className={'status ' + campaign.status}>
+                        {campaign.status}
+                      </span>
+                    </div>
+                  ))}
+                  {!data.campaigns?.length && (
+                    <p className="quiet">Las campañas aparecerán acá.</p>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
           {columns[section] && data && (
             <section className="panel table-panel">
               <div className="table-toolbar">
@@ -3789,8 +3860,8 @@ export default function Admin({ section }: { section: string }) {
               </div>
               <div className="profile-contact">
                 <span>
-                  <strong>WhatsApp</strong>
-                  {selected.metrics?.whatsapp || 'Sin cargar'}
+                  <strong>Email</strong>
+                  {selected.metrics?.email || 'Sin cargar'}
                 </span>
                 <span>
                   <strong>Localidad</strong>
@@ -4182,6 +4253,32 @@ export default function Admin({ section }: { section: string }) {
                   </label>
                 </>
               )}
+              {modal === 'newsletter-campaign' && (
+                <>
+                  {field('subject', 'Asunto')}
+                  {field('preheader', 'Texto de vista previa', {
+                    optional: true,
+                  })}
+                  <label>
+                    Contenido
+                    <textarea
+                      rows={9}
+                      value={form.content ?? ''}
+                      onChange={(event) =>
+                        setForm({ ...form, content: event.target.value })
+                      }
+                      placeholder="Escribí un mensaje breve. Cada salto de línea se convierte en un párrafo."
+                      required
+                    />
+                  </label>
+                  {field('ctaLabel', 'Texto del botón', { optional: true })}
+                  {field('ctaUrl', 'Enlace del botón', { optional: true })}
+                  <p className="quiet">
+                    Se envía únicamente a suscriptores activos. Cada email
+                    incluye un enlace para darse de baja.
+                  </p>
+                </>
+              )}
               {modal === 'edit-variant' && (
                 <>
                   <p>
@@ -4214,7 +4311,6 @@ export default function Admin({ section }: { section: string }) {
                   {field('name', 'Nombre')}
                   {field('surname', 'Apellido')}
                   {field('phone', 'Teléfono')}
-                  {field('whatsapp', 'WhatsApp', { optional: true })}
                   {field('email', 'Email', { type: 'email', optional: true })}
                   {field('birthday', 'Cumpleaños', {
                     type: 'date',
@@ -4233,7 +4329,6 @@ export default function Admin({ section }: { section: string }) {
                   })}
                   {field('contact', 'Persona de contacto', { optional: true })}
                   {field('phone', 'Teléfono', { optional: true })}
-                  {field('whatsapp', 'WhatsApp', { optional: true })}
                   {field('email', 'Email', { type: 'email', optional: true })}
                   {field('brands', 'Marcas', { optional: true })}
                   {field('terms', 'Condiciones comerciales', {
@@ -4585,7 +4680,6 @@ export default function Admin({ section }: { section: string }) {
                         optional: true,
                       })}
                       {field('phone', 'Teléfono', { optional: true })}
-                      {field('whatsapp', 'WhatsApp', { optional: true })}
                       {field('email', 'Email', {
                         type: 'email',
                         optional: true,

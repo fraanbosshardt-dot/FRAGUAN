@@ -3,6 +3,9 @@ declare namespace Cloudflare {
     ONLINE_PAYMENT_WEBHOOK_SECRET?: string;
     MERCADO_PAGO_ACCESS_TOKEN?: string;
     MERCADO_PAGO_WEBHOOK_SECRET?: string;
+    RESEND_API_KEY?: string;
+    RESEND_FROM?: string;
+    RESEND_ORDER_TO?: string;
     CORREO_API_URL?: string;
     CORREO_API_USER?: string;
     CORREO_API_PASSWORD?: string;

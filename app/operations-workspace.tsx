@@ -579,15 +579,15 @@ export default function Operations({ section }: { section: string }) {
         <>
           <p>
             Sugerencias de hoy: cumpleaños y clientes sin compras hace 90 días.
-            Revisá cada mensaje antes de enviarlo. El envío automático se
-            conectará junto con WhatsApp o email.
+            Revisá cada mensaje antes de enviarlo. El envío automático se se
+            gestionará por email desde Resend.
           </p>
           {table(
             'Mensajes preparados',
             data.drafts,
             [
               ['customer', 'Cliente'],
-              ['phone', 'Contacto'],
+              ['email', 'Email'],
               ['kind', 'Motivo'],
               ['message', 'Mensaje'],
             ],
