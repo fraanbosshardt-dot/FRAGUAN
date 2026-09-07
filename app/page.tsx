@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import Storefront from './storefront';
 export default function Home() {
-  redirect('/pos');
+  return <Storefront />;
 }

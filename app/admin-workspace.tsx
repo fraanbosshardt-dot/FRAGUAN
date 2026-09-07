@@ -24,6 +24,8 @@ import {
   Check,
   Printer,
   TrendingUp,
+  Globe2,
+  PackageCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -86,6 +88,14 @@ const navigationGroups: readonly NavigationGroup[] = [
     items: [['dashboard', 'Vista general', LayoutDashboard]],
   },
   {
+    label: 'Tienda online',
+    primaryCount: 2,
+    items: [
+      ['online-orders', 'Pedidos online', PackageCheck],
+      ['online-catalog', 'Catálogo online', Globe2],
+    ],
+  },
+  {
     label: 'Ventas y clientes',
     primaryCount: 3,
     items: [
@@ -145,6 +155,26 @@ const navigationGroups: readonly NavigationGroup[] = [
 ];
 const navigation = navigationGroups.flatMap((group) => group.items);
 const columns: Record<string, [string, string, string?][]> = {
+  'online-orders': [
+    ['orderNumber', 'Pedido'],
+    ['createdAt', 'Fecha', 'date'],
+    ['customerName', 'Cliente'],
+    ['paymentStatus', 'Pago'],
+    ['fulfillmentStatus', 'Preparación'],
+    ['paymentMethod', 'Medio'],
+    ['transferReference', 'Referencia'],
+    ['total', 'Total', 'money'],
+  ],
+  'online-catalog': [
+    ['name', 'Producto'],
+    ['section', 'Sección'],
+    ['price', 'Desde', 'money'],
+    ['stock', 'Stock'],
+    ['variants', 'Variantes'],
+    ['featured', 'Destacado'],
+    ['published', 'Publicado'],
+    ['slug', 'Enlace'],
+  ],
   products: [
     ['name', 'Producto'],
     ['internalCode', 'Código'],
@@ -286,6 +316,10 @@ const columns: Record<string, [string, string, string?][]> = {
 };
 const descriptions: Record<string, string> = {
   dashboard: 'Resumen del negocio y accesos a las tareas más frecuentes.',
+  'online-orders':
+    'Pagos, referencias, preparación, envíos y seguimiento en una sola cola.',
+  'online-catalog':
+    'Elegí qué productos se publican y completá su información de venta online.',
   products:
     'Productos, variantes, precios y existencias reunidos en un solo lugar.',
   stock: 'Consultá y ajustá las unidades de cada variante.',
@@ -322,12 +356,18 @@ const labels: Record<string, string> = {
   received: 'Recibida',
   pending: 'Pendiente',
   paid: 'Pagada',
+  reported: 'Transferencia informada',
+  awaiting_payment: 'Esperando pago',
+  preparing: 'Preparando',
+  shipped: 'Despachado',
+  unfulfilled: 'Pendiente',
+  transfer: 'Transferencia',
+  card: 'Tarjeta',
   not_registered: 'Sin obligación registrada',
   approved: 'Aprobado',
   cash: 'Efectivo',
   debit: 'Débito',
   credit: 'Crédito',
-  transfer: 'Transferencia',
   percentage: 'Porcentaje',
   fixed_amount: 'Monto fijo',
   two_for_one: '2×1',
@@ -414,7 +454,7 @@ export default function Admin({ section }: { section: string }) {
                 toLocationId: row.toLocationId || '',
                 quantity: row.suggested || 1,
               }
-          : {},
+            : {},
     );
     setSelected(row);
     setError('');
@@ -494,6 +534,15 @@ export default function Admin({ section }: { section: string }) {
       setError(e.message);
     }
   }
+  async function onlineOrderDetails(orderId: string) {
+    try {
+      setSelected(await api('online-orders?id=' + encodeURIComponent(orderId)));
+      setForm({});
+      setModal('online-order');
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
   async function customerProfile(customerId: string) {
     setError('');
     try {
@@ -558,7 +607,7 @@ export default function Admin({ section }: { section: string }) {
       ? (data?.movements ?? [])
       : section === 'storage'
         ? (data?.inventory ?? [])
-      : [];
+        : [];
   const filtered = list.filter((r) =>
     Object.values(r).join(' ').toLowerCase().includes(search.toLowerCase()),
   );
@@ -955,6 +1004,22 @@ export default function Admin({ section }: { section: string }) {
         });
         return;
       }
+      if (modal === 'edit-online-product') {
+        await mutate('online-catalog', {
+          productId: selected?.id,
+          slug: form.slug,
+          shortDescription: form.shortDescription,
+          description: form.description,
+          material: form.material || '',
+          care: form.care || '',
+          fit: form.fit,
+          section: form.section,
+          featured: Boolean(form.featured),
+          published: Boolean(form.published),
+          sortOrder: Number(form.sortOrder || 0),
+        });
+        return;
+      }
       let payload: Row = {};
       if (section === 'products')
         payload = {
@@ -1121,6 +1186,8 @@ export default function Admin({ section }: { section: string }) {
       'stock-adjust': 'Ajustar stock',
       'storage-location': 'Nueva ubicación',
       'storage-transfer': 'Mover mercadería',
+      'edit-online-product': 'Publicación online',
+      'online-order': `Pedido #${selected?.orderNumber ?? ''}`,
     };
     return modal === 'create'
       ? `Agregar · ${title}`
@@ -1161,6 +1228,10 @@ export default function Admin({ section }: { section: string }) {
         'Creá un sector, estante, módulo, perchero o caja para ubicar mercadería.',
       'storage-transfer':
         'Mové unidades sin alterar el stock total. La transferencia quedará registrada.',
+      'edit-online-product':
+        'La tienda usa el mismo precio, variantes y stock del sistema.',
+      'online-order':
+        'Pago, prendas, preparación y envío reunidos en un solo lugar.',
     };
     return (
       descriptions[modal] ?? 'Los cambios quedarán registrados con tu usuario.'
@@ -1340,6 +1411,8 @@ export default function Admin({ section }: { section: string }) {
                 'financial-calendar',
                 'stock-movements',
                 'storage',
+                'online-orders',
+                'online-catalog',
               ].includes(section) && (
                 <Button onClick={() => openForm()}>
                   <Plus size={16} />{' '}
@@ -1381,6 +1454,16 @@ export default function Admin({ section }: { section: string }) {
                   </span>
                   <ArrowUpRight size={16} />
                 </a>
+                {session?.permissions?.includes('online-orders') && (
+                  <a href="/admin/online-orders">
+                    <PackageCheck size={20} />
+                    <span>
+                      <strong>Pedidos online</strong>
+                      <small>Pago, preparación y envío</small>
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </a>
+                )}
                 {session?.permissions?.includes('products') && (
                   <a href="/admin/products">
                     <Package size={20} />
@@ -2520,8 +2603,8 @@ export default function Admin({ section }: { section: string }) {
                     <div>
                       <h2>Reponer el salón</h2>
                       <span>
-                        Hay mercadería en depósito para estas variantes con
-                        poco stock en el área de venta.
+                        Hay mercadería en depósito para estas variantes con poco
+                        stock en el área de venta.
                       </span>
                     </div>
                   </div>
@@ -2553,7 +2636,10 @@ export default function Admin({ section }: { section: string }) {
                   </div>
                 </section>
               )}
-              <section className="storage-location-grid" aria-label="Ubicaciones">
+              <section
+                className="storage-location-grid"
+                aria-label="Ubicaciones"
+              >
                 {(data.locations ?? []).map((location: Row) => (
                   <article className="storage-location-card" key={location.id}>
                     <div>
@@ -2641,7 +2727,9 @@ export default function Admin({ section }: { section: string }) {
                                 <span className={'status ' + r[key]}>
                                   {labels[r[key]] ?? r[key]}
                                 </span>
-                              ) : key === 'active' ? (
+                              ) : ['active', 'featured', 'published'].includes(
+                                  key,
+                                ) ? (
                                 r[key] ? (
                                   'Sí'
                                 ) : (
@@ -2783,6 +2871,35 @@ export default function Admin({ section }: { section: string }) {
                               >
                                 Mover
                               </Button>
+                            )}
+                            {section === 'online-orders' && (
+                              <Button
+                                variant="ghost"
+                                onClick={() => onlineOrderDetails(String(r.id))}
+                              >
+                                Gestionar
+                              </Button>
+                            )}
+                            {section === 'online-catalog' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() =>
+                                    openForm('edit-online-product', r)
+                                  }
+                                >
+                                  Editar publicación
+                                </Button>
+                                {r.published ? (
+                                  <a
+                                    href={'/producto/' + r.slug}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    Ver tienda
+                                  </a>
+                                ) : null}
+                              </>
                             )}
                             {section === 'suppliers' &&
                               session?.permissions?.includes('reports') && (
@@ -3004,7 +3121,124 @@ export default function Admin({ section }: { section: string }) {
               {error}
             </p>
           )}
-          {modal === 'labels' && selected ? (
+          {modal === 'online-order' && selected ? (
+            <div className="online-order-detail">
+              <div className="online-order-status">
+                <span className={'status ' + selected.paymentStatus}>
+                  {labels[selected.paymentStatus] ?? selected.paymentStatus}
+                </span>
+                <span className={'status ' + selected.fulfillmentStatus}>
+                  {labels[selected.fulfillmentStatus] ??
+                    selected.fulfillmentStatus}
+                </span>
+              </div>
+              <div className="stock-adjust-summary">
+                <strong>{selected.customerName}</strong>
+                <span>
+                  {selected.email} · {selected.phone}
+                </span>
+                <span>
+                  {selected.shippingMethod === 'pickup'
+                    ? 'Retiro en el local'
+                    : `${selected.address}, ${selected.city}, ${selected.province} · CP ${selected.postalCode}`}
+                </span>
+              </div>
+              <div className="online-order-reference">
+                <span>Referencia de transferencia</span>
+                <strong>{selected.transferReference}</strong>
+                <small>
+                  Operación informada: {selected.paymentReference || '—'}
+                </small>
+              </div>
+              <div className="online-picking-list">
+                <h3>Prendas a preparar</h3>
+                {selected.items?.map((item: Row, index: number) => (
+                  <div key={`${item.sku}-${index}`}>
+                    <span>
+                      <strong>{item.productName}</strong>
+                      <small>
+                        {item.color} · Talle {item.size} · SKU {item.sku}
+                      </small>
+                    </span>
+                    <span>{item.location}</span>
+                    <b>{item.quantity} u.</b>
+                  </div>
+                ))}
+              </div>
+              <div className="total-line">
+                <span>Total del pedido</span>
+                <strong>{money(selected.total)}</strong>
+              </div>
+              {['pending', 'reported'].includes(selected.paymentStatus) && (
+                <div className="online-order-action">
+                  {field('paymentReference', 'Referencia bancaria confirmada', {
+                    value:
+                      selected.paymentReference || selected.transferReference,
+                  })}
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      mutate('online-orders', {
+                        action: 'mark-paid',
+                        orderId: selected.id,
+                        paymentReference:
+                          form.paymentReference ||
+                          selected.paymentReference ||
+                          selected.transferReference,
+                      })
+                    }
+                  >
+                    <Check /> Confirmar pago
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() =>
+                      mutate('online-orders', {
+                        action: 'cancel',
+                        orderId: selected.id,
+                        reason: 'Cancelado desde administración',
+                      })
+                    }
+                  >
+                    Cancelar pedido
+                  </Button>
+                </div>
+              )}
+              {selected.paymentStatus === 'paid' &&
+                selected.fulfillmentStatus === 'unfulfilled' && (
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      mutate('online-orders', {
+                        action: 'prepare',
+                        orderId: selected.id,
+                      })
+                    }
+                  >
+                    <PackageCheck /> Empezar preparación
+                  </Button>
+                )}
+              {selected.paymentStatus === 'paid' &&
+                selected.fulfillmentStatus === 'preparing' && (
+                  <div className="online-order-action">
+                    {field('trackingNumber', 'Seguimiento de Correo Argentino')}
+                    <Button
+                      disabled={busy}
+                      onClick={() =>
+                        mutate('online-orders', {
+                          action: 'ship',
+                          orderId: selected.id,
+                          trackingNumber: form.trackingNumber,
+                        })
+                      }
+                    >
+                      Marcar despachado
+                    </Button>
+                  </div>
+                )}
+            </div>
+          ) : modal === 'labels' && selected ? (
             <div className="quick-form">
               <div className="no-print">
                 {field('labelCount', 'Cantidad de etiquetas', {
@@ -3860,6 +4094,53 @@ export default function Admin({ section }: { section: string }) {
                   })}
                 </>
               )}
+              {modal === 'edit-online-product' && selected && (
+                <>
+                  <div className="stock-adjust-summary">
+                    <strong>{selected.name}</strong>
+                    <span>
+                      {selected.variants} variantes · {selected.stock} unidades
+                    </span>
+                  </div>
+                  {field('slug', 'Enlace del producto')}
+                  {field('section', 'Sección de la tienda')}
+                  {field('shortDescription', 'Descripción breve')}
+                  <label>
+                    Descripción completa
+                    <textarea
+                      rows={5}
+                      value={form.description ?? ''}
+                      onChange={(event) =>
+                        setForm({ ...form, description: event.target.value })
+                      }
+                    />
+                  </label>
+                  {field('fit', 'Calce')}
+                  {field('material', 'Material', { optional: true })}
+                  {field('care', 'Cuidados', { optional: true })}
+                  {field('sortOrder', 'Orden de aparición', { type: 'number' })}
+                  <label className="admin-check-line">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.featured)}
+                      onChange={(event) =>
+                        setForm({ ...form, featured: event.target.checked })
+                      }
+                    />
+                    Destacar en la tienda
+                  </label>
+                  <label className="admin-check-line">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.published)}
+                      onChange={(event) =>
+                        setForm({ ...form, published: event.target.checked })
+                      }
+                    />
+                    Producto publicado
+                  </label>
+                </>
+              )}
               {modal === 'edit-variant' && (
                 <>
                   <p>
@@ -4654,9 +4935,13 @@ export default function Admin({ section }: { section: string }) {
                     ],
                     value: 'warehouse',
                   })}
-                  {field('detail', 'Detalle: estante, módulo, caja o perchero', {
-                    optional: true,
-                  })}
+                  {field(
+                    'detail',
+                    'Detalle: estante, módulo, caja o perchero',
+                    {
+                      optional: true,
+                    },
+                  )}
                 </>
               )}
               {modal === 'storage-transfer' && selected && (

@@ -79,6 +79,8 @@ const grants: Record<string, string[]> = {
     'club-rewards',
     'communications',
     'seller-commissions',
+    'online-orders',
+    'online-catalog',
   ],
   VENDEDOR: ['pos', 'customers', 'own-sales'],
   CAJA: ['pos', 'customers', 'own-sales', 'cash'],
@@ -89,6 +91,7 @@ const grants: Record<string, string[]> = {
     'suppliers',
     'purchases',
     'inventory',
+    'online-catalog',
   ],
 };
 export function can(a: Actor, resource: string) {

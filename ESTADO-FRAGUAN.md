@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 6 de septiembre de 2026.
+Actualizado: 7 de septiembre de 2026.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -14,12 +14,14 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | POS                     | Búsqueda, SKU y código de barras por teclado, categorías, variantes, stock, carrito, cliente básico, promociones autorizadas, cuotas, pago dividido, cotización en servidor y venta atómica.                                                                                                                                         |
 | Vendedor                | Entrada directa al POS. Solo campos comerciales en APIs, ventas propias recientes y devoluciones autorizadas. Sin costos, margen, markup ni finanzas.                                                                                                                                                                                |
-| Productos y stock       | Pantalla unificada con ficha, variantes, edición, archivo/reactivación, costo administrativo, precio, margen, markup, existencias, mínimos/ideales, ubicación, ajuste trazable, etiquetas e importación CSV con vista previa.                                                                                                         |
+| Productos y stock       | Pantalla unificada con ficha, variantes, edición, archivo/reactivación, costo administrativo, precio, margen, markup, existencias, mínimos/ideales, ubicación, ajuste trazable, etiquetas e importación CSV con vista previa.                                                                                                        |
 | Stock                   | Movimientos trazables con historial exportable, motivo, observaciones, usuario, referencia y cantidades anterior/posterior. Reposición sugerida y alertas por demanda/disponibilidad. Conteos multilínea, diferencias y exportación. Aprobación con cantidades vigentes dentro de transacción; la base congela las líneas aprobadas. |
 | Precios y medios        | Precio de variante, promociones por medio, recargos configurables, alta/pausa/reactivación de medios y planes de cuotas, comisiones y acreditación estimada. Importes enteros en centavos; visualización sin perder centavos.                                                                                                        |
 | Ventas y devoluciones   | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde.                                                                                                                                                   |
 | Clientes                | Perfil completo administrativo, historial, talles/preferencias, segmentos configurables, niveles del Club y saldos.                                                                                                                                                                                                                  |
 | Club                    | Puntos, cashback por nivel con vencimiento, catálogo de beneficios, reserva, entrega y cancelación de canjes con restitución única.                                                                                                                                                                                                  |
+| Tienda online           | Sitio público sin fotografías, catálogo por secciones, búsqueda, filtros, ficha con talle/color/stock, carrito, checkout, retiro o Correo Argentino, 10% por transferencia y pago con tarjeta preparado para Mercado Pago. Cuenta de cliente con historial, nivel, puntos y cashback.                                                |
+| Pedidos online          | Reserva de stock anti-sobreventa, referencia única de cobro, trazabilidad de prendas/cliente/ubicación, venta conectada, puntos/cashback, estados de preparación, despacho, cancelación, tracking y auditoría. Catálogo web editable desde administración.                                                                           |
 | Promociones             | Porcentaje, monto fijo, 2x1, segunda unidad, categoría, marca, nivel, cumpleaños, cupones, prioridad y exclusividad. Vigencia hasta medianoche argentina. Reporte de resultado por promoción.                                                                                                                                        |
 | Compras                 | Órdenes multilínea, impuestos, transporte, descuentos, vencimiento y condiciones. Entrega prevista, transportista, seguimiento y dirección. Recepción parcial/completa. Pago separado de recepción; una orden recibida y saldada se muestra pagada. Exportación de orden completa.                                                   |
 | Proveedores             | Edición/archivo, historial, ventas netas, rentabilidad, capital actual en stock y cumplimiento de entregas con fecha pactada.                                                                                                                                                                                                        |
@@ -31,7 +33,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 | Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales.                                                                                                                                                             |
 | Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
 | Comunicación            | Sugerencias de cumpleaños y reactivación para revisar/copiar. No hay envío automático.                                                                                                                                                                                                                                               |
-| Administración          | Acceso protegido por PIN de seis dígitos y sesión HttpOnly de ocho horas. Menú segmentado por áreas, roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                    |
+| Administración          | Acceso protegido por PIN de seis dígitos y sesión HttpOnly de ocho horas. Menú segmentado por áreas, roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                   |
 | Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4.                                                                                                                                                                                               |
 | Recuperación            | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md.                                                                                                                                                              |
 
@@ -39,6 +41,8 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 
 - Todo importe monetario persistido usa centavos enteros.
 - La venta confirma pagos, caja, stock, cliente y fidelización de forma atómica. Los reintentos protegidos no deben duplicar efectos.
+- Cada pedido online reserva stock durante 30 minutos. El pago confirmado crea una sola venta con canal online y vínculo al pedido.
+- La transferencia usa referencia única e importe exacto. El adaptador de webhook concilia referencia, estado e importe antes de acreditar.
 - El backend valida permisos; los costos nunca forman parte de las respuestas del vendedor.
 - Un conteo físico no ajusta stock hasta aprobarse; después queda congelado en base.
 - Las comisiones son estimaciones usando la tasa actual para el período elegido; no liquidan sueldos.
@@ -51,7 +55,8 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 
 ## Verificación
 
-- 24 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, movimientos de stock, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
+- 25 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, movimientos de stock, ubicaciones, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
+- 10 escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, stock y permisos.
 - tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.
 - tests-reporting.mjs: totales netos, filtros, productos sin ventas y permisos.
 - tests-database-recovery.mjs: instalación limpia, repetición, detección de alteraciones, copia, restauración y conservación de datos.
@@ -65,9 +70,9 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
 2. Conectar base definitiva y autenticación Google con identidades/roles reales.
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. SQL local aplicado hasta 0013_stock_notes.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0015_online_store.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
-6. Conectar factura fiscal, cobros, bancos y WhatsApp/email si se decide integrarlos. Actualmente no hay envíos ni movimientos externos.
+6. Cargar credenciales productivas de Mercado Pago y MiCorreo, configurar el webhook público y probar cobros/envíos reales. Conectar factura fiscal, banco directo y WhatsApp/email si se decide integrarlos.
 
 ## Continuidad
 

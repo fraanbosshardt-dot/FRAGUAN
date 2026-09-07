@@ -81,6 +81,9 @@ export function fixture(t, { rate = 100, expiry = 30, timestamp } = {}) {
         Date: Clock,
         TextEncoder,
         TextDecoder,
+        btoa,
+        atob,
+        Request,
         URL,
         require(name) {
           if (name === 'cloudflare:workers') return { env: { DB: binding } };

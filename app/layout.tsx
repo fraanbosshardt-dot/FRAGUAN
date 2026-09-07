@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
 export const metadata: Metadata = {
-  title: 'FRAGUAN · Gestión & Punto de venta',
+  title: 'FRAGUAN | Tienda oficial',
   description:
-    'El espacio de trabajo de FRAGUAN. Ventas, colección y gestión del negocio.',
+    'Indumentaria FRAGUAN. Comprá online por talle y color, con envíos a todo el país y beneficios del Club.',
   openGraph: {
-    title: 'FRAGUAN · Gestión & Punto de venta',
-    description: 'Ventas, colección y gestión del negocio.',
+    title: 'FRAGUAN | Tienda oficial',
+    description: 'Indumentaria FRAGUAN con envíos a todo el país.',
   },
-  twitter: { card: 'summary', title: 'FRAGUAN · Gestión & Punto de venta' },
+  twitter: { card: 'summary', title: 'FRAGUAN | Tienda oficial' },
 };
 export default function RootLayout({
   children,

@@ -1,4 +1,4 @@
-> Actualización: consultar primero [ESTADO-FRAGUAN.md](ESTADO-FRAGUAN.md). El trabajo está pausado; no usar fotos; base definitiva, Google Login y Vercel se conectarán al final.
+> Actualización: consultar primero [ESTADO-FRAGUAN.md](ESTADO-FRAGUAN.md). La tienda online está implementada sin fotos; base definitiva, Google Login, credenciales externas y Vercel se conectarán al final.
 
 # FRAGUAN · Business Studio
 
@@ -15,4 +15,3 @@ La primera activación permite cargar demostración o comenzar vacío. El servid
 Pruebas: `npm test` y `node tests-admin.mjs` con la demo local activada y el servidor ejecutándose. Las pruebas modifican datos de demostración. Verificación de tipos: `npx tsc --noEmit`. Publicación: `npm run build`.
 
 El cobro se registra después de verificar el pago externo. El ticket es interno, no una factura fiscal. No se configuraron integraciones bancarias ni fiscales.
-

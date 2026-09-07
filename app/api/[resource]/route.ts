@@ -88,6 +88,20 @@ import {
   verifyAdminPin,
 } from '@/lib/admin-pin';
 import { storageOverview, storageWrite } from '@/lib/storage';
+import {
+  createOnlineOrder,
+  listOnlineOrders,
+  listOnlineCatalog,
+  onlineOrderWrite,
+  onlineCatalogWrite,
+  publicOnlineOrder,
+  reportTransfer,
+  shippingQuote,
+  storeAccount,
+  storeAccountWrite,
+  storeCatalog,
+  storeProduct,
+} from '@/lib/online-store';
 export const dynamic = 'force-dynamic';
 function promotionRule(value: unknown) {
   if (typeof value !== 'string' || !value) return {} as Record<string, any>;
@@ -107,6 +121,24 @@ export async function GET(
   try {
     const { resource } = await params;
     const url = new URL(req.url);
+    if (resource === 'store-catalog')
+      return reply(
+        await storeCatalog(
+          url.searchParams.get('q') ?? '',
+          url.searchParams.get('section') ?? '',
+        ),
+      );
+    if (resource === 'store-product')
+      return reply(await storeProduct(url.searchParams.get('slug') ?? ''));
+    if (resource === 'store-account') return reply(await storeAccount(req));
+    if (resource === 'store-order')
+      return reply(
+        await publicOnlineOrder(
+          req,
+          url.searchParams.get('id') ?? '',
+          req.headers.get('x-order-token') ?? '',
+        ),
+      );
     if (resource === 'session') {
       const u = await identity();
       const configured = await one(
@@ -161,6 +193,8 @@ export async function GET(
           'club-rewards',
           'communications',
           'seller-commissions',
+          'online-orders',
+          'online-catalog',
         ].filter((p) => can(a, p)),
       });
     }
@@ -169,6 +203,9 @@ export async function GET(
       return reply(await globalSearch(a, url.searchParams.get('q') ?? ''));
     if (resource === 'access') return reply(await listAccess(a));
     if (resource === 'storage') return reply(await storageOverview(a));
+    if (resource === 'online-orders')
+      return reply(await listOnlineOrders(a, url.searchParams.get('id') ?? ''));
+    if (resource === 'online-catalog') return reply(await listOnlineCatalog(a));
     if (resource === 'communications')
       return reply(await communicationSuggestions(a));
     if (resource === 'supplier-history')
@@ -521,6 +558,29 @@ export async function POST(
     protectWrite(req);
     const { resource } = await params;
     const body = await readJsonBody(req);
+    if (resource === 'store-account') {
+      const result = await storeAccountWrite(req, body);
+      const response = reply(result.data, 201);
+      response.headers.append('Set-Cookie', result.cookie);
+      return response;
+    }
+    if (resource === 'store-checkout')
+      return reply(await createOnlineOrder(req, body), 201);
+    if (resource === 'store-transfer')
+      return reply(await reportTransfer(req, body));
+    if (resource === 'store-shipping') {
+      const input = z
+        .object({
+          postalCode: z.string(),
+          subtotal: z.number().int().nonnegative(),
+          method: z.string(),
+        })
+        .strict()
+        .parse(body);
+      return reply(
+        await shippingQuote(input.postalCode, input.subtotal, input.method),
+      );
+    }
     if (resource === 'setup') {
       const x = z.object({ demo: z.boolean() }).strict().parse(body);
       return reply(await setup(x.demo), 201);
@@ -546,6 +606,10 @@ export async function POST(
     }
     const a = await actor();
     if (resource === 'storage') return reply(await storageWrite(a, body), 201);
+    if (resource === 'online-orders')
+      return reply(await onlineOrderWrite(a, body));
+    if (resource === 'online-catalog')
+      return reply(await onlineCatalogWrite(a, body));
     if (resource === 'customers') {
       requirePermission(a, 'customers');
       const x = customerInput.parse(body),

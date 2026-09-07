@@ -145,6 +145,8 @@ export const sales = table(
     idempotencyKey: text().notNull().unique(),
     requestHash: text().notNull(),
     couponCode: text().notNull().default(''),
+    channel: text().notNull().default('pos'),
+    onlineOrderId: text(),
     createdAt: text().notNull(),
   },
   (t) => [
@@ -286,6 +288,126 @@ export const stockTransfers = table('stock_transfers', {
     .notNull()
     .references(() => users.id),
   notes: text().notNull().default(''),
+  createdAt: text().notNull(),
+});
+export const onlineProductProfiles = table('online_product_profiles', {
+  productId: text()
+    .primaryKey()
+    .references(() => products.id),
+  slug: text().notNull().unique(),
+  shortDescription: text().notNull().default(''),
+  description: text().notNull().default(''),
+  material: text().notNull().default(''),
+  care: text().notNull().default(''),
+  fit: text().notNull().default('Regular'),
+  section: text().notNull().default('Colección'),
+  featured: integer().notNull().default(0),
+  published: integer().notNull().default(1),
+  sortOrder: integer().notNull().default(100),
+  updatedAt: text().notNull(),
+});
+export const customerAccounts = table('customer_accounts', {
+  id: text().primaryKey(),
+  customerId: text()
+    .notNull()
+    .unique()
+    .references(() => customers.id),
+  email: text().notNull().unique(),
+  passwordHash: text().notNull(),
+  passwordSalt: text().notNull(),
+  emailVerified: integer().notNull().default(0),
+  marketingConsent: integer().notNull().default(0),
+  createdAt: text().notNull(),
+  lastLoginAt: text(),
+});
+export const customerSessions = table('customer_sessions', {
+  id: text().primaryKey(),
+  accountId: text()
+    .notNull()
+    .references(() => customerAccounts.id),
+  tokenHash: text().notNull().unique(),
+  expiresAt: text().notNull(),
+  createdAt: text().notNull(),
+});
+export const onlineOrders = table('online_orders', {
+  id: text().primaryKey(),
+  orderNumber: integer().notNull().unique(),
+  customerId: text().references(() => customers.id),
+  email: text().notNull(),
+  customerName: text().notNull(),
+  phone: text().notNull(),
+  status: text().notNull().default('awaiting_payment'),
+  paymentStatus: text().notNull().default('pending'),
+  paymentMethod: text().notNull(),
+  fulfillmentStatus: text().notNull().default('unfulfilled'),
+  subtotal: integer().notNull(),
+  discount: integer().notNull().default(0),
+  shipping: integer().notNull().default(0),
+  total: integer().notNull(),
+  shippingMethod: text().notNull(),
+  postalCode: text().notNull(),
+  address: text().notNull(),
+  city: text().notNull(),
+  province: text().notNull(),
+  notes: text().notNull().default(''),
+  accessTokenHash: text().notNull(),
+  transferReference: text().notNull().unique(),
+  paymentReference: text().notNull().default(''),
+  trackingNumber: text().notNull().default(''),
+  expiresAt: text().notNull(),
+  paidAt: text(),
+  createdAt: text().notNull(),
+  updatedAt: text().notNull(),
+});
+export const onlineOrderItems = table('online_order_items', {
+  id: text().primaryKey(),
+  orderId: text()
+    .notNull()
+    .references(() => onlineOrders.id),
+  variantId: text()
+    .notNull()
+    .references(() => variants.id),
+  productName: text().notNull(),
+  sku: text().notNull(),
+  color: text().notNull(),
+  size: text().notNull(),
+  quantity: integer().notNull(),
+  unitPrice: integer().notNull(),
+  lineTotal: integer().notNull(),
+});
+export const stockReservations = table('stock_reservations', {
+  id: text().primaryKey(),
+  orderId: text()
+    .notNull()
+    .references(() => onlineOrders.id),
+  variantId: text()
+    .notNull()
+    .references(() => variants.id),
+  quantity: integer().notNull(),
+  status: text().notNull().default('active'),
+  expiresAt: text().notNull(),
+  createdAt: text().notNull(),
+});
+export const onlineOrderEvents = table('online_order_events', {
+  id: text().primaryKey(),
+  orderId: text()
+    .notNull()
+    .references(() => onlineOrders.id),
+  kind: text().notNull(),
+  detail: text().notNull().default(''),
+  actorId: text(),
+  createdAt: text().notNull(),
+});
+export const onlinePaymentEvents = table('online_payment_events', {
+  id: text().primaryKey(),
+  provider: text().notNull(),
+  providerEventId: text().notNull().unique(),
+  orderId: text()
+    .notNull()
+    .references(() => onlineOrders.id),
+  status: text().notNull(),
+  amount: integer().notNull(),
+  payload: text().notNull().default(''),
   createdAt: text().notNull(),
 });
 export const cashSessions = table('cash_sessions', {
