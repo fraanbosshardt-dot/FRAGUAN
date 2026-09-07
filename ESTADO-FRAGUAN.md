@@ -101,3 +101,11 @@ integrar el logo oficial en `public/` y ejecutar QA visual y pruebas de checkout
 El diseño de referencia queda registrado: inspiración conceptual COS, SSENSE, Zara,
 MILFSHAKES y Represent/Fear of God, con identidad propia FRAGUAN. Se mantiene la decisión
 posterior de no usar fotos de productos y de no incluir WhatsApp.
+
+## Regla de trabajo vigente
+
+El desarrollo se realiza en local y los cambios se suben a GitHub. No se debe hacer ningún
+deploy a Vercel, automático ni manual, hasta recibir autorización explícita del usuario.
+El proyecto incluye `ignoreCommand` para que los pushes a GitHub no creen nuevos deploys por
+defecto. Para habilitar un lanzamiento se deberá activar expresamente
+`FRAGUAN_DEPLOY_ENABLED=true` y revisar la configuración productiva.

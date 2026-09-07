@@ -2,6 +2,7 @@
   "version": 2,
   "framework": null,
   "buildCommand": "node scripts/vercel-placeholder.mjs",
+  "ignoreCommand": "node scripts/vercel-ignore-until-release.mjs",
   "outputDirectory": "public",
   "cleanUrls": true
 }
