@@ -32,6 +32,7 @@ const variantUpdateInput = z
     color: text,
     size: text,
     price: positiveMoney,
+    onlinePrice: positiveMoney.nullable().optional(),
     cost: money,
     minimum: z.number().int().min(0).max(100_000),
     ideal: z.number().int().min(0).max(100_000),
@@ -91,7 +92,8 @@ export async function listAdminProducts(actor: Actor, includeArchived = true) {
     `SELECT v.id,v.productId,p.name,p.internalCode,p.category,p.subcategory,p.brand,
             p.season,p.collection,p.location,p.supplierId,s.name AS supplier,
             p.active,p.updatedAt,p.archivedAt,v.sku,v.barcode,v.color,v.size,
-            v.price,v.cost,v.stock,v.minimum,v.ideal,v.entryAt,v.updatedAt AS variantUpdatedAt,
+            v.price,v.onlinePrice,COALESCE(v.onlinePrice,v.price) AS effectiveOnlinePrice,
+            v.cost,v.stock,v.minimum,v.ideal,v.entryAt,v.updatedAt AS variantUpdatedAt,
             CASE WHEN v.price>0 THEN ROUND((v.price-v.cost)*100.0/v.price,2) ELSE NULL END AS marginPercent,
             CASE WHEN v.cost>0 THEN ROUND((v.price-v.cost)*100.0/v.cost,2) ELSE NULL END AS markupPercent
        FROM variants v JOIN products p ON p.id=v.productId
@@ -177,7 +179,7 @@ export async function updateVariant(actor: Actor, raw: unknown) {
   if (input.ideal < input.minimum)
     throw new AppError(400, 'El stock ideal no puede ser menor al mínimo.');
   const before = await one(
-    `SELECT id,productId,sku,barcode,color,size,price,cost,stock,minimum,ideal,entryAt
+    `SELECT id,productId,sku,barcode,color,size,price,onlinePrice,cost,stock,minimum,ideal,entryAt
        FROM variants WHERE id=?`,
     input.id,
   );
@@ -185,13 +187,16 @@ export async function updateVariant(actor: Actor, raw: unknown) {
   const changedAt = now();
   await db().batch([
     statement(
-      `UPDATE variants SET sku=?,barcode=?,color=?,size=?,price=?,cost=?,minimum=?,
+      `UPDATE variants SET sku=?,barcode=?,color=?,size=?,price=?,onlinePrice=?,cost=?,minimum=?,
               ideal=?,entryAt=?,updatedAt=? WHERE id=?`,
       input.sku,
       input.barcode,
       input.color,
       input.size,
       input.price,
+      input.onlinePrice === undefined
+        ? (before as { onlinePrice: number | null }).onlinePrice
+        : input.onlinePrice,
       input.cost,
       input.minimum,
       input.ideal,

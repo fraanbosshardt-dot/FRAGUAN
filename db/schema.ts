@@ -70,6 +70,7 @@ export const variants = table(
     color: text().notNull(),
     size: text().notNull(),
     price: integer().notNull(),
+    onlinePrice: integer(),
     cost: integer().notNull(),
     stock: integer().notNull().default(0),
     minimum: integer().notNull().default(3),

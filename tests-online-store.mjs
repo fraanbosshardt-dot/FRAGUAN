@@ -7,6 +7,7 @@ test('online checkout reserves stock, identifies transfers and becomes one conne
   f.database.exec(`
     INSERT INTO online_product_profiles(productId,slug,shortDescription,description,fit,section,updatedAt)
     VALUES ('product','camisa-prueba','Una camisa lista para todos los días.','Descripción completa de la camisa para comprar online.','Regular','Camisas','2026-01-01T12:00:00Z');
+    UPDATE variants SET onlinePrice=12500 WHERE id='variant';
     INSERT INTO payment_methods(id,name) VALUES ('transfer','Transferencia'),('credit','Tarjeta');
   `);
   const store = f.load('lib/online-store.ts');
@@ -29,8 +30,8 @@ test('online checkout reserves stock, identifies transfers and becomes one conne
     idempotencyKey: crypto.randomUUID(),
     accessToken,
   });
-  assert.equal(order.subtotal, 20000);
-  assert.equal(order.discount, 2000);
+  assert.equal(order.subtotal, 25000);
+  assert.equal(order.discount, 2500);
   assert.match(order.transferReference, /^FRG-1001-/);
   assert.equal(
     f.database
@@ -65,6 +66,22 @@ test('online checkout reserves stock, identifies transfers and becomes one conne
         .get(order.id),
     },
     { channel: 'online', onlineOrderId: order.id, total: order.total },
+  );
+  assert.deepEqual(
+    {
+      ...f.database
+        .prepare("SELECT price,onlinePrice FROM variants WHERE id='variant'")
+        .get(),
+    },
+    { price: 10000, onlinePrice: 12500 },
+  );
+  assert.equal(
+    f.database
+      .prepare(
+        'SELECT price FROM sale_items WHERE saleId=(SELECT id FROM sales WHERE onlineOrderId=?)',
+      )
+      .get(order.id).price,
+    12500,
   );
   assert.equal(
     f.database

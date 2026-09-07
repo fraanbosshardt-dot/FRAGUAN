@@ -117,7 +117,8 @@ export async function storeCatalog(query = '', section = '') {
   const products = await rows<Record<string, any>>(
     `SELECT p.id,p.name,p.category,p.brand,profile.slug,profile.shortDescription,
             profile.description,profile.material,profile.care,profile.fit,profile.section,
-            profile.featured,profile.sortOrder,v.id AS variantId,v.sku,v.barcode,v.color,v.size,v.price,
+            profile.featured,profile.sortOrder,v.id AS variantId,v.sku,v.barcode,v.color,v.size,
+            COALESCE(v.onlinePrice,v.price) AS price,
             MAX(0,v.stock-COALESCE((SELECT SUM(r.quantity) FROM stock_reservations r
               WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0)) AS available
        FROM online_product_profiles profile JOIN products p ON p.id=profile.productId
@@ -686,7 +687,7 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
   let subtotal = 0;
   for (const item of input.items) {
     const variant = await one<Record<string, any>>(
-      `SELECT v.id,v.sku,v.color,v.size,v.price,p.name,v.stock-COALESCE((SELECT SUM(r.quantity)
+      `SELECT v.id,v.sku,v.color,v.size,COALESCE(v.onlinePrice,v.price) AS price,p.name,v.stock-COALESCE((SELECT SUM(r.quantity)
          FROM stock_reservations r WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0) AS available
          FROM variants v JOIN products p ON p.id=v.productId JOIN online_product_profiles profile ON profile.productId=p.id
         WHERE v.id=? AND p.active=1 AND profile.published=1`,
@@ -913,8 +914,10 @@ export async function listOnlineCatalog(actor: Actor) {
   return rows(
     `SELECT p.id,p.name,p.category,profile.slug,profile.section,profile.shortDescription,
             profile.description,profile.material,profile.care,profile.fit,profile.featured,
-            profile.published,profile.sortOrder,MIN(v.price) AS price,SUM(v.stock) AS stock,
-            COUNT(v.id) AS variants
+            profile.published,profile.sortOrder,MIN(v.price) AS localPrice,
+            MIN(COALESCE(v.onlinePrice,v.price)) AS onlinePrice,
+            SUM(CASE WHEN v.onlinePrice IS NULL THEN 1 ELSE 0 END) AS inheritedVariants,
+            SUM(v.stock) AS stock,COUNT(v.id) AS variants
        FROM products p JOIN online_product_profiles profile ON profile.productId=p.id
        JOIN variants v ON v.productId=p.id
       GROUP BY p.id ORDER BY profile.sortOrder,p.name`,
@@ -942,6 +945,7 @@ export async function onlineCatalogWrite(actor: Actor, raw: unknown) {
       featured: z.boolean(),
       published: z.boolean(),
       sortOrder: z.number().int().min(0).max(100000),
+      onlinePrice: z.number().int().positive().nullable(),
     })
     .strict()
     .parse(raw);
@@ -964,6 +968,12 @@ export async function onlineCatalogWrite(actor: Actor, raw: unknown) {
         input.featured ? 1 : 0,
         input.published ? 1 : 0,
         input.sortOrder,
+        now(),
+        input.productId,
+      ),
+      statement(
+        'UPDATE variants SET onlinePrice=?,updatedAt=? WHERE productId=?',
+        input.onlinePrice,
         now(),
         input.productId,
       ),
@@ -1045,10 +1055,11 @@ export async function confirmOnlinePayment(
   for (const item of items)
     commands.push(
       statement(
-        'INSERT INTO sale_items(id,saleId,variantId,name,color,size,quantity,price,cost) SELECT ?,?,v.id,p.name,v.color,v.size,?,v.price,v.cost FROM variants v JOIN products p ON p.id=v.productId WHERE v.id=?',
+        'INSERT INTO sale_items(id,saleId,variantId,name,color,size,quantity,price,cost) SELECT ?,?,v.id,p.name,v.color,v.size,?,?,v.cost FROM variants v JOIN products p ON p.id=v.productId WHERE v.id=?',
         id(),
         saleId,
         item.quantity,
+        item.unitPrice,
         item.variantId,
       ),
     );

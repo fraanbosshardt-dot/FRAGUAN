@@ -168,7 +168,8 @@ const columns: Record<string, [string, string, string?][]> = {
   'online-catalog': [
     ['name', 'Producto'],
     ['section', 'Sección'],
-    ['price', 'Desde', 'money'],
+    ['localPrice', 'Precio local', 'money'],
+    ['onlinePrice', 'Precio online', 'money'],
     ['stock', 'Stock'],
     ['variants', 'Variantes'],
     ['featured', 'Destacado'],
@@ -182,6 +183,7 @@ const columns: Record<string, [string, string, string?][]> = {
     ['color', 'Color'],
     ['size', 'Talle'],
     ['price', 'Precio', 'money'],
+    ['effectiveOnlinePrice', 'Precio online', 'money'],
     ['cost', 'Costo', 'money'],
     ['marginPercent', 'Margen bruto %'],
     ['markupPercent', 'Markup %'],
@@ -438,7 +440,17 @@ export default function Admin({ section }: { section: string }) {
             ...(type === 'edit-variant'
               ? {
                   price: Number(row.price ?? 0) / 100,
+                  onlinePrice:
+                    row.onlinePrice == null
+                      ? ''
+                      : Number(row.onlinePrice) / 100,
                   cost: Number(row.cost ?? 0) / 100,
+                }
+              : {}),
+            ...(type === 'edit-online-product'
+              ? {
+                  onlinePrice: Number(row.onlinePrice ?? 0) / 100,
+                  useLocalPrice: Number(row.inheritedVariants ?? 0) > 0,
                 }
               : {}),
             ...(type === 'edit-supplier'
@@ -822,6 +834,10 @@ export default function Admin({ section }: { section: string }) {
           color: form.color,
           size: form.size,
           price: minor(form.price),
+          onlinePrice:
+            form.onlinePrice === '' || form.onlinePrice == null
+              ? null
+              : minor(form.onlinePrice),
           cost: minor(form.cost),
           minimum: Number(form.minimum || 0),
           ideal: Number(form.ideal || 0),
@@ -1017,6 +1033,7 @@ export default function Admin({ section }: { section: string }) {
           featured: Boolean(form.featured),
           published: Boolean(form.published),
           sortOrder: Number(form.sortOrder || 0),
+          onlinePrice: form.useLocalPrice ? null : minor(form.onlinePrice),
         });
         return;
       }
@@ -4102,6 +4119,30 @@ export default function Admin({ section }: { section: string }) {
                       {selected.variants} variantes · {selected.stock} unidades
                     </span>
                   </div>
+                  <div className="online-price-editor">
+                    {field('onlinePrice', 'Precio online (pesos)', {
+                      type: 'number',
+                      optional: Boolean(form.useLocalPrice),
+                    })}
+                    <label className="admin-check-line">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(form.useLocalPrice)}
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            useLocalPrice: event.target.checked,
+                          })
+                        }
+                      />
+                      Usar automáticamente el precio del local
+                    </label>
+                    <small>
+                      Precio local actual: {money(selected.localPrice)}. El
+                      precio online se aplica a todos los talles y colores de
+                      este producto.
+                    </small>
+                  </div>
                   {field('slug', 'Enlace del producto')}
                   {field('section', 'Sección de la tienda')}
                   {field('shortDescription', 'Descripción breve')}
@@ -4151,6 +4192,14 @@ export default function Admin({ section }: { section: string }) {
                   {field('sku', 'SKU')}
                   {field('barcode', 'Código de barras')}
                   {field('price', 'Precio (pesos)', { type: 'number' })}
+                  {field('onlinePrice', 'Precio online (pesos)', {
+                    type: 'number',
+                    optional: true,
+                  })}
+                  <small>
+                    Si queda vacío, la tienda online usa automáticamente el
+                    precio del local.
+                  </small>
                   {field('cost', 'Costo (pesos)', { type: 'number' })}
                   {field('minimum', 'Stock mínimo', { type: 'number' })}
                   {field('ideal', 'Stock ideal', { type: 'number' })}

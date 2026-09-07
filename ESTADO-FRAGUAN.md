@@ -20,7 +20,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 | Ventas y devoluciones   | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde.                                                                                                                                                   |
 | Clientes                | Perfil completo administrativo, historial, talles/preferencias, segmentos configurables, niveles del Club y saldos.                                                                                                                                                                                                                  |
 | Club                    | Puntos, cashback por nivel con vencimiento, catálogo de beneficios, reserva, entrega y cancelación de canjes con restitución única.                                                                                                                                                                                                  |
-| Tienda online           | Sitio público sin fotografías, catálogo por secciones, búsqueda, filtros, ficha con talle/color/stock, carrito, checkout, retiro o Correo Argentino, 10% por transferencia y pago con tarjeta preparado para Mercado Pago. Cuenta de cliente con historial, nivel, puntos y cashback.                                                |
+| Tienda online           | Sitio público sin fotografías, catálogo por secciones, búsqueda, filtros, ficha con talle/color/stock, precios online independientes, carrito, checkout, retiro o Correo Argentino, 10% por transferencia y pago con tarjeta preparado para Mercado Pago. Cuenta de cliente con historial, nivel, puntos y cashback.                 |
 | Pedidos online          | Reserva de stock anti-sobreventa, referencia única de cobro, trazabilidad de prendas/cliente/ubicación, venta conectada, puntos/cashback, estados de preparación, despacho, cancelación, tracking y auditoría. Catálogo web editable desde administración.                                                                           |
 | Promociones             | Porcentaje, monto fijo, 2x1, segunda unidad, categoría, marca, nivel, cumpleaños, cupones, prioridad y exclusividad. Vigencia hasta medianoche argentina. Reporte de resultado por promoción.                                                                                                                                        |
 | Compras                 | Órdenes multilínea, impuestos, transporte, descuentos, vencimiento y condiciones. Entrega prevista, transportista, seguimiento y dirección. Recepción parcial/completa. Pago separado de recepción; una orden recibida y saldada se muestra pagada. Exportación de orden completa.                                                   |
@@ -42,6 +42,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 - Todo importe monetario persistido usa centavos enteros.
 - La venta confirma pagos, caja, stock, cliente y fidelización de forma atómica. Los reintentos protegidos no deben duplicar efectos.
 - Cada pedido online reserva stock durante 30 minutos. El pago confirmado crea una sola venta con canal online y vínculo al pedido.
+- Cada variante puede tener un precio online propio. Si queda vacío, hereda el precio del local; el POS nunca toma el precio online y un pedido conserva el precio con el que fue creado.
 - La transferencia usa referencia única e importe exacto. El adaptador de webhook concilia referencia, estado e importe antes de acreditar.
 - El backend valida permisos; los costos nunca forman parte de las respuestas del vendedor.
 - Un conteo físico no ajusta stock hasta aprobarse; después queda congelado en base.
@@ -70,7 +71,7 @@ Implementación local con datos de demostración. Los módulos detallados abajo 
 1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
 2. Conectar base definitiva y autenticación Google con identidades/roles reales.
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0015_online_store.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0017_online_sale_price_guard.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
 6. Cargar credenciales productivas de Mercado Pago y MiCorreo, configurar el webhook público y probar cobros/envíos reales. Conectar factura fiscal, banco directo y WhatsApp/email si se decide integrarlos.
 

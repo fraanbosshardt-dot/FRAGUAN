@@ -4251,6 +4251,18 @@ textarea {
   gap: 9px;
   align-items: end;
 }
+.online-price-editor {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 7%, var(--card));
+}
+.online-price-editor > small {
+  color: var(--muted-foreground);
+  line-height: 1.45;
+}
 .admin-check-line {
   display: flex !important;
   align-items: center;
