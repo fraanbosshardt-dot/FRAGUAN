@@ -82,6 +82,7 @@ const grants: Record<string, string[]> = {
     'seller-commissions',
     'online-orders',
     'online-catalog',
+    'marketing',
   ],
   VENDEDOR: ['pos', 'customers', 'own-sales'],
   CAJA: ['pos', 'customers', 'own-sales', 'cash'],

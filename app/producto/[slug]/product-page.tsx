@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
 import { StoreFooter } from '@/components/store-footer';
 import { StoreProductCard } from '@/components/store-product-card';
+import { StoreProductTrust } from '@/components/store-product-trust';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import {
   storeMoney,
   useStoreCart,
   useStoreFavorites,
+  trackStore,
 } from '@/lib/store-client';
 
 export default function ProductPage({ slug }: { slug: string }) {
@@ -57,6 +59,7 @@ export default function ProductPage({ slug }: { slug: string }) {
             data.product.variants[0]?.color ||
             '',
         );
+        trackStore('view_item', { productId: data.product.id, value: data.product.price });
       })
       .catch((cause) => setError(cause.message));
   }, [slug]);
@@ -151,28 +154,6 @@ export default function ProductPage({ slug }: { slug: string }) {
     );
   return (
     <div className="store-shell">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Product',
-            name: product.name,
-            description: product.description,
-            brand: { '@type': 'Brand', name: product.brand },
-            sku: product.variants[0]?.sku,
-            offers: {
-              '@type': 'AggregateOffer',
-              priceCurrency: 'ARS',
-              lowPrice: product.price / 100,
-              offerCount: product.variants.filter((variant) => variant.stock > 0).length,
-              availability: product.variants.some((variant) => variant.stock > 0)
-                ? 'https://schema.org/InStock'
-                : 'https://schema.org/OutOfStock',
-            },
-          }).replaceAll('<', '\\u003c'),
-        }}
-      />
       <StoreHeader />
       <main className="store-detail">
         <a className="store-back" href="/tienda">
@@ -209,6 +190,7 @@ export default function ProductPage({ slug }: { slug: string }) {
                 )}
               </span>
             </div>
+            {selected && selected.stock <= 3 && <p className="store-stock-urgency">Últimas {selected.stock} unidades en este talle y color.</p>}
             <fieldset>
               <legend>
                 Color <strong>{color}</strong>
@@ -334,6 +316,7 @@ export default function ProductPage({ slug }: { slug: string }) {
             </div>
           </div>
         </section>
+        <StoreProductTrust product={product} />
         <section className="store-product-info" id="medidas">
           <div>
             <span>01</span>
@@ -376,6 +359,10 @@ export default function ProductPage({ slug }: { slug: string }) {
           </section>
         )}
       </main>
+      <div className="store-mobile-buybar">
+        <span><small>{product.name}</small><strong>{storeMoney(selected?.price ?? product.price)}</strong></span>
+        <button onClick={addSelected}>{selected ? 'Agregar' : 'Elegir talle'} <ArrowRight /></button>
+      </div>
       <StoreFooter />
     </div>
   );

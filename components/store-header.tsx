@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
-import { useStoreCart, useStoreFavorites, storeMoney } from '@/lib/store-client';
+import { useStoreCart, useStoreFavorites, storeMoney, trackStore } from '@/lib/store-client';
 import {
   Sheet,
   SheetContent,
@@ -45,11 +45,11 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           <span>FRAGUAN</span>
         </a>
         <nav aria-label="Tienda">
-          <a href="/tienda?section=Nuevos">Nuevos</a>
-          <a href="/tienda?section=Camisas">Camisas</a>
-          <a href="/tienda?section=Remeras">Remeras</a>
-          <a href="/tienda?section=Pantalones">Pantalones</a>
-          <a href="/tienda?section=Camperas">Abrigos</a>
+          <a href="/coleccion/nuevos">Nuevos</a>
+          <a href="/coleccion/camisas">Camisas</a>
+          <a href="/coleccion/remeras">Remeras</a>
+          <a href="/coleccion/pantalones">Pantalones</a>
+          <a href="/coleccion/camperas">Abrigos</a>
         </nav>
         <div className="store-header-actions">
           <a href="/tienda?search=1" aria-label="Buscar">
@@ -66,6 +66,7 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
             <SheetTrigger
               className="store-cart-trigger"
               aria-label={`Carrito, ${count} productos`}
+              onClick={() => trackStore('view_cart', { value: subtotal })}
             >
               <ShoppingBag />
               <span>{count}</span>
@@ -125,6 +126,7 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
                 <a
                   className={cart.length ? '' : 'disabled'}
                   href={cart.length ? '/checkout' : '#'}
+                  onClick={() => cart.length && trackStore('begin_checkout', { value: subtotal })}
                 >
                   Finalizar compra <ArrowRight />
                 </a>
@@ -140,11 +142,11 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           </button>
           <a href="/tienda">FRAGUAN</a>
           <nav>
-            <a href="/tienda?section=Nuevos">Nuevos ingresos</a>
-            <a href="/tienda?section=Camisas">Camisas</a>
-            <a href="/tienda?section=Remeras">Remeras</a>
-            <a href="/tienda?section=Pantalones">Pantalones</a>
-            <a href="/tienda?section=Camperas">Abrigos</a>
+            <a href="/coleccion/nuevos">Nuevos ingresos</a>
+            <a href="/coleccion/camisas">Camisas</a>
+            <a href="/coleccion/remeras">Remeras</a>
+            <a href="/coleccion/pantalones">Pantalones</a>
+            <a href="/coleccion/camperas">Abrigos</a>
             <a href="/tienda?favorites=1">Favoritos</a>
             <a href="/cuenta">Mi cuenta / Club</a>
           </nav>

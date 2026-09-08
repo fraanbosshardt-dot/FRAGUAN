@@ -4,15 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
 import { StoreFooter } from '@/components/store-footer';
 import { StoreProductCard } from '@/components/store-product-card';
-import { StoreProduct, storeApi, useStoreFavorites } from '@/lib/store-client';
+import { StoreProduct, storeApi, useStoreFavorites, trackStore } from '@/lib/store-client';
 
-export default function Storefront() {
+export default function Storefront({ initialSection = '' }: { initialSection?: string }) {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [sections, setSections] = useState<
     { name: string; products: number }[]
   >([]);
   const [query, setQuery] = useState('');
-  const [section, setSection] = useState('');
+  const [section, setSection] = useState(initialSection);
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   const [onlyAvailable, setOnlyAvailable] = useState(false);
@@ -23,7 +23,8 @@ export default function Storefront() {
   const { favorites } = useStoreFavorites();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    setSection(params.get('section') || '');
+    setQuery(params.get('q') || params.get('search') || '');
+    setSection(params.get('section') || initialSection);
     setOnlyFavorites(params.get('favorites') === '1');
     if (params.get('search'))
       setTimeout(
@@ -33,7 +34,7 @@ export default function Storefront() {
             ?.focus(),
         100,
       );
-  }, []);
+  }, [initialSection]);
   useEffect(() => {
     const timer = setTimeout(
       () => {
@@ -55,6 +56,11 @@ export default function Storefront() {
     );
     return () => clearTimeout(timer);
   }, [query, section]);
+  useEffect(() => {
+    if (!query.trim()) return;
+    const timer = setTimeout(() => trackStore('search', { metadata: { query: query.trim().slice(0, 100) } }), 600);
+    return () => clearTimeout(timer);
+  }, [query]);
   const featured = useMemo(
     () => products.filter((product) => product.featured).slice(0, 6),
     [products],
@@ -124,17 +130,17 @@ export default function Storefront() {
             <h2>Vestirse también es una forma de decir quién sos.</h2>
           </header>
           <div>
-            <a href="/tienda?section=Nuevos">
+            <a href="/coleccion/nuevos">
               <small>01 / NEW DROP</small>
               <strong>LO NUEVO</strong>
               <span>Primeras piezas de la temporada <ArrowRight /></span>
             </a>
-            <a href="/tienda?section=Camisas">
+            <a href="/coleccion/camisas">
               <small>02 / THE UNIFORM</small>
               <strong>CAMISAS</strong>
               <span>Para todos los días <ArrowRight /></span>
             </a>
-            <a href="/tienda?section=Pantalones">
+            <a href="/coleccion/pantalones">
               <small>03 / ESSENTIALS</small>
               <strong>BASES</strong>
               <span>Lo que combina con todo <ArrowRight /></span>
@@ -240,7 +246,9 @@ export default function Storefront() {
           </div>
           {error && <p className="store-error">{error}</p>}
           {loading ? (
-            <div className="store-loading">Preparando la colección…</div>
+            <div className="store-loading-grid" aria-label="Preparando la colección">
+              {Array.from({ length: 8 }).map((_, index) => <span key={index}><i /><b /><small /></span>)}
+            </div>
           ) : displayed.length ? (
             <div className="store-product-grid">
               {displayed.map((product, index) => (

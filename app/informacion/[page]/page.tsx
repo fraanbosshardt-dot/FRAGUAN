@@ -52,22 +52,23 @@ const pages: Record<string, Page> = {
     eyebrow: 'PRIVACIDAD', title: 'Tus datos, con propósito.',
     intro: 'Recopilamos lo necesario para comprar, entregar, proteger tu cuenta y ofrecer beneficios.',
     sections: [
-      { title: 'Qué datos usamos', body: 'Identificación, email, teléfono, domicilio, historial de pedidos, preferencias, talle y datos técnicos de seguridad. Los datos de tarjeta quedan en la pasarela de pago.' },
+      { title: 'Qué datos usamos', body: 'Identificación, email, teléfono, domicilio, historial de pedidos, preferencias, talle, recorrido de compra y datos técnicos de seguridad. Los datos de tarjeta quedan en la pasarela de pago.' },
       { title: 'Para qué', body: 'Procesar compras, prevenir fraude, entregar pedidos, atender cambios, mostrar Club FRAGUAN y enviar marketing únicamente cuando exista consentimiento.' },
       { title: 'Proveedores', body: 'Podemos compartir los datos mínimos necesarios con Google para autenticación, Mercado Pago para cobros, Correo Argentino para entregas y Resend para emails.' },
       { title: 'Conservación y seguridad', body: 'Conservamos datos mientras sean necesarios para la relación comercial, obligaciones legales y prevención de fraude. Aplicamos sesiones seguras, control de acceso y minimización de datos.' },
       { title: 'Tus derechos', body: 'Podés solicitar acceso, actualización, rectificación o supresión de tus datos. Verificaremos tu identidad antes de responder para proteger la cuenta.' },
-      { title: 'Marketing', body: 'La suscripción es opcional y separada de la compra. Cada email comercial incluye un enlace para darte de baja.' },
+      { title: 'Marketing', body: 'La suscripción y la recuperación de carrito son opcionales. Cada email comercial incluye un enlace para darte de baja. Medimos campañas sin guardar costos internos ni datos de tarjeta.' },
     ],
   },
   cookies: {
-    eyebrow: 'COOKIES', title: 'Solo lo necesario.',
-    intro: 'La tienda usa almacenamiento local y cookies funcionales para operar correctamente.',
+    eyebrow: 'COOKIES', title: 'Vos elegís.',
+    intro: 'La tienda separa el almacenamiento imprescindible de la medición opcional.',
     sections: [
       { title: 'Sesión', body: 'La cookie de Mi FRAGUAN mantiene la sesión iniciada y es HttpOnly, SameSite y segura en producción.' },
       { title: 'Carrito y favoritos', body: 'El navegador guarda localmente el carrito y los favoritos para que no se pierdan al cambiar de página.' },
       { title: 'Servicios externos', body: 'Google y Mercado Pago pueden usar sus propios mecanismos técnicos cuando elegís iniciar sesión o pagar. Sus políticas se muestran en esos servicios.' },
-      { title: 'Analítica', body: 'FRAGUAN no activa cookies publicitarias ni analítica no esencial por defecto. Si se incorporan, se solicitará la preferencia correspondiente.' },
+      { title: 'Medición propia', body: 'Con tu permiso registramos páginas, búsquedas, productos vistos y pasos de compra para mejorar la experiencia y medir campañas. No se activa al elegir “Solo esenciales”.' },
+      { title: 'Recuperación', body: 'Solo asociamos un carrito con tu email cuando pedís expresamente ayuda para terminar la compra o cuando tu cuenta tiene comunicaciones autorizadas.' },
     ],
   },
   terminos: {

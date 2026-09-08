@@ -15,6 +15,8 @@ import {
   readCustomerIntelligenceConfig,
 } from './customer-intelligence';
 import { sendOrderEmails, sendReturnRequestEmails } from './email';
+import { evaluateCommercialRules, type CommercialPromotion } from './commercial-rules';
+import { argentinaDay } from './business-date';
 
 const SESSION_COOKIE = 'fraguan_customer';
 const encoder = new TextEncoder();
@@ -689,14 +691,15 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
 
 export async function storeAccount(req: Request) {
   const customer = await currentStoreCustomer(req);
-  if (!customer) return { customer: null, orders: [], cashback: 0 };
+  if (!customer) return { customer: null, orders: [], addresses: [], cashback: 0 };
   const cutoff = new Date(Date.now() - 365 * 86400000).toISOString();
-  const [orders, cashback, activity, config] = await Promise.all([
+  const [orders, addresses, cashback, activity, config] = await Promise.all([
     rows(
       `SELECT id,orderNumber,status,paymentStatus,fulfillmentStatus,total,trackingNumber,createdAt
          FROM online_orders WHERE customerId=? ORDER BY createdAt DESC LIMIT 50`,
       customer.customerId,
     ),
+    rows('SELECT id,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt DESC', customer.customerId),
     one<{ balance: number }>(
       "SELECT COALESCE(SUM(balance),0) AS balance FROM customer_cashback WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>?)",
       customer.customerId,
@@ -733,6 +736,7 @@ export async function storeAccount(req: Request) {
   return {
     customer: { ...customer, level, marketingConsent: Boolean(customer.marketingConsent) },
     orders,
+    addresses,
     cashback: Number(cashback?.balance ?? 0),
   };
 }
@@ -829,6 +833,10 @@ const checkoutInput = z
     notes: z.string().trim().max(500).default(''),
     idempotencyKey: z.uuid(),
     accessToken: z.uuid(),
+    couponCode: z.string().trim().toUpperCase().max(60).default(''),
+    attribution: z.object({ source: z.string().max(100).default(''), medium: z.string().max(100).default(''), campaign: z.string().max(160).default('') }).strict().default({ source: '', medium: '', campaign: '' }),
+    sessionId: z.union([z.uuid(), z.literal('')]).default(''),
+    saveAddress: z.boolean().default(false),
   })
   .strict();
 
@@ -863,7 +871,7 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
   let subtotal = 0;
   for (const item of input.items) {
     const variant = await one<Record<string, any>>(
-      `SELECT v.id,v.sku,v.color,v.size,COALESCE(v.onlinePrice,v.price) AS price,p.name,v.stock-COALESCE((SELECT SUM(r.quantity)
+      `SELECT v.id,v.sku,v.color,v.size,COALESCE(v.onlinePrice,v.price) AS price,p.id AS productId,p.name,p.category,p.brand,v.stock-COALESCE((SELECT SUM(r.quantity)
          FROM stock_reservations r WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0) AS available
          FROM variants v JOIN products p ON p.id=v.productId JOIN online_product_profiles profile ON profile.productId=p.id
         WHERE v.id=? AND p.active=1 AND profile.published=1`,
@@ -878,8 +886,9 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
     lines.push({ ...variant, quantity: item.quantity });
     subtotal += Number(variant.price) * item.quantity;
   }
-  const discount =
-    input.paymentMethod === 'transfer' ? Math.floor(subtotal * 0.1) : 0;
+  const coupon = await onlineCouponDiscount(lines, input.couponCode, input.paymentMethod);
+  const transferDiscount = input.paymentMethod === 'transfer' ? Math.floor(subtotal * 0.1) : 0;
+  const discount = Math.min(subtotal, transferDiscount + coupon.discount);
   const shipping = await shippingQuote(
     input.postalCode,
     subtotal - discount,
@@ -904,8 +913,8 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       createdAt,
     ),
     statement(
-      `INSERT INTO online_orders(id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,addressExtra,city,province,notes,accessTokenHash,transferReference,expiresAt,createdAt,updatedAt)
-       VALUES (?,?,?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO online_orders(id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,addressExtra,city,province,notes,couponCode,attributionJson,accessTokenHash,transferReference,expiresAt,createdAt,updatedAt)
+       VALUES (?,?,?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId,
       orderNumber,
       customer?.customerId ?? null,
@@ -925,6 +934,8 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       input.city,
       input.province,
       input.notes,
+      input.couponCode,
+      JSON.stringify({ ...input.attribution, sessionId: input.sessionId }),
       await sha256(input.accessToken),
       transferReference,
       expiresAt,
@@ -966,6 +977,16 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       ),
     );
   }
+  if (customer && input.saveAddress && input.shippingMethod !== 'pickup') {
+    commands.push(statement(
+      `INSERT INTO customer_addresses(id,customerId,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault,createdAt,updatedAt)
+       SELECT ?,?,'Casa',?,?,?,?,?,?,?,CASE WHEN NOT EXISTS(SELECT 1 FROM customer_addresses WHERE customerId=?) THEN 1 ELSE 0 END,?,?
+       WHERE NOT EXISTS(SELECT 1 FROM customer_addresses WHERE customerId=? AND postalCode=? AND address=? AND addressExtra=?)`,
+      id(), customer.customerId, effectiveName, effectivePhone, input.postalCode, input.address, input.addressExtra,
+      input.city, input.province, customer.customerId, createdAt, createdAt,
+      customer.customerId, input.postalCode, input.address, input.addressExtra,
+    ));
+  }
   try {
     await db().batch(commands);
   } catch (cause) {
@@ -985,7 +1006,53 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       ? await createMercadoPagoPreference(detail)
       : null;
   await sendOrderEmails(orderId, 'created').catch(() => undefined);
+  if (input.sessionId) {
+    await db().batch([
+      statement("UPDATE abandoned_carts SET status='converted',recoveredAt=?,updatedAt=? WHERE sessionId=?", createdAt, createdAt, input.sessionId),
+      statement(`INSERT INTO store_events(id,sessionId,customerId,event,path,orderId,value,source,medium,campaign,metadata,createdAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, id(), input.sessionId, customer?.customerId ?? null, 'order_created', '/checkout', orderId, total, input.attribution.source, input.attribution.medium, input.attribution.campaign, JSON.stringify({ couponCode: input.couponCode }), createdAt),
+    ]);
+  }
   return { ...detail, accessToken: input.accessToken, paymentUrl };
+}
+
+async function onlineCouponDiscount(lines: Record<string, any>[], couponCode: string, paymentMethod: 'transfer'|'card') {
+  if (!couponCode) return { discount: 0, appliedDiscounts: [] as any[] };
+  const promotionRows = await rows<Record<string, any>>(
+    'SELECT id,name,percent,methodId,startsAt,endsAt,active,ruleJson FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?', argentinaDay(), argentinaDay(),
+  );
+  const normalized = couponCode.toLocaleLowerCase('es-AR');
+  const promotions: CommercialPromotion[] = promotionRows.flatMap((row) => {
+    let rule: Record<string, any> = {};
+    try { rule = row.ruleJson ? JSON.parse(row.ruleJson) : {}; } catch { return []; }
+    const coupons: string[] = rule.conditions?.couponCodes ?? [];
+    if (!coupons.some((code) => code.toLocaleLowerCase('es-AR') === normalized)) return [];
+    return [{
+      id: row.id, name: row.name, authorized: true, active: true,
+      kind: rule.kind ?? 'percentage', percentBps: rule.percentBps ?? row.percent * 100,
+      amountCents: rule.amountCents, scope: rule.scope, priority: rule.priority ?? 0,
+      exclusive: Boolean(rule.exclusive),
+      conditions: { ...rule.conditions, paymentMethodIds: row.methodId ? [row.methodId] : rule.conditions?.paymentMethodIds,
+        schedule: { startsAt: `${row.startsAt}T00:00:00-03:00`, endsAt: `${row.endsAt}T23:59:59-03:00`, timeZoneOffsetMinutes: -180 } },
+    } as CommercialPromotion];
+  });
+  const result = evaluateCommercialRules({
+    items: lines.map((line) => ({ id: line.id, category: line.category, brand: line.brand, unitPriceCents: Number(line.price), quantity: Number(line.quantity) })),
+    promotions,
+    context: { evaluatedAt: now(), timeZoneOffsetMinutes: -180, paymentMethodIds: [paymentMethod === 'transfer' ? 'transfer' : 'credit'], couponCode },
+  });
+  if (!result.appliedDiscounts.length) throw new AppError(403, 'El cupón no es válido para esta compra.');
+  return { discount: result.discountTotalCents, appliedDiscounts: result.appliedDiscounts };
+}
+
+export async function quoteOnlineCoupon(raw: unknown) {
+  const input = z.object({ items: checkoutInput.shape.items, couponCode: checkoutInput.shape.couponCode, paymentMethod: checkoutInput.shape.paymentMethod }).strict().parse(raw);
+  const lines: Record<string, any>[] = [];
+  for (const item of input.items) {
+    const line = await one<Record<string, any>>(`SELECT v.id,COALESCE(v.onlinePrice,v.price) AS price,p.category,p.brand FROM variants v JOIN products p ON p.id=v.productId JOIN online_product_profiles profile ON profile.productId=p.id WHERE v.id=? AND p.active=1 AND profile.published=1`, item.variantId);
+    if (!line) throw new AppError(404, 'Producto no disponible.');
+    lines.push({ ...line, quantity: item.quantity });
+  }
+  return onlineCouponDiscount(lines, input.couponCode, input.paymentMethod);
 }
 
 export async function onlineOrderDetail(
@@ -993,7 +1060,7 @@ export async function onlineOrderDetail(
 ): Promise<Record<string, any>> {
   const order = await one<Record<string, any>>(
     `SELECT id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,
-            fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,city,
+            fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,city,couponCode,attributionJson,
             addressExtra,province,notes,transferReference,paymentReference,trackingNumber,expiresAt,paidAt,createdAt,updatedAt
        FROM online_orders WHERE id=?`,
     orderId,
@@ -1203,7 +1270,7 @@ export async function confirmOnlinePayment(
   const commands = [
     statement(
       `INSERT INTO sales(id,ticket,sellerId,customerId,subtotal,discount,total,status,idempotencyKey,requestHash,couponCode,channel,onlineOrderId,createdAt)
-       VALUES (?,(SELECT COALESCE(MAX(ticket),0)+1 FROM sales),?,?,?,?,?,'confirmed',?,?,'','online',?,?)`,
+       VALUES (?,(SELECT COALESCE(MAX(ticket),0)+1 FROM sales),?,?,?,?,?,'confirmed',?,?,?,'online',?,?)`,
       saleId,
       actor.id,
       order.customerId,
@@ -1212,6 +1279,7 @@ export async function confirmOnlinePayment(
       order.total,
       `online:${orderId}`,
       'online-order',
+      order.couponCode || '',
       orderId,
       timestamp,
     ),
@@ -1338,6 +1406,18 @@ export async function confirmOnlinePayment(
       );
   }
   await db().batch(commands);
+  try {
+    const attribution = JSON.parse(order.attributionJson || '{}');
+    if (attribution.sessionId) await statement(
+      `INSERT INTO store_events(id,sessionId,customerId,event,path,orderId,value,source,medium,campaign,metadata,createdAt)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      id(), attribution.sessionId, order.customerId, 'purchase', '/checkout', orderId, order.total,
+      attribution.source || '', attribution.medium || '', attribution.campaign || '',
+      JSON.stringify({ couponCode: order.couponCode || '', saleId }), timestamp,
+    ).run();
+  } catch {
+    // La venta queda confirmada aunque la atribución histórica sea inválida.
+  }
   await importCorreoOrder(orderId, actor.id).catch(async (cause) => {
     await statement(
       'INSERT INTO online_order_events(id,orderId,kind,detail,actorId,createdAt) VALUES (?,?,?,?,?,?)',

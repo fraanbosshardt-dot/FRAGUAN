@@ -99,6 +99,30 @@ async function deliver(input: {
   }
 }
 
+export async function sendMarketingEmail(input: {
+  to: string;
+  subject: string;
+  title: string;
+  preheader: string;
+  content: string;
+  action?: { label: string; url: string };
+  kind: string;
+  entityId: string;
+}) {
+  return deliver({
+    to: input.to,
+    subject: input.subject,
+    html: emailFrame(
+      input.title,
+      input.preheader,
+      input.content,
+      input.action,
+    ),
+    kind: input.kind,
+    idempotencyKey: `marketing-${input.kind}-${input.entityId}`,
+  });
+}
+
 export async function sendOrderEmails(
   orderId: string,
   event: 'created' | 'paid' | 'preparing' | 'shipped',

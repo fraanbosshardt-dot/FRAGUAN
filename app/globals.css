@@ -311,6 +311,115 @@
   }
 }
 
+/* Tienda: movimiento, feedback y superficies de conversión. */
+@keyframes store-page-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes store-toast-in { from { opacity: 0; transform: translateY(18px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes store-pulse { 50% { opacity: .52; } }
+.store-shell main { animation: store-page-in .55s cubic-bezier(.2,.8,.2,1) both; }
+.store-product-card { transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease; }
+.store-product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 50px #1a191512; }
+.store-product-card:active { transform: translateY(-1px) scale(.995); }
+.store-loading { position: relative; overflow: hidden; animation: store-pulse 1.4s ease-in-out infinite; }
+.store-loading-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1px; background: var(--store-ink); }
+.store-loading-grid > span { min-height: 390px; padding: 22px; display: flex; flex-direction: column; gap: 12px; background: var(--store-paper); animation: store-pulse 1.2s ease-in-out infinite alternate; }
+.store-loading-grid i { flex: 1; background: #ded9cf; }
+.store-loading-grid b, .store-loading-grid small { display: block; height: 18px; width: 70%; background: #ded9cf; }
+.store-loading-grid small { height: 12px; width: 42%; }
+.store-toast { position: fixed; right: 24px; bottom: 24px; z-index: 100; display: flex; align-items: center; gap: 12px; width: min(390px, calc(100vw - 32px)); padding: 16px; color: var(--store-paper); background: var(--store-ink); border: 1px solid #ffffff26; box-shadow: 0 24px 60px #0003; animation: store-toast-in .35s cubic-bezier(.2,.8,.2,1) both; }
+.store-toast > svg { width: 20px; color: var(--store-copper); }
+.store-toast span { display: grid; gap: 3px; font-size: 14px; }
+.store-toast strong { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
+.store-toast button { margin-left: auto; color: inherit; }
+.store-toast button svg { width: 18px; }
+.store-cookie-banner { position: fixed; left: 20px; right: 20px; bottom: 20px; z-index: 110; display: flex; align-items: center; gap: 28px; max-width: 880px; margin: auto; padding: 18px 20px; color: var(--store-paper); background: var(--store-ink); border: 1px solid #ffffff26; box-shadow: 0 24px 70px #0004; animation: store-toast-in .4s ease both; }
+.store-cookie-banner > div:first-child { flex: 1; }
+.store-cookie-banner strong { font-size: 15px; }
+.store-cookie-banner p { margin: 4px 0; font-size: 13px; line-height: 1.45; color: #e5e0d5; }
+.store-cookie-banner a { font-size: 12px; text-decoration: underline; }
+.store-cookie-banner > div:last-child { display: flex; gap: 8px; }
+.store-cookie-banner button { padding: 12px 14px; border: 1px solid #ffffff66; font-size: 12px; font-weight: 750; white-space: nowrap; }
+.store-cookie-banner button.primary { color: var(--store-ink); background: var(--store-paper); }
+.store-product-trust { padding: 0 clamp(20px,5vw,82px) 100px; display: grid; gap: 1px; grid-template-columns: minmax(300px,.75fr) minmax(0,1.25fr); }
+.store-stock-alert-form, .store-reviews { padding: clamp(28px,4vw,52px); border: 1px solid var(--store-ink); background: var(--store-paper); }
+.store-stock-alert-form { display: grid; grid-template-columns: auto 1fr; gap: 18px; background: var(--store-steel); color: white; }
+.store-stock-alert-form > svg { width: 26px; }
+.store-stock-alert-form span, .store-reviews header span { font-size: 12px; font-weight: 850; letter-spacing: .14em; }
+.store-stock-alert-form h2, .store-reviews h2 { margin: 28px 0 10px; font-size: clamp(32px,4vw,58px); letter-spacing: -.06em; line-height: .92; }
+.store-stock-alert-form p, .store-reviews header p { font-size: 15px; line-height: 1.55; opacity: .8; }
+.store-stock-alert-form form { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 28px; }
+.store-stock-alert-form input, .store-stock-alert-form select, .store-review-form input, .store-review-form select, .store-review-form textarea, .store-coupon input { min-height: 48px; padding: 0 14px; border: 1px solid currentColor; background: transparent; font-size: 15px; }
+.store-stock-alert-form button, .store-review-form button { min-height: 48px; padding: 0 18px; background: var(--store-ink); color: var(--store-paper); font-size: 13px; font-weight: 800; text-transform: uppercase; }
+.store-reviews header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.store-reviews header button { padding: 12px 0; border-bottom: 1px solid; font-size: 14px; font-weight: 750; }
+.store-review-form { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 30px 0; }
+.store-review-form textarea, .store-review-form button { grid-column: 1 / -1; }
+.store-review-form textarea { min-height: 110px; padding-top: 13px; }
+.store-review-list { display: grid; grid-template-columns: repeat(2,1fr); gap: 1px; margin-top: 34px; background: var(--store-ink); }
+.store-review-list article { min-height: 200px; padding: 24px; background: var(--store-paper); }
+.store-review-list article svg { width: 15px; color: var(--store-copper); }
+.store-review-list h3 { margin: 24px 0 10px; font-size: 19px; }
+.store-review-list p { font-size: 15px; line-height: 1.55; }
+.store-review-list small { display: block; margin-top: 18px; color: #67675f; }
+.store-inline-success { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 101; display: flex; gap: 8px; align-items: center; padding: 14px 18px; background: var(--store-ink); color: var(--store-paper); font-size: 14px; }
+.store-mobile-buybar { display: none; }
+.store-recovery-page { max-width: 900px; min-height: 70vh; padding: clamp(70px,10vw,150px) clamp(20px,5vw,82px); }
+.store-recovery-page > svg { width: 44px; height: 44px; margin-bottom: 30px; }
+.store-recovery-page > span { display: block; font-size: 12px; font-weight: 850; letter-spacing: .16em; }
+.store-recovery-page h1 { margin: 18px 0; font-size: clamp(52px,9vw,110px); line-height: .85; letter-spacing: -.075em; }
+.store-recovery-page p { max-width: 630px; font-size: 18px; line-height: 1.6; }
+.store-recovery-page a { display: inline-flex; align-items: center; gap: 10px; margin-top: 34px; padding: 16px 22px; background: var(--store-ink); color: var(--store-paper); }
+.store-summary-edit { display: flex; align-items: center; gap: 8px; }
+.store-summary-edit button { width: 28px; height: 28px; border: 1px solid currentColor; }
+.store-coupon { padding: 22px 0; border-top: 1px solid #18181833; }
+.store-coupon label { display: block; margin-bottom: 9px; font-size: 13px; font-weight: 750; }
+.store-coupon > div { display: flex; }
+.store-coupon input { flex: 1; min-width: 0; }
+.store-coupon button { padding: 0 16px; color: var(--store-paper); background: var(--store-ink); font-size: 12px; font-weight: 800; }
+.store-coupon small { display: block; margin-top: 8px; color: #466a3e; }
+.store-stock-urgency { margin: 12px 0 2px; color: #8c4a2f; font-size: 14px; font-weight: 750; }
+.store-address-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 10px; }
+.store-address-list article { padding: 18px; border: 1px solid var(--store-ink); }
+.store-address-list p { margin-top: 10px; color: #62645f; font-size: 14px; line-height: 1.55; }
+.growth-admin { display: grid; gap: 20px; }
+.growth-admin .metric-grid { grid-template-columns: repeat(5,minmax(0,1fr)); margin-top: 0; }
+.growth-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.growth-funnel { display: grid; gap: 15px; }
+.growth-funnel > div { display: grid; grid-template-columns: 85px 1fr 95px; align-items: center; gap: 10px; font-size: 12px; }
+.growth-funnel i { height: 10px; overflow: hidden; border-radius: 99px; background: var(--muted); }
+.growth-funnel i b { display: block; height: 100%; border-radius: inherit; background: #6b8057; }
+.growth-funnel strong { text-align: right; font-size: 11px; }
+.growth-list { display: grid; }
+.growth-list > div { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+.growth-list > div > span { display: grid; gap: 3px; margin-right: auto; }
+.growth-list small { color: var(--muted-foreground); }
+.growth-list em { font-style: normal; color: #6b8057; }
+.growth-review-list article { display: flex; align-items: center; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+.growth-review-list article > div:first-child { flex: 1; }
+.growth-review-list article p { margin-top: 8px; font-size: 12px; line-height: 1.5; }
+.growth-review-list article small { display: block; margin-top: 3px; color: var(--muted-foreground); }
+.growth-review-list article > div:last-child { display: flex; gap: 6px; }
+@media (max-width: 900px) {
+  .store-loading-grid { grid-template-columns: repeat(2,1fr); }
+  .store-product-trust, .growth-grid { grid-template-columns: 1fr; }
+  .growth-admin .metric-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 700px) {
+  .store-loading-grid > span { min-height: 280px; }
+  .store-cookie-banner { align-items: stretch; flex-direction: column; gap: 14px; bottom: 10px; }
+  .store-cookie-banner > div:last-child { display: grid; grid-template-columns: 1fr 1fr; }
+  .store-toast { right: 16px; bottom: 84px; }
+  .store-product-trust { padding-bottom: 80px; }
+  .store-review-form, .store-review-list { grid-template-columns: 1fr; }
+  .store-review-form > * { grid-column: 1; }
+  .store-reviews header { align-items: flex-start; flex-direction: column; }
+  .store-mobile-buybar { position: fixed; display: flex; align-items: center; gap: 12px; left: 0; right: 0; bottom: 0; z-index: 90; padding: 10px 14px; background: var(--store-paper); border-top: 1px solid var(--store-ink); box-shadow: 0 -10px 30px #0001; }
+  .store-mobile-buybar span { display: grid; min-width: 0; margin-right: auto; }
+  .store-mobile-buybar small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+  .store-mobile-buybar strong { font-size: 17px; }
+  .store-mobile-buybar button { display: flex; align-items: center; gap: 8px; padding: 13px 16px; color: var(--store-paper); background: var(--store-ink); font-size: 13px; font-weight: 800; }
+  .growth-funnel > div { grid-template-columns: 65px 1fr 70px; }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -102,6 +102,7 @@ import {
   storeAccountWrite,
   storeCatalog,
   storeProduct,
+  quoteOnlineCoupon,
 } from '@/lib/online-store';
 import {
   newsletterOverview,
@@ -109,6 +110,16 @@ import {
   subscribeNewsletter,
   unsubscribeNewsletter,
 } from '@/lib/email';
+import {
+  moderateReview,
+  publicProductReviews,
+  recoverCart,
+  requestBackInStock,
+  runMarketingAutomations,
+  storeGrowthDashboard,
+  submitProductReview,
+  trackStoreEvent,
+} from '@/lib/store-growth';
 export const dynamic = 'force-dynamic';
 function promotionRule(value: unknown) {
   if (typeof value !== 'string' || !value) return {} as Record<string, any>;
@@ -137,6 +148,10 @@ export async function GET(
       );
     if (resource === 'store-product')
       return reply(await storeProduct(url.searchParams.get('slug') ?? ''));
+    if (resource === 'store-reviews')
+      return reply(await publicProductReviews(url.searchParams.get('productId') ?? ''));
+    if (resource === 'store-recover-cart')
+      return reply(await recoverCart(url.searchParams.get('token') ?? ''));
     if (resource === 'store-account') return reply(await storeAccount(req));
     if (resource === 'store-order')
       return reply(
@@ -207,6 +222,7 @@ export async function GET(
           'seller-commissions',
           'online-orders',
           'online-catalog',
+          'marketing',
         ].filter((p) => can(a, p)),
       });
     }
@@ -219,6 +235,7 @@ export async function GET(
       return reply(await listOnlineOrders(a, url.searchParams.get('id') ?? ''));
     if (resource === 'online-catalog') return reply(await listOnlineCatalog(a));
     if (resource === 'newsletter') return reply(await newsletterOverview(a));
+    if (resource === 'marketing') return reply(await storeGrowthDashboard(a));
     if (resource === 'communications')
       return reply(await communicationSuggestions(a));
     if (resource === 'supplier-history')
@@ -585,6 +602,12 @@ export async function POST(
       return reply(await createOnlineReturnRequest(body), 201);
     if (resource === 'store-newsletter')
       return reply(await subscribeNewsletter(body), 201);
+    if (resource === 'store-event')
+      return reply(await trackStoreEvent(req, body), 201);
+    if (resource === 'store-back-in-stock')
+      return reply(await requestBackInStock(req, body), 201);
+    if (resource === 'store-review')
+      return reply(await submitProductReview(req, body), 201);
     if (resource === 'store-shipping') {
       const input = z
         .object({
@@ -598,6 +621,7 @@ export async function POST(
         await shippingQuote(input.postalCode, input.subtotal, input.method),
       );
     }
+    if (resource === 'store-coupon') return reply(await quoteOnlineCoupon(body));
     if (resource === 'setup') {
       const x = z.object({ demo: z.boolean() }).strict().parse(body);
       return reply(await setup(x.demo), 201);
@@ -629,6 +653,12 @@ export async function POST(
       return reply(await onlineCatalogWrite(a, body));
     if (resource === 'newsletter')
       return reply(await sendNewsletterCampaign(a, body));
+    if (resource === 'marketing') {
+      const action = z.object({ action: z.enum(['run-automations','moderate-review']), reviewId: z.string().optional(), status: z.enum(['published','rejected']).optional() }).parse(body);
+      return reply(action.action === 'run-automations'
+        ? await runMarketingAutomations(a)
+        : await moderateReview(a, { reviewId: action.reviewId, status: action.status }));
+    }
     if (resource === 'customers') {
       requirePermission(a, 'customers');
       const x = customerInput.parse(body),

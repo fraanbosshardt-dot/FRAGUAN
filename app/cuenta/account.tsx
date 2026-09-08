@@ -141,6 +141,7 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
                 {profileState && <small className="wide">{profileState}</small>}
               </form>
             </section>
+            {!!data.addresses?.length && <section className="store-account-orders"><div><span>TUS DIRECCIONES</span><h2>Entrega más rápida</h2></div><div className="store-address-list">{data.addresses.map((address: any) => <article key={address.id}><strong>{address.label}{address.isDefault ? ' · Principal' : ''}</strong><p>{address.address}{address.addressExtra ? `, ${address.addressExtra}` : ''}<br />{address.postalCode} · {address.city}, {address.province}</p></article>)}</div></section>}
             <section className="store-account-orders">
               <div>
                 <span>TUS COMPRAS</span>

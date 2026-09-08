@@ -27,6 +27,7 @@ export type StoreProduct = {
   variants: StoreVariant[];
 };
 export type StoreCartItem = StoreVariant & {
+  productId: string;
   productName: string;
   slug: string;
   quantity: number;
@@ -56,6 +57,60 @@ export const storeMoney = (value: number) =>
 
 const CART_KEY = 'fraguan-online-cart';
 const FAVORITES_KEY = 'fraguan-online-favorites';
+const SESSION_KEY = 'fraguan-store-session';
+const ATTRIBUTION_KEY = 'fraguan-store-attribution';
+
+export function storeSessionId() {
+  let value = localStorage.getItem(SESSION_KEY);
+  if (!value) {
+    value = crypto.randomUUID();
+    localStorage.setItem(SESSION_KEY, value);
+  }
+  return value;
+}
+
+export function storeAttribution() {
+  try {
+    return JSON.parse(sessionStorage.getItem(ATTRIBUTION_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+export function captureStoreAttribution() {
+  const query = new URLSearchParams(location.search);
+  const current = storeAttribution();
+  const next = {
+    source: query.get('utm_source') || current.source || '',
+    medium: query.get('utm_medium') || current.medium || '',
+    campaign: query.get('utm_campaign') || current.campaign || '',
+  };
+  sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(next));
+  return next;
+}
+
+export function trackStore(
+  event: string,
+  detail: Record<string, unknown> = {},
+) {
+  if (typeof window === 'undefined') return;
+  const { consentGranted, ...safeDetail } = detail;
+  if (localStorage.getItem('fraguan-cookie-consent') !== 'analytics' && !consentGranted) return;
+  const attribution = captureStoreAttribution();
+  const payload = {
+    sessionId: storeSessionId(),
+    event,
+    path: location.pathname,
+    ...attribution,
+    ...safeDetail,
+  };
+  const body = JSON.stringify(payload);
+  if (navigator.sendBeacon && event === 'page_view') {
+    navigator.sendBeacon('/api/store-event', new Blob([body], { type: 'application/json' }));
+    return;
+  }
+  void storeApi('store-event', { method: 'POST', body }).catch(() => undefined);
+}
 
 export function useStoreFavorites() {
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -146,12 +201,22 @@ export function useStoreCart() {
             ...current,
             {
               ...variant,
+              productId: product.id,
               productName: product.name,
               slug: product.slug,
               quantity: Math.min(quantity, variant.stock),
             },
           ];
       save(next);
+      trackStore('add_to_cart', {
+        productId: product.id,
+        variantId: variant.id,
+        value: variant.price * quantity,
+        cart: next.map(({ id, productName, slug, color, size, price, quantity }) => ({
+          variantId: id, productName, slug, color, size, price, quantity,
+        })),
+      });
+      dispatchEvent(new CustomEvent('fraguan-cart-feedback', { detail: { productName: product.name, size: variant.size } }));
     },
     [save],
   );
@@ -160,19 +225,30 @@ export function useStoreCart() {
       const current: StoreCartItem[] = JSON.parse(
         localStorage.getItem(CART_KEY) || '[]',
       );
-      save(
-        current.flatMap((item) =>
+      const next = current.flatMap((item) =>
           item.id !== variantId
             ? [item]
             : quantity > 0
               ? [{ ...item, quantity: Math.min(item.stock, quantity) }]
               : [],
-        ),
-      );
+        );
+      save(next);
+      const changed = current.find((item) => item.id === variantId);
+      if (changed) trackStore(quantity > 0 ? 'add_to_cart' : 'remove_from_cart', {
+        productId: changed.productId,
+        variantId,
+        value: changed.price * Math.max(0, quantity),
+        cart: next.map(({ id, productName, slug, color, size, price, quantity }) => ({
+          variantId: id, productName, slug, color, size, price, quantity,
+        })),
+      });
     },
     [save],
   );
-  const clear = useCallback(() => save([]), [save]);
+  const clear = useCallback(() => {
+    save([]);
+    trackStore('remove_from_cart', { cart: [] });
+  }, [save]);
   return {
     cart,
     add,

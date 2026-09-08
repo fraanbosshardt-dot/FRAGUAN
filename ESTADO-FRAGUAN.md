@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 8 de septiembre de 2026.
+Actualizado: 8 de septiembre de 2026 · etapa de crecimiento online.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -31,6 +31,14 @@ pagos, talles, contacto, términos, privacidad y cookies; Botón de arrepentimie
 con código trazable; Google Sign-In preparado; metadata, datos estructurados de producto,
 cabeceras de seguridad, `robots.txt` y sitemap.
 
+La etapa de crecimiento también está implementada en local: colecciones rastreables,
+sitemap dinámico, datos estructurados por variante, organización, breadcrumbs y devoluciones;
+medición propia bajo consentimiento con embudo y atribución UTM; cupones online conectados
+al motor central de promociones; direcciones guardadas; recuperación de carrito; avisos de
+reposición; reseñas moderadas; panel `Crecimiento online`; automatizaciones de bienvenida,
+navegación, carrito, poscompra y reactivación; skeletons, feedback, transiciones y barra fija
+de compra móvil.
+
 El lanzamiento real continúa condicionado a credenciales y servicios externos: base de datos
 productiva, Google Auth, Mercado Pago, Correo Argentino, Resend, dominio y pruebas físicas.
 Hasta autorización explícita, Vercel mantiene solamente “Próximamente disponible”.
@@ -60,7 +68,8 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 | Flujo de fondos         | Caja, bancos registrados, cobros y obligaciones con proyecciones de 7/30/60/90 días.                                                                                                                                                                                                                                                 |
 | Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales.                                                                                                                                                             |
 | Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
-| Email y newsletter      | Suscripción pública, bajas, campañas para suscriptores activos y notificaciones transaccionales de pedidos con Resend. Sin WhatsApp.                                                                                                                                                                                                 |
+| Email y newsletter      | Suscripción, bajas, campañas, notificaciones transaccionales y automatizaciones de bienvenida, navegación, carrito, reposición, poscompra y reactivación con Resend. Sin WhatsApp.                                                                                                                                                    |
+| Marketing y conversión  | Embudo consentido, UTMs, atribución, cupones online, carritos recuperables, direcciones guardadas, reposición, reseñas verificables y moderadas, interés por producto y facturación por origen. Se vincula con clientes, pedidos, promociones, variantes y stock centrales.                                                              |
 | Administración          | Acceso protegido por PIN de seis dígitos y sesión HttpOnly de ocho horas. Menú segmentado por áreas, roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                   |
 | Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4.                                                                                                                                                                                               |
 | Recuperación            | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md.                                                                                                                                                              |
@@ -71,6 +80,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 - La venta confirma pagos, caja, stock, cliente y fidelización de forma atómica. Los reintentos protegidos no deben duplicar efectos.
 - Cada pedido online reserva stock durante 30 minutos. El pago confirmado crea una sola venta con canal online y vínculo al pedido.
 - Cada variante puede tener un precio online propio. Si queda vacío, hereda el precio del local; el POS nunca toma el precio online y un pedido conserva el precio con el que fue creado.
+- Los cupones online se validan en el servidor con las promociones centrales y quedan trazados en el pedido y la venta. La medición comercial nunca recibe costos, márgenes, datos completos de tarjeta ni información financiera interna.
 - La transferencia usa referencia única e importe exacto. El adaptador de webhook concilia referencia, estado e importe antes de acreditar.
 - El backend valida permisos; los costos nunca forman parte de las respuestas del vendedor.
 - Un conteo físico no ajusta stock hasta aprobarse; después queda congelado en base.
@@ -101,8 +111,9 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
 4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0019_store_auth_returns_legal.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
-6. Cargar credenciales productivas de Google Identity Services, Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos y probar login/cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
-7. Cargar razón social, CUIT, domicilio, email y horario reales del comercio y completar la revisión legal previa a ventas.
+6. Cargar credenciales productivas de Google Identity Services, Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos, programar las automatizaciones y probar login/cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
+7. Agregar fotografías reales por producto y variante; después habilitar Merchant Center y previsualizaciones sociales con esos activos.
+8. Cargar razón social, CUIT, domicilio, email y horario reales del comercio y completar la revisión legal previa a ventas.
 
 ## Continuidad
 
@@ -116,7 +127,7 @@ Mantener datos reales fuera del entorno demo hasta completar la puesta en produc
 
 Continuar con QA visual local y pruebas de checkout/envío. Cuando el usuario habilite la
 etapa de integraciones, decidir el runtime definitivo (D1/Cloudflare o una base compatible
-con Vercel), crear la base productiva y ejecutar las migraciones hasta `0019`, configurar
+con Vercel), crear la base productiva y ejecutar las migraciones hasta `0020`, configurar
 Google Auth, Mercado Pago, Correo Argentino y Resend, cargar sus variables secretas y
 conectar `fraguan.com`.
 

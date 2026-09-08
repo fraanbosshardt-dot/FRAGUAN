@@ -13,11 +13,11 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
 import { StoreFooter } from '@/components/store-footer';
-import { storeApi, storeMoney, useStoreCart } from '@/lib/store-client';
+import { storeApi, storeMoney, useStoreCart, storeAttribution, storeSessionId, trackStore } from '@/lib/store-client';
 
 type Order = Record<string, any>;
 export default function Checkout() {
-  const { cart, subtotal, clear } = useStoreCart();
+  const { cart, subtotal, clear, update } = useStoreCart();
   const [payment, setPayment] = useState<'transfer' | 'card'>('transfer');
   const [shippingMethod, setShippingMethod] = useState<
     'correo-argentino-home' | 'pickup'
@@ -28,6 +28,9 @@ export default function Checkout() {
   const [order, setOrder] = useState<Order | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponMessage, setCouponMessage] = useState('');
   const idempotency = useRef(crypto.randomUUID());
   const accessToken = useRef(crypto.randomUUID());
   useEffect(() => {
@@ -35,6 +38,7 @@ export default function Checkout() {
       .then(setSession)
       .catch(() => undefined);
   }, []);
+  useEffect(() => { if (cart.length) trackStore('begin_checkout', { value: subtotal, cart: cart.map(({ id, productName, slug, color, size, price, quantity }) => ({ variantId: id, productName, slug, color, size, price, quantity })) }); }, [cart, subtotal]);
   useEffect(() => {
     if (shippingMethod === 'pickup') {
       setShipping({
@@ -65,7 +69,8 @@ export default function Checkout() {
     );
     return () => clearTimeout(t);
   }, [postalCode, subtotal, payment, shippingMethod]);
-  const discount = payment === 'transfer' ? Math.floor(subtotal * 0.1) : 0;
+  const transferDiscount = payment === 'transfer' ? Math.floor(subtotal * 0.1) : 0;
+  const discount = Math.min(subtotal, transferDiscount + couponDiscount);
   const total = useMemo(
     () => subtotal - discount + (shipping?.amount ?? 0),
     [subtotal, discount, shipping],
@@ -101,10 +106,14 @@ export default function Checkout() {
           notes: form.get('notes') || '',
           idempotencyKey: idempotency.current,
           accessToken: accessToken.current,
+          couponCode,
+          attribution: storeAttribution(),
+          sessionId: storeSessionId(),
+          saveAddress: form.get('saveAddress') === 'on',
         }),
       });
       setOrder(result);
-      clear();
+      if (payment === 'transfer' || !result.paymentUrl) clear();
       sessionStorage.setItem(`fraguan-order-${result.id}`, result.accessToken);
       if (result.paymentUrl) window.location.assign(result.paymentUrl);
     } catch (cause: any) {
@@ -112,6 +121,15 @@ export default function Checkout() {
     } finally {
       setBusy(false);
     }
+  }
+  async function applyCoupon() {
+    setError(''); setCouponMessage('Validando…');
+    try {
+      const result = await storeApi<{ discount: number; appliedDiscounts: any[] }>('store-coupon', { method: 'POST', body: JSON.stringify({ items: cart.map((item) => ({ variantId: item.id, quantity: item.quantity })), couponCode, paymentMethod: payment }) });
+      setCouponDiscount(result.discount);
+      setCouponMessage(result.appliedDiscounts.map((item) => item.promotionName).join(' · ') || 'Cupón aplicado');
+      trackStore('coupon_applied', { value: result.discount, metadata: { couponCode } });
+    } catch (cause: any) { setCouponDiscount(0); setCouponMessage(''); setError(cause.message); }
   }
   async function report(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -316,7 +334,7 @@ export default function Checkout() {
                   className={
                     shippingMethod === 'correo-argentino-home' ? 'active' : ''
                   }
-                  onClick={() => setShippingMethod('correo-argentino-home')}
+                  onClick={() => { setShippingMethod('correo-argentino-home'); trackStore('add_shipping_info', { metadata: { method: 'correo-argentino-home' } }); }}
                 >
                   <Truck />
                   <strong>Correo Argentino</strong>
@@ -325,7 +343,7 @@ export default function Checkout() {
                 <button
                   type="button"
                   className={shippingMethod === 'pickup' ? 'active' : ''}
-                  onClick={() => setShippingMethod('pickup')}
+                  onClick={() => { setShippingMethod('pickup'); trackStore('add_shipping_info', { metadata: { method: 'pickup' } }); }}
                 >
                   <PackageCheck />
                   <strong>Retiro</strong>
@@ -334,6 +352,11 @@ export default function Checkout() {
               </div>
               {shippingMethod !== 'pickup' && (
                 <div className="store-fields">
+                  {!!session?.addresses?.length && <label className="wide">Dirección guardada<select defaultValue="" onChange={(event) => {
+                    const address = session.addresses.find((item: any) => item.id === event.target.value); if (!address) return;
+                    setPostalCode(address.postalCode);
+                    for (const key of ['address','addressExtra','city','province']) { const element = document.querySelector(`[name="${key}"]`) as HTMLInputElement | HTMLSelectElement | null; if (element) element.value = String(address[key] ?? ''); }
+                  }}><option value="">Completar una nueva</option>{session.addresses.map((item: any) => <option key={item.id} value={item.id}>{item.label} · {item.address}, {item.city}</option>)}</select></label>}
                   <label>
                     Código postal
                     <input
@@ -375,6 +398,7 @@ export default function Checkout() {
                   </strong>
                 </p>
               )}
+              {session?.customer && shippingMethod !== 'pickup' && <label className="store-checkout-consent"><input name="saveAddress" type="checkbox" defaultChecked /><span>Guardar esta dirección en Mi FRAGUAN.</span></label>}
             </section>
             <section>
               <div className="store-form-step">
@@ -388,7 +412,7 @@ export default function Checkout() {
                 <button
                   type="button"
                   className={payment === 'transfer' ? 'active' : ''}
-                  onClick={() => setPayment('transfer')}
+                  onClick={() => { setPayment('transfer'); setCouponDiscount(0); setCouponCode(''); setCouponMessage(''); trackStore('add_payment_info', { metadata: { method: 'transfer' } }); }}
                 >
                   <Landmark />
                   <span>
@@ -400,7 +424,7 @@ export default function Checkout() {
                 <button
                   type="button"
                   className={payment === 'card' ? 'active' : ''}
-                  onClick={() => setPayment('card')}
+                  onClick={() => { setPayment('card'); setCouponDiscount(0); setCouponCode(''); setCouponMessage(''); trackStore('add_payment_info', { metadata: { method: 'card' } }); }}
                 >
                   <CreditCard />
                   <span>
@@ -418,6 +442,15 @@ export default function Checkout() {
             <label className="store-checkout-consent">
               <input type="checkbox" required />
               <span>Confirmo que los datos son correctos y acepto los <a href="/informacion/terminos" target="_blank">Términos y condiciones</a> y la <a href="/informacion/privacidad" target="_blank">Política de privacidad</a>.</span>
+            </label>
+            <label className="store-checkout-consent">
+              <input name="marketingRecovery" type="checkbox" onChange={(event) => {
+                if (!event.currentTarget.checked) return;
+                localStorage.setItem('fraguan-cookie-consent', 'analytics');
+                const email = (event.currentTarget.form?.elements.namedItem('email') as HTMLInputElement | null)?.value || '';
+                if (email) trackStore('begin_checkout', { consentGranted: true, email, value: subtotal, cart: cart.map(({ id, productName, slug, color, size, price, quantity }) => ({ variantId: id, productName, slug, color, size, price, quantity })) });
+              }} />
+              <span>Quiero recibir ayuda por email si dejo esta compra sin terminar.</span>
             </label>
             {error && <p className="store-buy-error">{error}</p>}
             <button
@@ -445,9 +478,10 @@ export default function Checkout() {
                     {item.color} · {item.size} · {item.quantity} u.
                   </small>
                 </span>
-                <b>{storeMoney(item.price * item.quantity)}</b>
+                <span className="store-summary-edit"><button onClick={() => update(item.id, item.quantity - 1)} aria-label="Quitar una unidad">−</button><b>{storeMoney(item.price * item.quantity)}</b><button onClick={() => update(item.id, item.quantity + 1)} aria-label="Agregar una unidad">+</button></span>
               </div>
             ))}
+            <div className="store-coupon"><label htmlFor="coupon">¿Tenés un cupón?</label><div><input id="coupon" value={couponCode} onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponDiscount(0); setCouponMessage(''); }} placeholder="CÓDIGO"/><button type="button" onClick={applyCoupon} disabled={!couponCode}>Aplicar</button></div>{couponMessage && <small>{couponMessage}</small>}</div>
             <dl>
               <div>
                 <dt>Subtotal</dt>
@@ -455,7 +489,7 @@ export default function Checkout() {
               </div>
               {discount > 0 && (
                 <div className="discount">
-                  <dt>10% transferencia</dt>
+                  <dt>{couponDiscount ? 'Descuentos' : '10% transferencia'}</dt>
                   <dd>−{storeMoney(discount)}</dd>
                 </div>
               )}

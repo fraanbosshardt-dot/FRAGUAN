@@ -27,6 +27,7 @@ export const configurablePermissions = [
   'banking',
   'club-rewards',
   'communications',
+  'marketing',
   'seller-commissions',
 ] as const;
 export async function listAccess(a: Actor) {

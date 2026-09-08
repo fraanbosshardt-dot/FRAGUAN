@@ -26,6 +26,7 @@ import {
   TrendingUp,
   Globe2,
   PackageCheck,
+  BarChart3,
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -89,10 +90,11 @@ const navigationGroups: readonly NavigationGroup[] = [
   },
   {
     label: 'Tienda online',
-    primaryCount: 2,
+    primaryCount: 3,
     items: [
       ['online-orders', 'Pedidos online', PackageCheck],
       ['online-catalog', 'Catálogo online', Globe2],
+      ['marketing', 'Crecimiento online', BarChart3],
     ],
   },
   {
@@ -323,6 +325,7 @@ const descriptions: Record<string, string> = {
     'Pagos, referencias, preparación, envíos y seguimiento en una sola cola.',
   'online-catalog':
     'Elegí qué productos se publican y completá su información de venta online.',
+  marketing: 'Medí el embudo y gestioná recuperación, reposiciones, reseñas y campañas desde los mismos datos de la tienda.',
   products:
     'Productos, variantes, precios y existencias reunidos en un solo lugar.',
   stock: 'Consultá y ajustá las unidades de cada variante.',
@@ -1432,6 +1435,11 @@ export default function Admin({ section }: { section: string }) {
                   <Plus size={16} /> Nueva campaña
                 </Button>
               )}
+              {section === 'marketing' && (
+                <Button onClick={() => mutate('marketing', { action: 'run-automations' })} disabled={busy}>
+                  <RefreshCw size={15} /> Ejecutar automatizaciones
+                </Button>
+              )}
               {![
                 'dashboard',
                 'reports',
@@ -1449,6 +1457,7 @@ export default function Admin({ section }: { section: string }) {
                 'online-orders',
                 'online-catalog',
                 'newsletter',
+                'marketing',
               ].includes(section) && (
                 <Button onClick={() => openForm()}>
                   <Plus size={16} />{' '}
@@ -2776,6 +2785,31 @@ export default function Admin({ section }: { section: string }) {
               </section>
             </div>
           )}
+          {section === 'marketing' && data && (
+            <div className="growth-admin">
+              <section className="metric-grid">
+                {[
+                  ['Sesiones', data.funnel?.visitors ?? 0],
+                  ['Vieron productos', data.funnel?.productViews ?? 0],
+                  ['Agregaron', data.funnel?.addToCart ?? 0],
+                  ['Iniciaron compra', data.funnel?.checkout ?? 0],
+                  ['Compraron', data.funnel?.purchases ?? 0],
+                ].map(([label, value]) => <article className="metric" key={String(label)}><p>{label}</p><strong>{value}</strong><small>Últimos {data.periodDays} días</small></article>)}
+              </section>
+              <div className="growth-grid">
+                <section className="panel"><div className="panel-heading"><h2>Embudo de compra</h2><span>Sesiones únicas</span></div><div className="growth-funnel">{[
+                  ['Visitas', data.funnel?.visitors], ['Producto', data.funnel?.productViews], ['Carrito', data.funnel?.addToCart], ['Checkout', data.funnel?.checkout], ['Compra', data.funnel?.purchases],
+                ].map(([label, value], index) => { const max = Math.max(1, data.funnel?.visitors || 1); return <div key={String(label)}><span>{label}</span><i><b style={{ width: `${Math.max(3, Number(value || 0) / max * 100)}%` }} /></i><strong>{value || 0}{index ? ` · ${Math.round(Number(value || 0) / Math.max(1, Number(Object.values(data.funnel)[index - 1] || 1)) * 100)}%` : ''}</strong></div>; })}</div></section>
+                <section className="panel"><div className="panel-heading"><h2>Origen de ventas</h2><span>Campañas y canales</span></div><div className="growth-list">{(data.sources ?? []).map((row: Row, index: number) => <div key={`${row.source}-${row.campaign}-${index}`}><span><strong>{row.source}</strong><small>{row.campaign}</small></span><b>{row.sessions} sesiones</b><em>{money(row.revenue)}</em></div>)}{!data.sources?.length && <p className="quiet">Los canales aparecerán cuando haya visitas.</p>}</div></section>
+              </div>
+              <div className="growth-grid">
+                <section className="panel"><div className="panel-heading"><h2>Carritos por recuperar</h2><span>{data.configured ? 'Emails automáticos listos' : 'Falta configurar Resend'}</span></div><div className="growth-list">{(data.carts ?? []).map((cart: Row) => <div key={cart.id}><span><strong>{cart.email || 'Visitante sin email'}</strong><small>{date(cart.lastActivityAt)} · {cart.source || 'Directo'}</small></span><b>{money(cart.subtotal)}</b><em>{cart.secondReminderAt ? '2 avisos' : cart.firstReminderAt ? '1 aviso' : 'Pendiente'}</em></div>)}{!data.carts?.length && <p className="quiet">No hay carritos pendientes.</p>}</div></section>
+                <section className="panel"><div className="panel-heading"><h2>Productos más mirados</h2><span>Interés y agregado</span></div><div className="growth-list">{(data.products ?? []).map((product: Row) => <div key={product.name}><span><strong>{product.name}</strong><small>{product.views} vistas</small></span><b>{product.adds} agregados</b></div>)}</div></section>
+              </div>
+              <section className="panel"><div className="panel-heading"><h2>Reseñas para moderar</h2><span>Las compras verificadas quedan identificadas</span></div><div className="growth-review-list">{(data.reviews ?? []).map((review: Row) => <article key={review.id}><div><strong>{review.product} · {review.rating}/5</strong><small>{review.displayName}{review.verified ? ' · Compra verificada' : ''}</small><p>{review.body}</p></div><span className={'status ' + review.status}>{review.status}</span>{review.status === 'pending' && <div><Button variant="outline" onClick={() => mutate('marketing', { action: 'moderate-review', reviewId: review.id, status: 'rejected' })}>Rechazar</Button><Button onClick={() => mutate('marketing', { action: 'moderate-review', reviewId: review.id, status: 'published' })}>Publicar</Button></div>}</article>)}{!data.reviews?.length && <p className="quiet">Todavía no hay opiniones.</p>}</div></section>
+              <section className="panel"><div className="panel-heading"><h2>Avisos de reposición</h2><span>Conectados al stock de variantes</span></div><div className="growth-list">{(data.waits ?? []).map((wait: Row) => <div key={wait.id}><span><strong>{wait.product}</strong><small>{wait.color} · talle {wait.size} · {wait.email}</small></span><em>{wait.status === 'waiting' ? 'Esperando stock' : 'Avisado'}</em></div>)}{!data.waits?.length && <p className="quiet">No hay avisos pendientes.</p>}</div></section>
+            </div>
+          )}
           {columns[section] && data && (
             <section className="panel table-panel">
               <div className="table-toolbar">
@@ -3234,6 +3268,8 @@ export default function Admin({ section }: { section: string }) {
                     : `${selected.address}${selected.addressExtra ? ` · ${selected.addressExtra}` : ''}, ${selected.city}, ${selected.province} · CP ${selected.postalCode}`}
                 </span>
                 {selected.document && <span>DNI: {selected.document}</span>}
+                {selected.couponCode && <span>Cupón aplicado: {selected.couponCode}</span>}
+                {selected.attributionJson && (() => { try { const source = JSON.parse(selected.attributionJson); return <span>Origen: {source.source || 'Directo'}{source.campaign ? ` · ${source.campaign}` : ''}</span>; } catch { return null; } })()}
               </div>
               {!!selected.returnRequests?.length && (
                 <div className="online-return-alert">

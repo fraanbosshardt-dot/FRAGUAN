@@ -16,6 +16,14 @@ Actualizado: 8 de septiembre de 2026.
 - Botón de arrepentimiento visible desde el primer acceso, sin registro, con verificación razonable de pedido/email, código inmediato, email y aparición en Administración.
 - Metadata por página, canonical, sitemap, robots, datos estructurados de producto y cabeceras de seguridad.
 - Navegación responsive, foco visible, reducción de movimiento y formularios accesibles.
+- Colecciones con URLs indexables, sitemap dinámico de productos y categorías, canonical, breadcrumbs y datos estructurados de variantes, ofertas, organización y devoluciones.
+- Medición propia con consentimiento: sesiones, búsqueda, producto, carrito, checkout, compra, UTM, campaña y facturación atribuida, sin costos internos ni datos de tarjeta.
+- Panel `Crecimiento online` en Administración con embudo, canales, productos mirados, carritos, reposiciones y moderación de reseñas.
+- Cupones online validados en servidor por el motor central de promociones y guardados en pedido y venta.
+- Recuperación de carrito consentida, direcciones guardadas, edición del carrito en checkout, stock bajo, barra de compra móvil y feedback inmediato.
+- Reseñas moderadas con compra verificable y resumen preparado para SEO.
+- Automatizaciones para Resend: bienvenida, nutrición, navegación y carrito abandonados, reposición, poscompra y reactivación.
+- Transiciones, microinteracciones, skeletons y reducción de movimiento.
 
 ## Conexiones externas pendientes de credenciales
 
@@ -24,10 +32,12 @@ Estas tareas requieren datos o cuentas que no pueden inventarse en desarrollo:
 1. Crear el cliente web en Google Cloud, autorizar `fraguan.com` y cargar el mismo ID en `GOOGLE_CLIENT_ID` y `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
 2. Cargar razón social, CUIT, domicilio y contacto reales en las variables `STORE_*`.
 3. Configurar Mercado Pago, Correo Argentino y Resend con credenciales productivas y webhooks públicos.
-4. Verificar `emails.fraguan.com` en Resend y crear `atencion@fraguan.com` o reemplazarlo por el email definitivo.
-5. Decidir y conectar la base productiva; aplicar migraciones hasta `0019_store_auth_returns_legal.sql`.
+4. Verificar `emails.fraguan.com` en Resend, crear `atencion@fraguan.com`, activar el programador de automatizaciones y probar las bajas.
+5. Decidir y conectar la base productiva; aplicar migraciones hasta `0020_store_growth.sql`.
 6. Probar un pago real, un reintegro, una etiqueta de Correo Argentino, todos los emails y el flujo físico de cambio.
-7. Ejecutar revisión legal final con los datos reales del comercio antes de habilitar ventas.
+7. Agregar fotografías reales cuando estén disponibles; Merchant Center queda pendiente hasta contar con imágenes aprobables.
+8. Conectar Search Console y Merchant Center, enviar el sitemap y revisar resultados enriquecidos después del lanzamiento autorizado.
+9. Ejecutar revisión legal final con los datos reales del comercio antes de habilitar ventas.
 
 ## Referencia normativa y técnica usada
 
@@ -42,4 +52,3 @@ Estas tareas requieren datos o cuentas que no pueden inventarse en desarrollo:
 
 El trabajo se mantiene en local y GitHub. Vercel continúa mostrando “Próximamente
 disponible”. No se habilita ningún deploy sin autorización explícita del usuario.
-
