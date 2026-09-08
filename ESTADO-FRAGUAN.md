@@ -117,3 +117,10 @@ incorporará el modelo multi-sucursal con usuarios asignados a una o más tienda
 con alcance por sucursal: vendedor, encargado y administración central. El stock, las
 cajas, los pedidos, las transferencias y los reportes podrán filtrarse por tienda o
 consolidarse globalmente sin cambiar la operación actual.
+
+## Rol operativo actual
+
+El POS tendrá por ahora un único rol: `VENDEDOR`. Este usuario puede realizar el flujo
+completo de venta, consultar información comercial y gestionar únicamente las funciones
+operativas autorizadas. La administración continúa separada y protegida. Los roles de
+encargado, caja, depósito y alcance por sucursal quedan reservados para una etapa futura.
