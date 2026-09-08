@@ -150,69 +150,25 @@ export default function Storefront({
     <div className="store-shell">
       <StoreHeader />
       <main>
-        <section className="store-hero">
-          <div className="store-hero-kicker animate__animated animate__fadeInDown">
-            <span>FRAGUAN / ISLA VERDE</span>
-            <span>NUEVA TEMPORADA</span>
-          </div>
-          <h1 className="animate__animated animate__fadeInUp">
-            FORJÁ
-            <br />
-            <em>TU ESTILO.</em>
-          </h1>
-          <div className="store-hero-bottom animate__animated animate__fadeInUp">
-            <p>
-              Hecho para usarlo a tu manera. Elegí tu talle, tu color y armá un
-              estilo propio.
-            </p>
-            <a href="#coleccion">
-              Ver colección <ArrowDown />
+        {!initialSection && !query && !onlyFavorites && (
+          <section className="store-campaign" aria-label="Descubrí FRAGUAN">
+            <a className="store-campaign-panel campaign-new" href="/coleccion/nuevos">
+              <span className="campaign-eyebrow">FRAGUAN · NUEVA TEMPORADA</span>
+              <h1 className="animate__animated animate__fadeInUp">LO NUEVO.<br /><em>A TU MANERA.</em></h1>
+              <span className="campaign-link">Ver novedades <ArrowRight /></span>
             </a>
-          </div>
-          <div className="store-orbit" aria-hidden="true">
-            <span>HECHO PARA USARLO A TU MANERA ·</span>
-          </div>
-        </section>
-        <div className="store-marquee" aria-hidden="true">
-          <span>
-            NUEVO DROP — HECHO PARA USARLO A TU MANERA — ISLA VERDE — NUEVO DROP
-            — HECHO PARA USARLO A TU MANERA — ISLA VERDE —{' '}
-          </span>
-        </div>
-        <section className="store-worlds" aria-label="Colecciones FRAGUAN">
-          <header>
-            <span>ENTRÁ POR TU ESTILO</span>
-            <h2>Vestirse también es una forma de decir quién sos.</h2>
-          </header>
-          <div>
-            <a href="/coleccion/nuevos">
-              <small>01 / NEW DROP</small>
-              <strong>LO NUEVO</strong>
-              <span>
-                Primeras piezas de la temporada <ArrowRight />
-              </span>
+            <a className="store-campaign-panel campaign-daily" href="/coleccion/remeras">
+              <span className="campaign-eyebrow">TU ESTILO, TODOS LOS DÍAS</span>
+              <h2 className="animate__animated animate__fadeInUp">MENOS<br />VUELTAS.<br /><em>MÁS VOS.</em></h2>
+              <span className="campaign-link">Elegir remeras <ArrowRight /></span>
             </a>
-            <a href="/coleccion/camisas">
-              <small>02 / THE UNIFORM</small>
-              <strong>CAMISAS</strong>
-              <span>
-                Para todos los días <ArrowRight />
-              </span>
-            </a>
-            <a href="/coleccion/pantalones">
-              <small>03 / ESSENTIALS</small>
-              <strong>BASES</strong>
-              <span>
-                Lo que combina con todo <ArrowRight />
-              </span>
-            </a>
-          </div>
-        </section>
+          </section>
+        )}
         <section className="store-catalog-section" id="coleccion">
           <div className="store-section-head">
             <div>
-              <span>01 / COLECCIÓN</span>
-              <h2>{section || 'Elegí sin vueltas'}</h2>
+              <span>FRAGUAN / COLECCIÓN</span>
+              <h2>{onlyFavorites ? 'Tus favoritos' : section || 'Encontrá tu próxima prenda'}</h2>
             </div>
             <p>{displayed.length} prendas para elegir</p>
           </div>
