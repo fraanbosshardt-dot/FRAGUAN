@@ -15,8 +15,12 @@ import {
   readCustomerIntelligenceConfig,
 } from './customer-intelligence';
 import { sendOrderEmails, sendReturnRequestEmails } from './email';
-import { evaluateCommercialRules, type CommercialPromotion } from './commercial-rules';
+import {
+  evaluateCommercialRules,
+  type CommercialPromotion,
+} from './commercial-rules';
 import { argentinaDay } from './business-date';
+import type { StoreCatalog, StoreProduct } from './store-client';
 
 const SESSION_COOKIE = 'fraguan_customer';
 const encoder = new TextEncoder();
@@ -117,7 +121,10 @@ async function ensureOnlineProfiles() {
   ).run();
 }
 
-export async function storeCatalog(query = '', section = '') {
+export async function storeCatalog(
+  query = '',
+  section = '',
+): Promise<StoreCatalog> {
   await ensureOnlineProfiles();
   const q = `%${query.slice(0, 100)}%`;
   const products = await rows<Record<string, any>>(
@@ -145,7 +152,7 @@ export async function storeCatalog(query = '', section = '') {
     q,
     q,
   );
-  const grouped = new Map<string, Record<string, any>>();
+  const grouped = new Map<string, StoreProduct>();
   for (const row of products) {
     if (!grouped.has(row.id))
       grouped.set(row.id, {
@@ -184,7 +191,9 @@ export async function storeCatalog(query = '', section = '') {
   return { products: [...grouped.values()], sections };
 }
 
-export async function storeProduct(slug: string) {
+export async function storeProduct(
+  slug: string,
+): Promise<{ product: StoreProduct; related: StoreProduct[] }> {
   const catalog = await storeCatalog();
   const product = catalog.products.find((item) => item.slug === slug);
   if (!product) throw new AppError(404, 'Producto no encontrado.');
@@ -498,7 +507,9 @@ async function verifyGoogleCredential(credential: string) {
   if (
     !response.ok ||
     claims.aud !== env.GOOGLE_CLIENT_ID ||
-    !['accounts.google.com', 'https://accounts.google.com'].includes(claims.iss) ||
+    !['accounts.google.com', 'https://accounts.google.com'].includes(
+      claims.iss,
+    ) ||
     claims.email_verified !== 'true' ||
     Number(claims.exp) * 1000 <= Date.now() ||
     !claims.sub ||
@@ -508,8 +519,12 @@ async function verifyGoogleCredential(credential: string) {
   return {
     sub: String(claims.sub),
     email: String(claims.email).trim().toLowerCase(),
-    name: String(claims.given_name || claims.name || 'Cliente').trim().slice(0, 80),
-    surname: String(claims.family_name || 'FRAGUAN').trim().slice(0, 80),
+    name: String(claims.given_name || claims.name || 'Cliente')
+      .trim()
+      .slice(0, 80),
+    surname: String(claims.family_name || 'FRAGUAN')
+      .trim()
+      .slice(0, 80),
   };
 }
 
@@ -529,7 +544,8 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
   }
   if (input.action === 'update') {
     const customer = await currentStoreCustomer(req);
-    if (!customer) throw new AppError(401, 'Iniciá sesión para actualizar tus datos.');
+    if (!customer)
+      throw new AppError(401, 'Iniciá sesión para actualizar tus datos.');
     if (!input.name || !input.surname || !input.phone)
       throw new AppError(400, 'Completá tus datos personales.');
     await db().batch([
@@ -574,7 +590,10 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
         account.id,
       );
       if (collision?.googleSub && collision.googleSub !== profile.sub)
-        throw new AppError(409, 'Ese email ya está vinculado con otra cuenta de Google.');
+        throw new AppError(
+          409,
+          'Ese email ya está vinculado con otra cuenta de Google.',
+        );
       await statement(
         "UPDATE customer_accounts SET googleSub=?,authProvider='google',emailVerified=1,lastLoginAt=? WHERE id=?",
         profile.sub,
@@ -582,7 +601,9 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
         account.id,
       ).run();
     } else {
-      const customerId = id(), accountId = id(), createdAt = now();
+      const customerId = id(),
+        accountId = id(),
+        createdAt = now();
       await db().batch([
         statement(
           'INSERT INTO customers(id,name,surname,phone,email,whatsapp,createdAt) VALUES (?,?,?,?,?,?,?)',
@@ -606,7 +627,12 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
           createdAt,
         ),
       ]);
-      account = { id: accountId, customerId, passwordHash: '', passwordSalt: '' };
+      account = {
+        id: accountId,
+        customerId,
+        passwordHash: '',
+        passwordSalt: '',
+      };
     }
   } else if (input.action === 'register') {
     if (!input.email || !input.password)
@@ -691,7 +717,8 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
 
 export async function storeAccount(req: Request) {
   const customer = await currentStoreCustomer(req);
-  if (!customer) return { customer: null, orders: [], addresses: [], cashback: 0 };
+  if (!customer)
+    return { customer: null, orders: [], addresses: [], cashback: 0 };
   const cutoff = new Date(Date.now() - 365 * 86400000).toISOString();
   const [orders, addresses, cashback, activity, config] = await Promise.all([
     rows(
@@ -699,7 +726,10 @@ export async function storeAccount(req: Request) {
          FROM online_orders WHERE customerId=? ORDER BY createdAt DESC LIMIT 50`,
       customer.customerId,
     ),
-    rows('SELECT id,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt DESC', customer.customerId),
+    rows(
+      'SELECT id,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt DESC',
+      customer.customerId,
+    ),
     one<{ balance: number }>(
       "SELECT COALESCE(SUM(balance),0) AS balance FROM customer_cashback WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>?)",
       customer.customerId,
@@ -734,7 +764,11 @@ export async function storeAccount(req: Request) {
     config,
   );
   return {
-    customer: { ...customer, level, marketingConsent: Boolean(customer.marketingConsent) },
+    customer: {
+      ...customer,
+      level,
+      marketingConsent: Boolean(customer.marketingConsent),
+    },
     orders,
     addresses,
     cashback: Number(cashback?.balance ?? 0),
@@ -771,9 +805,19 @@ export async function createOnlineReturnRequest(raw: unknown) {
     new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
   );
   if (duplicate)
-    return { ok: true, code: duplicate.code, orderNumber: order.orderNumber, status: 'received' };
+    return {
+      ok: true,
+      code: duplicate.code,
+      orderNumber: order.orderNumber,
+      status: 'received',
+    };
   const requestId = id();
-  const prefix = input.kind === 'withdrawal' ? 'ARR' : input.kind === 'exchange' ? 'CAM' : 'DEV';
+  const prefix =
+    input.kind === 'withdrawal'
+      ? 'ARR'
+      : input.kind === 'exchange'
+        ? 'CAM'
+        : 'DEV';
   const code = `${prefix}-${input.orderNumber}-${randomToken(4).toUpperCase()}`;
   const createdAt = now();
   await db().batch([
@@ -834,11 +878,97 @@ const checkoutInput = z
     idempotencyKey: z.uuid(),
     accessToken: z.uuid(),
     couponCode: z.string().trim().toUpperCase().max(60).default(''),
-    attribution: z.object({ source: z.string().max(100).default(''), medium: z.string().max(100).default(''), campaign: z.string().max(160).default('') }).strict().default({ source: '', medium: '', campaign: '' }),
+    attribution: z
+      .object({
+        source: z.string().max(100).default(''),
+        medium: z.string().max(100).default(''),
+        campaign: z.string().max(160).default(''),
+      })
+      .strict()
+      .default({ source: '', medium: '', campaign: '' }),
     sessionId: z.union([z.uuid(), z.literal('')]).default(''),
     saveAddress: z.boolean().default(false),
   })
   .strict();
+
+type CheckoutPricingInput = Pick<
+  z.infer<typeof checkoutInput>,
+  'items' | 'couponCode' | 'paymentMethod' | 'shippingMethod' | 'postalCode'
+>;
+
+async function calculateOnlineCheckout(input: CheckoutPricingInput) {
+  if (
+    new Set(input.items.map((item) => item.variantId)).size !==
+    input.items.length
+  )
+    throw new AppError(400, 'Agrupá las cantidades de cada talle y color.');
+  const lines: Record<string, any>[] = [];
+  let subtotal = 0;
+  for (const item of input.items) {
+    const variant = await one<Record<string, any>>(
+      `SELECT v.id,v.sku,v.color,v.size,COALESCE(v.onlinePrice,v.price) AS price,p.id AS productId,p.name,p.category,p.brand,v.stock-COALESCE((SELECT SUM(r.quantity)
+         FROM stock_reservations r WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0) AS available
+         FROM variants v JOIN products p ON p.id=v.productId JOIN online_product_profiles profile ON profile.productId=p.id
+        WHERE v.id=? AND p.active=1 AND profile.published=1`,
+      now(),
+      item.variantId,
+    );
+    if (!variant || Number(variant.available) < item.quantity)
+      throw new AppError(
+        409,
+        'Una variante cambió de stock. Revisá el carrito.',
+      );
+    const unitPrice = Number(variant.price);
+    const lineTotal = unitPrice * item.quantity;
+    if (
+      !Number.isSafeInteger(unitPrice) ||
+      unitPrice <= 0 ||
+      !Number.isSafeInteger(lineTotal)
+    )
+      throw new AppError(
+        409,
+        'El precio online debe revisarse antes de vender.',
+      );
+    lines.push({ ...variant, quantity: item.quantity });
+    subtotal += lineTotal;
+  }
+  const coupon = await onlineCouponDiscount(
+    lines,
+    input.couponCode,
+    input.paymentMethod,
+  );
+  const transferDiscount =
+    input.paymentMethod === 'transfer' ? Math.floor(subtotal * 0.1) : 0;
+  const discount = Math.min(subtotal, transferDiscount + coupon.discount);
+  const shipping = await shippingQuote(
+    input.postalCode,
+    subtotal - discount,
+    input.shippingMethod,
+    lines.reduce((sum, line) => sum + Number(line.quantity), 0),
+  );
+  const total = subtotal - discount + shipping.amount;
+  if (
+    ![
+      subtotal,
+      coupon.discount,
+      transferDiscount,
+      discount,
+      shipping.amount,
+      total,
+    ].every((amount) => Number.isSafeInteger(amount) && amount >= 0) ||
+    total <= 0
+  )
+    throw new AppError(400, 'El importe del pedido no es válido.');
+  return {
+    lines,
+    subtotal,
+    coupon,
+    transferDiscount,
+    discount,
+    shipping,
+    total,
+  };
+}
 
 export async function createOnlineOrder(req: Request, raw: unknown) {
   const input = checkoutInput.parse(raw);
@@ -856,59 +986,14 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
         : null;
     return { ...detail, accessToken: input.accessToken, paymentUrl };
   }
-  if (
-    new Set(input.items.map((item) => item.variantId)).size !==
-    input.items.length
-  )
-    throw new AppError(400, 'Agrupá las cantidades de cada talle y color.');
+  const { lines, subtotal, discount, shipping, total } =
+    await calculateOnlineCheckout(input);
   const customer = await currentStoreCustomer(req);
   const effectiveEmail = customer?.email ?? input.email;
   const effectiveName = customer
     ? `${customer.name} ${customer.surname}`
     : input.customerName;
   const effectivePhone = customer?.phone || input.phone;
-  const lines: Record<string, any>[] = [];
-  let subtotal = 0;
-  for (const item of input.items) {
-    const variant = await one<Record<string, any>>(
-      `SELECT v.id,v.sku,v.color,v.size,COALESCE(v.onlinePrice,v.price) AS price,p.id AS productId,p.name,p.category,p.brand,v.stock-COALESCE((SELECT SUM(r.quantity)
-         FROM stock_reservations r WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0) AS available
-         FROM variants v JOIN products p ON p.id=v.productId JOIN online_product_profiles profile ON profile.productId=p.id
-        WHERE v.id=? AND p.active=1 AND profile.published=1`,
-      now(),
-      item.variantId,
-    );
-    if (!variant || Number(variant.available) < item.quantity)
-      throw new AppError(
-        409,
-        'Una variante cambió de stock. Revisá el carrito.',
-      );
-    lines.push({ ...variant, quantity: item.quantity });
-    const unitPrice = Number(variant.price);
-    if (!Number.isSafeInteger(unitPrice) || unitPrice <= 0)
-      throw new AppError(409, 'El precio online debe revisarse antes de vender.');
-    const lineTotal = unitPrice * item.quantity;
-    if (!Number.isSafeInteger(lineTotal))
-      throw new AppError(400, 'El importe del pedido está fuera de rango.');
-    subtotal += lineTotal;
-  }
-  const coupon = await onlineCouponDiscount(lines, input.couponCode, input.paymentMethod);
-  const transferDiscount = input.paymentMethod === 'transfer' ? Math.floor(subtotal * 0.1) : 0;
-  const discount = Math.min(subtotal, transferDiscount + coupon.discount);
-  const shipping = await shippingQuote(
-    input.postalCode,
-    subtotal - discount,
-    input.shippingMethod,
-    lines.reduce((sum, line) => sum + line.quantity, 0),
-  );
-  const total = subtotal - discount + shipping.amount;
-  if (
-    ![subtotal, coupon.discount, transferDiscount, discount, shipping.amount, total].every(
-      (amount) => Number.isSafeInteger(amount) && amount >= 0,
-    ) ||
-    total <= 0
-  )
-    throw new AppError(400, 'El importe del pedido no es válido.');
   const orderNumber = Number(
     (
       await one<{ next: number }>(
@@ -991,14 +1076,29 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
     );
   }
   if (customer && input.saveAddress && input.shippingMethod !== 'pickup') {
-    commands.push(statement(
-      `INSERT INTO customer_addresses(id,customerId,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault,createdAt,updatedAt)
+    commands.push(
+      statement(
+        `INSERT INTO customer_addresses(id,customerId,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault,createdAt,updatedAt)
        SELECT ?,?,'Casa',?,?,?,?,?,?,?,CASE WHEN NOT EXISTS(SELECT 1 FROM customer_addresses WHERE customerId=?) THEN 1 ELSE 0 END,?,?
        WHERE NOT EXISTS(SELECT 1 FROM customer_addresses WHERE customerId=? AND postalCode=? AND address=? AND addressExtra=?)`,
-      id(), customer.customerId, effectiveName, effectivePhone, input.postalCode, input.address, input.addressExtra,
-      input.city, input.province, customer.customerId, createdAt, createdAt,
-      customer.customerId, input.postalCode, input.address, input.addressExtra,
-    ));
+        id(),
+        customer.customerId,
+        effectiveName,
+        effectivePhone,
+        input.postalCode,
+        input.address,
+        input.addressExtra,
+        input.city,
+        input.province,
+        customer.customerId,
+        createdAt,
+        createdAt,
+        customer.customerId,
+        input.postalCode,
+        input.address,
+        input.addressExtra,
+      ),
+    );
   }
   try {
     await db().batch(commands);
@@ -1021,51 +1121,147 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
   await sendOrderEmails(orderId, 'created').catch(() => undefined);
   if (input.sessionId) {
     await db().batch([
-      statement("UPDATE abandoned_carts SET status='converted',recoveredAt=?,updatedAt=? WHERE sessionId=?", createdAt, createdAt, input.sessionId),
-      statement(`INSERT INTO store_events(id,sessionId,customerId,event,path,orderId,value,source,medium,campaign,metadata,createdAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, id(), input.sessionId, customer?.customerId ?? null, 'order_created', '/checkout', orderId, total, input.attribution.source, input.attribution.medium, input.attribution.campaign, JSON.stringify({ couponCode: input.couponCode }), createdAt),
+      statement(
+        "UPDATE abandoned_carts SET status='converted',recoveredAt=?,updatedAt=? WHERE sessionId=?",
+        createdAt,
+        createdAt,
+        input.sessionId,
+      ),
+      statement(
+        `INSERT INTO store_events(id,sessionId,customerId,event,path,orderId,value,source,medium,campaign,metadata,createdAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        id(),
+        input.sessionId,
+        customer?.customerId ?? null,
+        'order_created',
+        '/checkout',
+        orderId,
+        total,
+        input.attribution.source,
+        input.attribution.medium,
+        input.attribution.campaign,
+        JSON.stringify({ couponCode: input.couponCode }),
+        createdAt,
+      ),
     ]);
   }
   return { ...detail, accessToken: input.accessToken, paymentUrl };
 }
 
-async function onlineCouponDiscount(lines: Record<string, any>[], couponCode: string, paymentMethod: 'transfer'|'card') {
+async function onlineCouponDiscount(
+  lines: Record<string, any>[],
+  couponCode: string,
+  paymentMethod: 'transfer' | 'card',
+) {
   if (!couponCode) return { discount: 0, appliedDiscounts: [] as any[] };
   const promotionRows = await rows<Record<string, any>>(
-    'SELECT id,name,percent,methodId,startsAt,endsAt,active,ruleJson FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?', argentinaDay(), argentinaDay(),
+    'SELECT id,name,percent,methodId,startsAt,endsAt,active,ruleJson FROM promotions WHERE active=1 AND startsAt<=? AND endsAt>=?',
+    argentinaDay(),
+    argentinaDay(),
   );
   const normalized = couponCode.toLocaleLowerCase('es-AR');
   const promotions: CommercialPromotion[] = promotionRows.flatMap((row) => {
     let rule: Record<string, any> = {};
-    try { rule = row.ruleJson ? JSON.parse(row.ruleJson) : {}; } catch { return []; }
+    try {
+      rule = row.ruleJson ? JSON.parse(row.ruleJson) : {};
+    } catch {
+      return [];
+    }
     const coupons: string[] = rule.conditions?.couponCodes ?? [];
-    if (!coupons.some((code) => code.toLocaleLowerCase('es-AR') === normalized)) return [];
-    return [{
-      id: row.id, name: row.name, authorized: true, active: true,
-      kind: rule.kind ?? 'percentage', percentBps: rule.percentBps ?? row.percent * 100,
-      amountCents: rule.amountCents, scope: rule.scope, priority: rule.priority ?? 0,
-      exclusive: Boolean(rule.exclusive),
-      conditions: { ...rule.conditions, paymentMethodIds: row.methodId ? [row.methodId] : rule.conditions?.paymentMethodIds,
-        schedule: { startsAt: `${row.startsAt}T00:00:00-03:00`, endsAt: `${row.endsAt}T23:59:59-03:00`, timeZoneOffsetMinutes: -180 } },
-    } as CommercialPromotion];
+    if (!coupons.some((code) => code.toLocaleLowerCase('es-AR') === normalized))
+      return [];
+    return [
+      {
+        id: row.id,
+        name: row.name,
+        authorized: true,
+        active: true,
+        kind: rule.kind ?? 'percentage',
+        percentBps: rule.percentBps ?? row.percent * 100,
+        amountCents: rule.amountCents,
+        scope: rule.scope,
+        priority: rule.priority ?? 0,
+        exclusive: Boolean(rule.exclusive),
+        conditions: {
+          ...rule.conditions,
+          paymentMethodIds: row.methodId
+            ? [row.methodId]
+            : rule.conditions?.paymentMethodIds,
+          schedule: {
+            startsAt: `${row.startsAt}T00:00:00-03:00`,
+            endsAt: `${row.endsAt}T23:59:59-03:00`,
+            timeZoneOffsetMinutes: -180,
+          },
+        },
+      } as CommercialPromotion,
+    ];
   });
   const result = evaluateCommercialRules({
-    items: lines.map((line) => ({ id: line.id, category: line.category, brand: line.brand, unitPriceCents: Number(line.price), quantity: Number(line.quantity) })),
+    items: lines.map((line) => ({
+      id: line.id,
+      category: line.category,
+      brand: line.brand,
+      unitPriceCents: Number(line.price),
+      quantity: Number(line.quantity),
+    })),
     promotions,
-    context: { evaluatedAt: now(), timeZoneOffsetMinutes: -180, paymentMethodIds: [paymentMethod === 'transfer' ? 'transfer' : 'credit'], couponCode },
+    context: {
+      evaluatedAt: now(),
+      timeZoneOffsetMinutes: -180,
+      paymentMethodIds: [paymentMethod === 'transfer' ? 'transfer' : 'credit'],
+      couponCode,
+    },
   });
-  if (!result.appliedDiscounts.length) throw new AppError(403, 'El cupón no es válido para esta compra.');
-  return { discount: result.discountTotalCents, appliedDiscounts: result.appliedDiscounts };
+  if (!result.appliedDiscounts.length)
+    throw new AppError(403, 'El cupón no es válido para esta compra.');
+  return {
+    discount: result.discountTotalCents,
+    appliedDiscounts: result.appliedDiscounts,
+  };
 }
 
 export async function quoteOnlineCoupon(raw: unknown) {
-  const input = z.object({ items: checkoutInput.shape.items, couponCode: checkoutInput.shape.couponCode, paymentMethod: checkoutInput.shape.paymentMethod }).strict().parse(raw);
+  const input = z
+    .object({
+      items: checkoutInput.shape.items,
+      couponCode: checkoutInput.shape.couponCode,
+      paymentMethod: checkoutInput.shape.paymentMethod,
+    })
+    .strict()
+    .parse(raw);
   const lines: Record<string, any>[] = [];
   for (const item of input.items) {
-    const line = await one<Record<string, any>>(`SELECT v.id,COALESCE(v.onlinePrice,v.price) AS price,p.category,p.brand FROM variants v JOIN products p ON p.id=v.productId JOIN online_product_profiles profile ON profile.productId=p.id WHERE v.id=? AND p.active=1 AND profile.published=1`, item.variantId);
+    const line = await one<Record<string, any>>(
+      `SELECT v.id,COALESCE(v.onlinePrice,v.price) AS price,p.category,p.brand FROM variants v JOIN products p ON p.id=v.productId JOIN online_product_profiles profile ON profile.productId=p.id WHERE v.id=? AND p.active=1 AND profile.published=1`,
+      item.variantId,
+    );
     if (!line) throw new AppError(404, 'Producto no disponible.');
     lines.push({ ...line, quantity: item.quantity });
   }
   return onlineCouponDiscount(lines, input.couponCode, input.paymentMethod);
+}
+
+export async function quoteOnlineCheckout(raw: unknown) {
+  const input = z
+    .object({
+      items: checkoutInput.shape.items,
+      couponCode: checkoutInput.shape.couponCode,
+      paymentMethod: checkoutInput.shape.paymentMethod,
+      shippingMethod: checkoutInput.shape.shippingMethod,
+      postalCode: checkoutInput.shape.postalCode,
+    })
+    .strict()
+    .parse(raw);
+  const { subtotal, transferDiscount, coupon, discount, shipping, total } =
+    await calculateOnlineCheckout(input);
+  return {
+    subtotal,
+    transferDiscount,
+    couponDiscount: coupon.discount,
+    discount,
+    shipping,
+    total,
+    appliedDiscounts: coupon.appliedDiscounts,
+  };
 }
 
 export async function onlineOrderDetail(
@@ -1154,7 +1350,10 @@ export async function reportTransfer(req: Request, raw: unknown) {
     ]);
   } catch (cause) {
     if (/UNIQUE/i.test(String((cause as any)?.message ?? cause)))
-      throw new AppError(409, 'Ese comprobante ya fue informado en otro pedido.');
+      throw new AppError(
+        409,
+        'Ese comprobante ya fue informado en otro pedido.',
+      );
     throw cause;
   }
   return onlineOrderDetail(input.orderId);
@@ -1246,7 +1445,10 @@ export async function posOnlineOrderWrite(actor: Actor, raw: unknown) {
     emailEvent = 'preparing';
   } else if (input.action === 'ready-pickup') {
     if (order.shippingMethod !== 'pickup')
-      throw new AppError(409, 'Esta acción corresponde solamente a retiros en el local.');
+      throw new AppError(
+        409,
+        'Esta acción corresponde solamente a retiros en el local.',
+      );
     if (order.fulfillmentStatus !== 'preparing')
       throw new AppError(409, 'Primero iniciá la preparación del pedido.');
     nextStatus = 'ready_pickup';
@@ -1255,8 +1457,14 @@ export async function posOnlineOrderWrite(actor: Actor, raw: unknown) {
     detail = 'Listo para retirar, marcado desde POS';
     emailEvent = 'ready_pickup';
   } else {
-    if (order.shippingMethod !== 'pickup' || order.fulfillmentStatus !== 'ready_pickup')
-      throw new AppError(409, 'Solo se puede entregar un retiro que ya esté listo.');
+    if (
+      order.shippingMethod !== 'pickup' ||
+      order.fulfillmentStatus !== 'ready_pickup'
+    )
+      throw new AppError(
+        409,
+        'Solo se puede entregar un retiro que ya esté listo.',
+      );
     nextStatus = 'completed';
     nextFulfillment = 'delivered';
     kind = 'delivered';
@@ -1561,13 +1769,23 @@ export async function confirmOnlinePayment(
   }
   try {
     const attribution = JSON.parse(order.attributionJson || '{}');
-    if (attribution.sessionId) await statement(
-      `INSERT INTO store_events(id,sessionId,customerId,event,path,orderId,value,source,medium,campaign,metadata,createdAt)
+    if (attribution.sessionId)
+      await statement(
+        `INSERT INTO store_events(id,sessionId,customerId,event,path,orderId,value,source,medium,campaign,metadata,createdAt)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      id(), attribution.sessionId, order.customerId, 'purchase', '/checkout', orderId, order.total,
-      attribution.source || '', attribution.medium || '', attribution.campaign || '',
-      JSON.stringify({ couponCode: order.couponCode || '', saleId }), timestamp,
-    ).run();
+        id(),
+        attribution.sessionId,
+        order.customerId,
+        'purchase',
+        '/checkout',
+        orderId,
+        order.total,
+        attribution.source || '',
+        attribution.medium || '',
+        attribution.campaign || '',
+        JSON.stringify({ couponCode: order.couponCode || '', saleId }),
+        timestamp,
+      ).run();
   } catch {
     // La venta queda confirmada aunque la atribución histórica sea inválida.
   }
@@ -1614,9 +1832,15 @@ export async function confirmOnlinePaymentWebhook(input: {
     (candidate) => candidate.paymentMethod === expectedMethod,
   );
   if (!methodMatches.length)
-    throw new AppError(409, 'El proveedor no corresponde al medio de pago del pedido.');
+    throw new AppError(
+      409,
+      'El proveedor no corresponde al medio de pago del pedido.',
+    );
   if (methodMatches.length !== 1)
-    throw new AppError(409, 'La referencia coincide con más de un pedido y requiere revisión.');
+    throw new AppError(
+      409,
+      'La referencia coincide con más de un pedido y requiere revisión.',
+    );
   const order = methodMatches[0];
   if (Number(order.total) !== input.amount)
     throw new AppError(409, 'El importe recibido no coincide con el pedido.');
@@ -1658,7 +1882,9 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
         })
         .strict(),
       z.object({ action: z.literal('prepare'), orderId: z.uuid() }).strict(),
-      z.object({ action: z.literal('ready-pickup'), orderId: z.uuid() }).strict(),
+      z
+        .object({ action: z.literal('ready-pickup'), orderId: z.uuid() })
+        .strict(),
       z.object({ action: z.literal('deliver'), orderId: z.uuid() }).strict(),
       z
         .object({
@@ -1683,9 +1909,15 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
     );
     if (!pending) throw new AppError(404, 'Pedido no encontrado.');
     if (pending.paymentMethod !== 'transfer')
-      throw new AppError(409, 'Los pagos con tarjeta se confirman desde Mercado Pago.');
+      throw new AppError(
+        409,
+        'Los pagos con tarjeta se confirman desde Mercado Pago.',
+      );
     if (Number(pending.total) !== input.confirmedAmount)
-      throw new AppError(409, 'El importe acreditado no coincide con el total del pedido.');
+      throw new AppError(
+        409,
+        'El importe acreditado no coincide con el total del pedido.',
+      );
     return confirmOnlinePayment(actor, input.orderId, input.paymentReference);
   }
   if (input.action === 'ready-pickup' || input.action === 'deliver')

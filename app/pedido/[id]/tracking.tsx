@@ -34,7 +34,7 @@ export default function OrderTracking({ orderId }: { orderId: string }) {
     <div className="store-shell">
       <StoreHeader />
       <main className="store-tracking">
-        <a href="/tienda" className="store-back"><ArrowLeft /> Volver a la tienda</a>
+        <a href="/" className="store-back"><ArrowLeft /> Volver a la tienda</a>
         {error ? (
           <section className="store-tracking-error">
             <h1>No pudimos abrir el pedido.</h1>

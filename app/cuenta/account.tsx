@@ -175,7 +175,7 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
                 <div className="store-account-empty">
                   <Package />
                   <h3>Todavía no tenés pedidos online.</h3>
-                  <a href="/tienda">
+                  <a href="/">
                     Explorar la colección <ArrowRight />
                   </a>
                 </div>
@@ -196,7 +196,7 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
                 <div className="store-account-empty">
                   <Gift />
                   <h3>Todavía no guardaste prendas.</h3>
-                  <a href="/tienda">Explorar la colección <ArrowRight /></a>
+                  <a href="/">Explorar la colección <ArrowRight /></a>
                 </div>
               )}
             </section>

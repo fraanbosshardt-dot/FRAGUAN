@@ -26,7 +26,7 @@ export function StoreFooter() {
   return (
     <footer className="store-footer">
       <div className="store-footer-brand">
-        <a href="/tienda">FRAGUAN</a>
+        <a href="/">FRAGUAN</a>
         <p>Forjá tu estilo.<br />Buenos Aires · Argentina</p>
       </div>
       <nav aria-label="Ayuda y políticas">

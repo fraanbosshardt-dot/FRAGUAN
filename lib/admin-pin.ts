@@ -32,6 +32,21 @@ export async function verifyAdminPin(pin: string) {
   return difference === 0;
 }
 
+export async function verifyAdminPinRequest(req: Request) {
+  const value = (req.headers.get('cookie') || '')
+    .split(';')
+    .map((part) => part.trim().split('='))
+    .find(([name]) => name === adminPinCookie)
+    ?.slice(1)
+    .join('=');
+  if (!value) return false;
+  const expected = await adminPinToken();
+  let difference = value.length ^ expected.length;
+  for (let index = 0; index < expected.length; index++)
+    difference |= (value.charCodeAt(index) || 0) ^ expected.charCodeAt(index);
+  return difference === 0;
+}
+
 export function adminPinSetCookie(token: string, secure: boolean) {
   return `${adminPinCookie}=${token}; Path=/; Max-Age=28800; HttpOnly; SameSite=Strict${secure ? '; Secure' : ''}`;
 }

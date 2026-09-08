@@ -33,7 +33,7 @@ export default function RootLayout({
   const website = {
     '@context': 'https://schema.org', '@type': 'WebSite', '@id': 'https://fraguan.com/#website',
     url: 'https://fraguan.com', name: 'FRAGUAN', publisher: { '@id': 'https://fraguan.com/#organization' },
-    potentialAction: { '@type': 'SearchAction', target: 'https://fraguan.com/tienda?search={search_term_string}', 'query-input': 'required name=search_term_string' },
+    potentialAction: { '@type': 'SearchAction', target: 'https://fraguan.com/?search={search_term_string}', 'query-input': 'required name=search_term_string' },
   };
   return (
     <html lang="es-AR">

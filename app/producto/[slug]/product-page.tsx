@@ -33,9 +33,17 @@ import {
   trackStore,
 } from '@/lib/store-client';
 
-export default function ProductPage({ slug }: { slug: string }) {
-  const [product, setProduct] = useState<StoreProduct | null>(null);
-  const [related, setRelated] = useState<StoreProduct[]>([]);
+export default function ProductPage({
+  slug,
+  initialProduct = null,
+  initialRelated,
+}: {
+  slug: string;
+  initialProduct?: StoreProduct | null;
+  initialRelated?: StoreProduct[];
+}) {
+  const [product, setProduct] = useState<StoreProduct | null>(initialProduct);
+  const [related, setRelated] = useState<StoreProduct[]>(initialRelated || []);
   const [color, setColor] = useState('');
   const [size, setSize] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -48,21 +56,36 @@ export default function ProductPage({ slug }: { slug: string }) {
   const { add } = useStoreCart();
   const { favorites, toggle } = useStoreFavorites();
   useEffect(() => {
-    storeApi<{ product: StoreProduct; related: StoreProduct[] }>(
-      `store-product?slug=${encodeURIComponent(slug)}`,
-    )
+    const request =
+      initialProduct?.slug === slug
+        ? Promise.resolve({
+            product: initialProduct,
+            related: initialRelated || [],
+          })
+        : storeApi<{ product: StoreProduct; related: StoreProduct[] }>(
+            `store-product?slug=${encodeURIComponent(slug)}`,
+          );
+    request
       .then((data) => {
         setProduct(data.product);
         setRelated(data.related);
-        setColor(
-          data.product.variants.find((v) => v.stock)?.color ||
-            data.product.variants[0]?.color ||
-            '',
+        const requested = new URLSearchParams(location.search).get('variant');
+        const requestedVariant = data.product.variants.find(
+          (variant) => variant.sku === requested || variant.id === requested,
         );
-        trackStore('view_item', { productId: data.product.id, value: data.product.price });
+        const firstVariant =
+          requestedVariant ||
+          data.product.variants.find((v) => v.stock) ||
+          data.product.variants[0];
+        setColor(firstVariant?.color || '');
+        setSize(requestedVariant?.size || '');
+        trackStore('view_item', {
+          productId: data.product.id,
+          value: data.product.price,
+        });
       })
       .catch((cause) => setError(cause.message));
-  }, [slug]);
+  }, [slug, initialProduct, initialRelated]);
   const colors = useMemo(
     () => [...new Set(product?.variants.map((v) => v.color) || [])],
     [product],
@@ -71,8 +94,11 @@ export default function ProductPage({ slug }: { slug: string }) {
   const selected = variants.find((v) => v.size === size);
   function recommendSize() {
     const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-    const available = [...new Set((product?.variants || []).filter((v) => v.stock > 0).map((v) => v.size))]
-      .sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    const available = [
+      ...new Set(
+        (product?.variants || []).filter((v) => v.stock > 0).map((v) => v.size),
+      ),
+    ].sort((a, b) => order.indexOf(a) - order.indexOf(b));
     if (!available.length) return setRecommendedSize('Sin talles disponibles');
     const h = Number(height);
     const w = Number(weight);
@@ -81,8 +107,11 @@ export default function ProductPage({ slug }: { slug: string }) {
     const score = w / Math.pow(h / 100, 2);
     let position = score < 20 ? 0 : score < 24 ? 1 : score < 28 ? 2 : 3;
     position += h > 188 ? 1 : h < 165 ? -1 : 0;
-    position += fitPreference === 'oversize' ? 1 : fitPreference === 'ajustado' ? -1 : 0;
-    setRecommendedSize(available[Math.max(0, Math.min(available.length - 1, position))]);
+    position +=
+      fitPreference === 'oversize' ? 1 : fitPreference === 'ajustado' ? -1 : 0;
+    setRecommendedSize(
+      available[Math.max(0, Math.min(available.length - 1, position))],
+    );
   }
   function addSelected() {
     if (!product || !selected) return setError('Elegí un talle disponible.');
@@ -139,7 +168,7 @@ export default function ProductPage({ slug }: { slug: string }) {
         <StoreHeader />
         <main className="store-page-error">
           <h1>{error}</h1>
-          <a href="/tienda">
+          <a href="/">
             <ArrowLeft /> Volver a la tienda
           </a>
         </main>
@@ -156,7 +185,7 @@ export default function ProductPage({ slug }: { slug: string }) {
     <div className="store-shell">
       <StoreHeader />
       <main className="store-detail">
-        <a className="store-back" href="/tienda">
+        <a className="store-back" href="/">
           <ArrowLeft /> Volver
         </a>
         <section className="store-detail-grid">
@@ -190,7 +219,11 @@ export default function ProductPage({ slug }: { slug: string }) {
                 )}
               </span>
             </div>
-            {selected && selected.stock <= 3 && <p className="store-stock-urgency">Últimas {selected.stock} unidades en este talle y color.</p>}
+            {selected && selected.stock <= 3 && (
+              <p className="store-stock-urgency">
+                Últimas {selected.stock} unidades en este talle y color.
+              </p>
+            )}
             <fieldset>
               <legend>
                 Color <strong>{color}</strong>
@@ -221,24 +254,50 @@ export default function ProductPage({ slug }: { slug: string }) {
                     <DialogHeader>
                       <DialogTitle>Encontrá tu talle</DialogTitle>
                       <DialogDescription>
-                        Una recomendación orientativa según tus medidas y el calce que preferís.
+                        Una recomendación orientativa según tus medidas y el
+                        calce que preferís.
                       </DialogDescription>
                     </DialogHeader>
-                    <label>Altura (cm)<input inputMode="numeric" value={height} onChange={(e) => setHeight(e.target.value)} /></label>
-                    <label>Peso (kg)<input inputMode="numeric" value={weight} onChange={(e) => setWeight(e.target.value)} /></label>
-                    <label>¿Cómo te gusta usar la ropa?
-                      <select value={fitPreference} onChange={(e) => setFitPreference(e.target.value)}>
+                    <label>
+                      Altura (cm)
+                      <input
+                        inputMode="numeric"
+                        value={height}
+                        onChange={(e) => setHeight(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Peso (kg)
+                      <input
+                        inputMode="numeric"
+                        value={weight}
+                        onChange={(e) => setWeight(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      ¿Cómo te gusta usar la ropa?
+                      <select
+                        value={fitPreference}
+                        onChange={(e) => setFitPreference(e.target.value)}
+                      >
                         <option value="ajustado">Ajustada</option>
                         <option value="normal">Normal</option>
                         <option value="oversize">Oversize</option>
                       </select>
                     </label>
-                    <button className="store-size-recommend" onClick={recommendSize}>Recomendar talle</button>
+                    <button
+                      className="store-size-recommend"
+                      onClick={recommendSize}
+                    >
+                      Recomendar talle
+                    </button>
                     {recommendedSize && (
                       <div className="store-size-result">
                         <span>TE RECOMENDAMOS</span>
                         <strong>{recommendedSize}</strong>
-                        <small>Confirmá siempre con la guía de medidas de la prenda.</small>
+                        <small>
+                          Confirmá siempre con la guía de medidas de la prenda.
+                        </small>
                       </div>
                     )}
                   </DialogContent>
@@ -253,6 +312,11 @@ export default function ProductPage({ slug }: { slug: string }) {
                     onClick={() => {
                       setSize(variant.size);
                       setQuantity(1);
+                      history.replaceState(
+                        null,
+                        '',
+                        `?variant=${encodeURIComponent(variant.sku)}`,
+                      );
                     }}
                   >
                     {variant.size}
@@ -269,6 +333,7 @@ export default function ProductPage({ slug }: { slug: string }) {
                 <div>
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    aria-label="Quitar una unidad"
                   >
                     <Minus />
                   </button>
@@ -277,13 +342,18 @@ export default function ProductPage({ slug }: { slug: string }) {
                     onClick={() =>
                       setQuantity(Math.min(selected.stock, quantity + 1))
                     }
+                    aria-label="Agregar una unidad"
                   >
                     <Plus />
                   </button>
                 </div>
               </div>
             )}
-            {error && <p className="store-buy-error">{error}</p>}
+            {error && (
+              <p className="store-buy-error" role="alert">
+                {error}
+              </p>
+            )}
             <button
               className={`store-add-button ${added ? 'added' : ''}`}
               onClick={addSelected}
@@ -302,8 +372,12 @@ export default function ProductPage({ slug }: { slug: string }) {
               className={`store-detail-favorite ${favorites.includes(product.id) ? 'active' : ''}`}
               onClick={() => toggle(product.id)}
             >
-              <Heart fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
-              {favorites.includes(product.id) ? 'Guardado en favoritos' : 'Guardar en favoritos'}
+              <Heart
+                fill={favorites.includes(product.id) ? 'currentColor' : 'none'}
+              />
+              {favorites.includes(product.id)
+                ? 'Guardado en favoritos'
+                : 'Guardar en favoritos'}
             </button>
             <div className="store-buy-benefits">
               <p>
@@ -360,8 +434,13 @@ export default function ProductPage({ slug }: { slug: string }) {
         )}
       </main>
       <div className="store-mobile-buybar">
-        <span><small>{product.name}</small><strong>{storeMoney(selected?.price ?? product.price)}</strong></span>
-        <button onClick={addSelected}>{selected ? 'Agregar' : 'Elegir talle'} <ArrowRight /></button>
+        <span>
+          <small>{product.name}</small>
+          <strong>{storeMoney(selected?.price ?? product.price)}</strong>
+        </span>
+        <button onClick={addSelected}>
+          {selected ? 'Agregar' : 'Elegir talle'} <ArrowRight />
+        </button>
       </div>
       <StoreFooter />
     </div>

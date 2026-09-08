@@ -39,7 +39,7 @@ export default function WithdrawalForm() {
     <div className="store-shell">
       <StoreHeader />
       <main className="store-withdrawal-page">
-        <a href="/tienda" className="store-back"><ArrowLeft /> Volver a la tienda</a>
+        <a href="/" className="store-back"><ArrowLeft /> Volver a la tienda</a>
         {result ? (
           <section className="store-withdrawal-success">
             <div><Check /></div>
@@ -48,7 +48,7 @@ export default function WithdrawalForm() {
             <p>Pedido #{result.orderNumber}. Guardá este código para cualquier consulta:</p>
             <strong>{result.code}</strong>
             <p>También lo enviaremos al email de la compra. Atención al Cliente continuará la gestión por ese medio.</p>
-            <a href="/tienda">Volver a la tienda <ArrowRight /></a>
+            <a href="/">Volver a la tienda <ArrowRight /></a>
           </section>
         ) : (
           <div className="store-withdrawal-grid">

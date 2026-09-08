@@ -19,7 +19,7 @@ completa está en `BRANDING-FRAGUAN.md`.
 
 ## Estado general
 
-Implementación local con datos de demostración. En producción, la tienda, el POS y la administración muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`). En local el ecommerce completo continúa accesible en `/tienda`, junto con POS y administración, para desarrollo. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
+Implementación local con datos de demostración. En producción, la tienda, el POS y la administración muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`) mientras no exista `FRAGUAN_DEPLOY_ENABLED=true`. En local el ecommerce completo está disponible en `/`, junto con POS y administración, para desarrollo. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
 
 ### Tienda online: estado local terminado
 
@@ -70,7 +70,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 | Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
 | Email y newsletter      | Suscripción, bajas, campañas, notificaciones transaccionales y automatizaciones de bienvenida, navegación, carrito, reposición, poscompra y reactivación con Resend. Sin WhatsApp.                                                                                                                                                    |
 | Marketing y conversión  | Embudo consentido, UTMs, atribución, cupones online, carritos recuperables, direcciones guardadas, reposición, reseñas verificables y moderadas, interés por producto y facturación por origen. Se vincula con clientes, pedidos, promociones, variantes y stock centrales.                                                              |
-| Administración          | Acceso protegido por PIN de seis dígitos y sesión HttpOnly de ocho horas. Menú segmentado por áreas, roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                   |
+| Administración          | Acceso protegido por PIN de seis dígitos y sesión HttpOnly de ocho horas, validado también en APIs administrativas. Menú segmentado por áreas, roles, restricciones individuales que solo quitan capacidades, auditoría, búsqueda global Ctrl/Cmd-K, tablas paginadas, tema claro/oscuro y estados de carga.                                                                   |
 | Exportación e impresión | CSV, XLSX real y PDF mediante impresión del navegador. Tickets en documento separado y etiquetas Code39 en tandas de ocho por hoja A4.                                                                                                                                                                                               |
 | Recuperación            | Instalación en archivo nuevo, historial de migraciones con hashes, respaldo consistente, verificación y restauración a destino nuevo. Instrucciones en RECUPERACION.md.                                                                                                                                                              |
 
@@ -105,11 +105,11 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 - La batería completa `tests-*.mjs` pasa, incluidas integración, administración, reglas comerciales, caja, cashback, reportes, recuperación, stock y seguridad del vendedor.
 - Lint, TypeScript y compilación de producción pasan; detalles técnicos en IMPLEMENTATION.md.
 - XLSX contrastado con openpyxl y Code39 con ReportLab.
-- No se ha realizado QA visual con navegador ni prueba física de impresora/lector. La pregunta para incluir pruebas de navegador quedó planteada.
+- Se realizó QA visual local de la tienda y del acceso administrativo en escritorio y una revisión responsive. Sigue pendiente la prueba física de impresora, lector y terminal del negocio.
 
 ## Lo que falta para operar
 
-1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
+1. Revisión visual con la sesión y los datos definitivos de POS/Administración, más pruebas de impresora, lector USB y dispositivos del negocio.
 2. Conectar base definitiva y autenticación Google con identidades/roles reales.
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
 4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta `0021_payment_integrity.sql`. El migrador con hashes es independiente y no adopta automáticamente la demo.
@@ -121,9 +121,9 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 ## Continuidad
 
 Repositorio: `https://github.com/fraanbosshardt-dot/FRAGUAN`.
-Rama publicada: `main` (commit de documentación actual: `18aed33`).
+Rama de trabajo y respaldo: `main`.
 Inicio local: `npm run dev -- --host 127.0.0.1`.
-Servidor local detenido al pausar la sesión.
+Servidor local disponible durante esta auditoría.
 Mantener datos reales fuera del entorno demo hasta completar la puesta en producción.
 
 ## Punto de reanudación

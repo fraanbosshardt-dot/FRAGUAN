@@ -34,6 +34,6 @@ export default function RecoverCart({ token }: { token: string }) {
   return <div className="store-shell"><StoreHeader /><main className="store-recovery-page">
     {state === 'loading' && <p>Recuperando tu selección…</p>}
     {state === 'ready' && <><Check /><span>SELECCIÓN RECUPERADA</span><h1>Seguimos donde lo dejaste.</h1><p>Restauramos tu carrito por {storeMoney(subtotal)}. El stock y el precio se validarán nuevamente antes de crear el pedido.</p><a href="/checkout">Continuar compra <ArrowRight /></a></>}
-    {state === 'error' && <><h1>Este enlace ya no está disponible.</h1><p>Podés volver a la colección y armar una selección nueva.</p><a href="/tienda">Ver colección <ArrowRight /></a></>}
+    {state === 'error' && <><h1>Este enlace ya no está disponible.</h1><p>Podés volver a la colección y armar una selección nueva.</p><a href="/">Ver colección <ArrowRight /></a></>}
   </main><StoreFooter /></div>;
 }

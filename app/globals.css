@@ -331,14 +331,14 @@
 .store-toast strong { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
 .store-toast button { margin-left: auto; color: inherit; }
 .store-toast button svg { width: 18px; }
-.store-cookie-banner { position: fixed; left: 20px; right: 20px; bottom: 20px; z-index: 110; display: flex; align-items: center; gap: 28px; max-width: 880px; margin: auto; padding: 18px 20px; color: var(--store-paper); background: var(--store-ink); border: 1px solid #ffffff26; box-shadow: 0 24px 70px #0004; animation: store-toast-in .4s ease both; }
+.store-cookie-banner { position: fixed; left: 20px; right: 20px; bottom: 20px; z-index: 110; display: flex; align-items: center; gap: 28px; max-width: 880px; margin: auto; padding: 18px 20px; color: #f1ede4; background: #171813; border: 1px solid #ffffff26; box-shadow: 0 24px 70px #0004; animation: store-toast-in .4s ease both; }
 .store-cookie-banner > div:first-child { flex: 1; }
 .store-cookie-banner strong { font-size: 15px; }
 .store-cookie-banner p { margin: 4px 0; font-size: 13px; line-height: 1.45; color: #e5e0d5; }
 .store-cookie-banner a { font-size: 12px; text-decoration: underline; }
 .store-cookie-banner > div:last-child { display: flex; gap: 8px; }
 .store-cookie-banner button { padding: 12px 14px; border: 1px solid #ffffff66; font-size: 12px; font-weight: 750; white-space: nowrap; }
-.store-cookie-banner button.primary { color: var(--store-ink); background: var(--store-paper); }
+.store-cookie-banner button.primary { color: #171813; background: #f1ede4; }
 .store-product-trust { padding: 0 clamp(20px,5vw,82px) 100px; display: grid; gap: 1px; grid-template-columns: minmax(300px,.75fr) minmax(0,1.25fr); }
 .store-stock-alert-form, .store-reviews { padding: clamp(28px,4vw,52px); border: 1px solid var(--store-ink); background: var(--store-paper); }
 .store-stock-alert-form { display: grid; grid-template-columns: auto 1fr; gap: 18px; background: var(--store-steel); color: white; }
@@ -3334,6 +3334,11 @@ textarea {
   background: var(--store-ink);
   border: 1px solid var(--store-ink);
 }
+.store-catalog-more { display: grid; justify-items: center; gap: 14px; padding: 34px 20px 0; }
+.store-catalog-more span { color: #68675f; font-size: 13px; }
+.store-catalog-more button { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; border: 1px solid var(--store-ink); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.store-catalog-more button:hover { color: var(--store-paper); background: var(--store-ink); }
+.store-catalog-more svg { width: 15px; }
 .store-service-band {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -96,6 +96,34 @@ test('online checkout reserves stock, identifies transfers and becomes one conne
   );
 });
 
+test('checkout quote and final order use the same server-side totals', async (t) => {
+  const f = fixture(t);
+  f.database.exec(`
+    INSERT INTO online_product_profiles(productId,slug,shortDescription,description,fit,section,updatedAt)
+    VALUES ('product','camisa-prueba','Una camisa lista para todos los días.','Descripción completa de la camisa para comprar online.','Regular','Camisas','2026-01-01T12:00:00Z');
+    UPDATE variants SET onlinePrice=12501 WHERE id='variant';
+  `);
+  const store = f.load('lib/online-store.ts');
+  const common = {
+    items: [{ variantId: 'variant', quantity: 2 }],
+    couponCode: '',
+    paymentMethod: 'transfer',
+    shippingMethod: 'pickup',
+    postalCode: '1000',
+  };
+  const quoted = await store.quoteOnlineCheckout(common);
+  const order = await store.createOnlineOrder(new Request('http://localhost/api/store-checkout'), {
+    ...common,
+    email: 'comprador@example.com', customerName: 'Cliente Online', phone: '1122334455',
+    address: 'Retiro en local', city: 'Buenos Aires', province: 'CABA', notes: '',
+    idempotencyKey: crypto.randomUUID(), accessToken: crypto.randomUUID(),
+  });
+  assert.deepEqual(
+    { subtotal: quoted.subtotal, discount: quoted.discount, shipping: quoted.shipping.amount, total: quoted.total },
+    { subtotal: order.subtotal, discount: order.discount, shipping: order.shipping, total: order.total },
+  );
+});
+
 test('online reservation guard prevents overselling across simultaneous orders', async (t) => {
   const f = fixture(t);
   f.database

@@ -86,6 +86,7 @@ import {
   adminPinSetCookie,
   adminPinToken,
   verifyAdminPin,
+  verifyAdminPinRequest,
 } from '@/lib/admin-pin';
 import { storageOverview, storageWrite } from '@/lib/storage';
 import {
@@ -105,6 +106,7 @@ import {
   storeCatalog,
   storeProduct,
   quoteOnlineCoupon,
+  quoteOnlineCheckout,
 } from '@/lib/online-store';
 import {
   newsletterOverview,
@@ -134,6 +136,38 @@ function promotionRule(value: unknown) {
     return {} as Record<string, any>;
   }
 }
+const posReadResources = new Set([
+  'catalog',
+  'methods',
+  'offers',
+  'customers',
+  'customer-credit-balance',
+  'customer-cashback',
+  'sales',
+  'pos-online-orders',
+]);
+const posWriteResources = new Set([
+  'customers',
+  'quote',
+  'pricing',
+  'sales',
+  'pos-online-orders',
+  'refunds',
+  'refund-authorizations',
+]);
+async function requireAdminPinForApi(
+  req: Request,
+  resource: string,
+  posResources: Set<string>,
+  a: { role: string },
+) {
+  if (
+    ['ADMIN', 'GERENTE'].includes(a.role) &&
+    !posResources.has(resource) &&
+    !(await verifyAdminPinRequest(req))
+  )
+    throw new AppError(403, 'Ingresá el PIN de Administración para continuar.');
+}
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ resource: string }> },
@@ -151,7 +185,9 @@ export async function GET(
     if (resource === 'store-product')
       return reply(await storeProduct(url.searchParams.get('slug') ?? ''));
     if (resource === 'store-reviews')
-      return reply(await publicProductReviews(url.searchParams.get('productId') ?? ''));
+      return reply(
+        await publicProductReviews(url.searchParams.get('productId') ?? ''),
+      );
     if (resource === 'store-recover-cart')
       return reply(await recoverCart(url.searchParams.get('token') ?? ''));
     if (resource === 'store-account') return reply(await storeAccount(req));
@@ -230,6 +266,7 @@ export async function GET(
       });
     }
     const a = await actor();
+    await requireAdminPinForApi(req, resource, posReadResources, a);
     if (resource === 'global-search')
       return reply(await globalSearch(a, url.searchParams.get('q') ?? ''));
     if (resource === 'access') return reply(await listAccess(a));
@@ -237,7 +274,9 @@ export async function GET(
     if (resource === 'online-orders')
       return reply(await listOnlineOrders(a, url.searchParams.get('id') ?? ''));
     if (resource === 'pos-online-orders')
-      return reply(await listPosOnlineOrders(a, url.searchParams.get('id') ?? ''));
+      return reply(
+        await listPosOnlineOrders(a, url.searchParams.get('id') ?? ''),
+      );
     if (resource === 'online-catalog') return reply(await listOnlineCatalog(a));
     if (resource === 'newsletter') return reply(await newsletterOverview(a));
     if (resource === 'marketing') return reply(await storeGrowthDashboard(a));
@@ -626,7 +665,10 @@ export async function POST(
         await shippingQuote(input.postalCode, input.subtotal, input.method),
       );
     }
-    if (resource === 'store-coupon') return reply(await quoteOnlineCoupon(body));
+    if (resource === 'store-coupon')
+      return reply(await quoteOnlineCoupon(body));
+    if (resource === 'store-checkout-quote')
+      return reply(await quoteOnlineCheckout(body));
     if (resource === 'setup') {
       const x = z.object({ demo: z.boolean() }).strict().parse(body);
       return reply(await setup(x.demo), 201);
@@ -651,6 +693,7 @@ export async function POST(
       return response;
     }
     const a = await actor();
+    await requireAdminPinForApi(req, resource, posWriteResources, a);
     if (resource === 'storage') return reply(await storageWrite(a, body), 201);
     if (resource === 'online-orders')
       return reply(await onlineOrderWrite(a, body));
@@ -661,10 +704,21 @@ export async function POST(
     if (resource === 'newsletter')
       return reply(await sendNewsletterCampaign(a, body));
     if (resource === 'marketing') {
-      const action = z.object({ action: z.enum(['run-automations','moderate-review']), reviewId: z.string().optional(), status: z.enum(['published','rejected']).optional() }).parse(body);
-      return reply(action.action === 'run-automations'
-        ? await runMarketingAutomations(a)
-        : await moderateReview(a, { reviewId: action.reviewId, status: action.status }));
+      const action = z
+        .object({
+          action: z.enum(['run-automations', 'moderate-review']),
+          reviewId: z.string().optional(),
+          status: z.enum(['published', 'rejected']).optional(),
+        })
+        .parse(body);
+      return reply(
+        action.action === 'run-automations'
+          ? await runMarketingAutomations(a)
+          : await moderateReview(a, {
+              reviewId: action.reviewId,
+              status: action.status,
+            }),
+      );
     }
     if (resource === 'customers') {
       requirePermission(a, 'customers');

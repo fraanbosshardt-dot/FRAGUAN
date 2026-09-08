@@ -40,6 +40,9 @@ function sql(command) {
 
 try {
   assert.equal((await request('session')).body.user.id, 'local_seedy');
+  const pin = await fetch(origin + '/api/admin-pin', { method: 'POST', headers, body: JSON.stringify({ pin: '197313' }) });
+  assert.equal(pin.status, 200);
+  headers.Cookie += '; ' + pin.headers.get('set-cookie').split(';', 1)[0];
   const methods = await request('methods');
   assert.equal(methods.status, 200);
   assert(methods.body.some((method) => method.id === 'cashback'));

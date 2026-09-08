@@ -142,7 +142,7 @@ try {
   assert.equal(session.body.user.role, 'VENDEDOR');
   assert.deepEqual(
     [...session.body.permissions].sort((a, b) => a.localeCompare(b)),
-    ['customers', 'pos'],
+    ['customers', 'pos', 'pos-online-orders'],
   );
   assertSellerSafe('session', session.body);
   assertNoStore('session', session);

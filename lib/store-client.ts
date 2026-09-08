@@ -26,6 +26,10 @@ export type StoreProduct = {
   price: number;
   variants: StoreVariant[];
 };
+export type StoreCatalog = {
+  products: StoreProduct[];
+  sections: { name: string; products: number }[];
+};
 export type StoreCartItem = StoreVariant & {
   productId: string;
   productName: string;
@@ -52,7 +56,8 @@ export const storeMoney = (value: number) =>
   new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value / 100);
 
 const CART_KEY = 'fraguan-online-cart';
@@ -95,7 +100,11 @@ export function trackStore(
 ) {
   if (typeof window === 'undefined') return;
   const { consentGranted, ...safeDetail } = detail;
-  if (localStorage.getItem('fraguan-cookie-consent') !== 'analytics' && !consentGranted) return;
+  if (
+    localStorage.getItem('fraguan-cookie-consent') !== 'analytics' &&
+    !consentGranted
+  )
+    return;
   const attribution = captureStoreAttribution();
   const payload = {
     sessionId: storeSessionId(),
@@ -106,7 +115,10 @@ export function trackStore(
   };
   const body = JSON.stringify(payload);
   if (navigator.sendBeacon && event === 'page_view') {
-    navigator.sendBeacon('/api/store-event', new Blob([body], { type: 'application/json' }));
+    navigator.sendBeacon(
+      '/api/store-event',
+      new Blob([body], { type: 'application/json' }),
+    );
     return;
   }
   void storeApi('store-event', { method: 'POST', body }).catch(() => undefined);
@@ -212,11 +224,23 @@ export function useStoreCart() {
         productId: product.id,
         variantId: variant.id,
         value: variant.price * quantity,
-        cart: next.map(({ id, productName, slug, color, size, price, quantity }) => ({
-          variantId: id, productName, slug, color, size, price, quantity,
-        })),
+        cart: next.map(
+          ({ id, productName, slug, color, size, price, quantity }) => ({
+            variantId: id,
+            productName,
+            slug,
+            color,
+            size,
+            price,
+            quantity,
+          }),
+        ),
       });
-      dispatchEvent(new CustomEvent('fraguan-cart-feedback', { detail: { productName: product.name, size: variant.size } }));
+      dispatchEvent(
+        new CustomEvent('fraguan-cart-feedback', {
+          detail: { productName: product.name, size: variant.size },
+        }),
+      );
     },
     [save],
   );
@@ -226,22 +250,31 @@ export function useStoreCart() {
         localStorage.getItem(CART_KEY) || '[]',
       );
       const next = current.flatMap((item) =>
-          item.id !== variantId
-            ? [item]
-            : quantity > 0
-              ? [{ ...item, quantity: Math.min(item.stock, quantity) }]
-              : [],
-        );
+        item.id !== variantId
+          ? [item]
+          : quantity > 0
+            ? [{ ...item, quantity: Math.min(item.stock, quantity) }]
+            : [],
+      );
       save(next);
       const changed = current.find((item) => item.id === variantId);
-      if (changed) trackStore(quantity > 0 ? 'add_to_cart' : 'remove_from_cart', {
-        productId: changed.productId,
-        variantId,
-        value: changed.price * Math.max(0, quantity),
-        cart: next.map(({ id, productName, slug, color, size, price, quantity }) => ({
-          variantId: id, productName, slug, color, size, price, quantity,
-        })),
-      });
+      if (changed)
+        trackStore(quantity > 0 ? 'add_to_cart' : 'remove_from_cart', {
+          productId: changed.productId,
+          variantId,
+          value: changed.price * Math.max(0, quantity),
+          cart: next.map(
+            ({ id, productName, slug, color, size, price, quantity }) => ({
+              variantId: id,
+              productName,
+              slug,
+              color,
+              size,
+              price,
+              quantity,
+            }),
+          ),
+        });
     },
     [save],
   );

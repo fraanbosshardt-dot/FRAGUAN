@@ -121,7 +121,7 @@ export default async function InformationPage({ params }: { params: Promise<{ pa
     <div className="store-shell">
       <StoreHeader />
       <main className="store-information">
-        <a href="/tienda">← Volver a la tienda</a>
+        <a href="/">← Volver a la tienda</a>
         <header>
           <span>{content.eyebrow}</span>
           <h1>{content.title}</h1>

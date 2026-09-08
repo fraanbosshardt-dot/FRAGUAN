@@ -258,7 +258,7 @@ export async function runMarketingAutomations(actor: Actor) {
       to: order.email, subject: '¿CÓMO TE QUEDÓ?', title: 'CONTANOS TU EXPERIENCIA.',
       preheader: `Pedido #${order.orderNumber}`,
       content: `<p>Esperamos que ya estés disfrutando tu pedido #${order.orderNumber}. Tu opinión ayuda a otros a elegir talle y calce con más seguridad. También preparamos piezas que combinan con tu compra.</p>`,
-      action: { label: 'COMPLETAR EL LOOK', url: `${origin}/tienda?utm_source=email&utm_medium=automation&utm_campaign=post_purchase` }, kind: 'post_purchase', entityId: order.id,
+      action: { label: 'COMPLETAR EL LOOK', url: `${origin}/?utm_source=email&utm_medium=automation&utm_campaign=post_purchase` }, kind: 'post_purchase', entityId: order.id,
     });
     if (result.sent) await statement("INSERT OR IGNORE INTO marketing_automation_log(id,kind,entityId,recipient,status,detail,createdAt) VALUES (?,?,?,?,?,'',?)", id(), 'post_purchase', order.id, order.email, 'sent', now()).run();
     if (result.sent) sent++;
@@ -292,7 +292,7 @@ export async function runMarketingAutomations(actor: Actor) {
       to: subscriber.email, subject: 'ELEGIR MEJOR, SIN VUELTAS.', title: 'EMPEZÁ POR TU ESTILO.',
       preheader: 'Talles, stock y beneficios en un solo lugar.',
       content: '<p>Explorá la colección por categoría, guardá favoritos y usá el asistente de talle. Tu cuenta conecta compras online y del local.</p>',
-      action: { label: 'EXPLORAR COLECCIÓN', url: `${origin}/tienda?utm_source=email&utm_medium=automation&utm_campaign=welcome` },
+      action: { label: 'EXPLORAR COLECCIÓN', url: `${origin}/?utm_source=email&utm_medium=automation&utm_campaign=welcome` },
       kind: 'newsletter_nurture', entityId: subscriber.id,
     });
     if (result.sent) await statement("INSERT OR IGNORE INTO marketing_automation_log(id,kind,entityId,recipient,status,detail,createdAt) VALUES (?,?,?,?,?,'',?)", id(), 'newsletter_nurture', subscriber.id, subscriber.email, 'sent', now()).run();

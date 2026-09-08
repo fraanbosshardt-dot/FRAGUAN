@@ -40,7 +40,7 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
         >
           <Menu />
         </button>
-        <a className="store-logo" href="/tienda">
+        <a className="store-logo" href="/">
           <Image src="/fraguan-logo.jpg" alt="" width={38} height={38} />
           <span>FRAGUAN</span>
         </a>
@@ -52,10 +52,10 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           <a href="/coleccion/camperas">Abrigos</a>
         </nav>
         <div className="store-header-actions">
-          <a href="/tienda?search=1" aria-label="Buscar">
+          <a href="/?search=1" aria-label="Buscar">
             <Search />
           </a>
-          <a href="/tienda?favorites=1" aria-label={`${favorites.length} favoritos`}>
+          <a href="/?favorites=1" aria-label={`${favorites.length} favoritos`}>
             <Heart />
             {!!favorites.length && <span className="store-favorite-count">{favorites.length}</span>}
           </a>
@@ -140,14 +140,14 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           <button onClick={() => setMenu(false)} aria-label="Cerrar menú">
             <X />
           </button>
-          <a href="/tienda">FRAGUAN</a>
+          <a href="/">FRAGUAN</a>
           <nav>
             <a href="/coleccion/nuevos">Nuevos ingresos</a>
             <a href="/coleccion/camisas">Camisas</a>
             <a href="/coleccion/remeras">Remeras</a>
             <a href="/coleccion/pantalones">Pantalones</a>
             <a href="/coleccion/camperas">Abrigos</a>
-            <a href="/tienda?favorites=1">Favoritos</a>
+            <a href="/?favorites=1">Favoritos</a>
             <a href="/cuenta">Mi cuenta / Club</a>
           </nav>
         </div>

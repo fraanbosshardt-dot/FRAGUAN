@@ -37,6 +37,9 @@ function assertNoKey(value, forbiddenKey) {
 }
 
 const database = localDatabase();
+const pin = await fetch(origin + '/api/admin-pin', { method: 'POST', headers, body: JSON.stringify({ pin: '197313' }) });
+assert.equal(pin.status, 200);
+headers.Cookie += '; ' + pin.headers.get('set-cookie').split(';', 1)[0];
 database.exec('PRAGMA foreign_keys=ON');
 const originalRole = database
   .prepare("SELECT role FROM users WHERE id='local_seedy'")

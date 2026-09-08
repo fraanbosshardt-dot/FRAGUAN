@@ -1,16 +1,30 @@
 'use client';
 import { ArrowDown, ArrowRight, Search, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
 import { StoreFooter } from '@/components/store-footer';
 import { StoreProductCard } from '@/components/store-product-card';
-import { StoreProduct, storeApi, useStoreFavorites, trackStore } from '@/lib/store-client';
+import {
+  StoreCatalog,
+  StoreProduct,
+  storeApi,
+  useStoreFavorites,
+  trackStore,
+} from '@/lib/store-client';
 
-export default function Storefront({ initialSection = '' }: { initialSection?: string }) {
-  const [products, setProducts] = useState<StoreProduct[]>([]);
+export default function Storefront({
+  initialSection = '',
+  initialCatalog,
+}: {
+  initialSection?: string;
+  initialCatalog?: StoreCatalog;
+}) {
+  const [products, setProducts] = useState<StoreProduct[]>(
+    initialCatalog?.products || [],
+  );
   const [sections, setSections] = useState<
     { name: string; products: number }[]
-  >([]);
+  >(initialCatalog?.sections || []);
   const [query, setQuery] = useState('');
   const [section, setSection] = useState(initialSection);
   const [size, setSize] = useState('');
@@ -18,14 +32,18 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [sort, setSort] = useState('recommended');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCatalog);
   const [error, setError] = useState('');
+  const [initialized, setInitialized] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(16);
+  const initialCatalogUsed = useRef(false);
   const { favorites } = useStoreFavorites();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     setQuery(params.get('q') || params.get('search') || '');
     setSection(params.get('section') || initialSection);
     setOnlyFavorites(params.get('favorites') === '1');
+    setInitialized(true);
     if (params.get('search'))
       setTimeout(
         () =>
@@ -36,6 +54,18 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
       );
   }, [initialSection]);
   useEffect(() => {
+    if (!initialized) return;
+    if (
+      initialCatalog &&
+      !initialCatalogUsed.current &&
+      !query &&
+      section === initialSection
+    ) {
+      initialCatalogUsed.current = true;
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const timer = setTimeout(
       () => {
         storeApi<{
@@ -55,10 +85,16 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
       query ? 180 : 0,
     );
     return () => clearTimeout(timer);
-  }, [query, section]);
+  }, [query, section, initialized, initialCatalog, initialSection]);
   useEffect(() => {
     if (!query.trim()) return;
-    const timer = setTimeout(() => trackStore('search', { metadata: { query: query.trim().slice(0, 100) } }), 600);
+    const timer = setTimeout(
+      () =>
+        trackStore('search', {
+          metadata: { query: query.trim().slice(0, 100) },
+        }),
+      600,
+    );
     return () => clearTimeout(timer);
   }, [query]);
   const featured = useMemo(
@@ -66,11 +102,23 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
     [products],
   );
   const sizes = useMemo(
-    () => [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.size)))],
+    () => [
+      ...new Set(
+        products.flatMap((product) =>
+          product.variants.map((variant) => variant.size),
+        ),
+      ),
+    ],
     [products],
   );
   const colors = useMemo(
-    () => [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.color)))],
+    () => [
+      ...new Set(
+        products.flatMap((product) =>
+          product.variants.map((variant) => variant.color),
+        ),
+      ),
+    ],
     [products],
   );
   const displayed = useMemo(() => {
@@ -90,7 +138,14 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
       return Number(b.featured) - Number(a.featured);
     });
   }, [products, favorites, onlyFavorites, size, color, onlyAvailable, sort]);
-  const hasActiveFilters = Boolean(size || color || onlyAvailable || onlyFavorites);
+  const hasActiveFilters = Boolean(
+    size || color || onlyAvailable || onlyFavorites,
+  );
+  useEffect(
+    () => setVisibleCount(16),
+    [query, section, size, color, onlyAvailable, onlyFavorites, sort],
+  );
+  const visibleProducts = displayed.slice(0, visibleCount);
   return (
     <div className="store-shell">
       <StoreHeader />
@@ -107,8 +162,8 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
           </h1>
           <div className="store-hero-bottom">
             <p>
-              Hecho para usarlo a tu manera. Elegí tu talle, tu color y armá
-              un estilo propio.
+              Hecho para usarlo a tu manera. Elegí tu talle, tu color y armá un
+              estilo propio.
             </p>
             <a href="#coleccion">
               Ver colección <ArrowDown />
@@ -120,8 +175,8 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
         </section>
         <div className="store-marquee" aria-hidden="true">
           <span>
-            NUEVO DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES —
-            NUEVO DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES —{' '}
+            NUEVO DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES — NUEVO
+            DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES —{' '}
           </span>
         </div>
         <section className="store-worlds" aria-label="Colecciones FRAGUAN">
@@ -133,17 +188,23 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
             <a href="/coleccion/nuevos">
               <small>01 / NEW DROP</small>
               <strong>LO NUEVO</strong>
-              <span>Primeras piezas de la temporada <ArrowRight /></span>
+              <span>
+                Primeras piezas de la temporada <ArrowRight />
+              </span>
             </a>
             <a href="/coleccion/camisas">
               <small>02 / THE UNIFORM</small>
               <strong>CAMISAS</strong>
-              <span>Para todos los días <ArrowRight /></span>
+              <span>
+                Para todos los días <ArrowRight />
+              </span>
             </a>
             <a href="/coleccion/pantalones">
               <small>03 / ESSENTIALS</small>
               <strong>BASES</strong>
-              <span>Lo que combina con todo <ArrowRight /></span>
+              <span>
+                Lo que combina con todo <ArrowRight />
+              </span>
             </a>
           </div>
         </section>
@@ -190,19 +251,32 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
               </button>
             ))}
           </div>
-          <div className="store-catalog-tools" aria-label="Filtrar y ordenar productos">
+          <div
+            className="store-catalog-tools"
+            aria-label="Filtrar y ordenar productos"
+          >
             <label>
               Talle
-              <select value={size} onChange={(event) => setSize(event.target.value)}>
+              <select
+                value={size}
+                onChange={(event) => setSize(event.target.value)}
+              >
                 <option value="">Todos</option>
-                {sizes.map((value) => <option key={value}>{value}</option>)}
+                {sizes.map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
               </select>
             </label>
             <label>
               Color
-              <select value={color} onChange={(event) => setColor(event.target.value)}>
+              <select
+                value={color}
+                onChange={(event) => setColor(event.target.value)}
+              >
                 <option value="">Todos</option>
-                {colors.map((value) => <option key={value}>{value}</option>)}
+                {colors.map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
               </select>
             </label>
             <label className="store-check-filter">
@@ -223,7 +297,10 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
             </label>
             <label className="store-sort">
               Ordenar
-              <select value={sort} onChange={(event) => setSort(event.target.value)}>
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value)}
+              >
                 <option value="recommended">Recomendados</option>
                 <option value="price-asc">Menor precio</option>
                 <option value="price-desc">Mayor precio</option>
@@ -246,19 +323,42 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
           </div>
           {error && <p className="store-error">{error}</p>}
           {loading ? (
-            <div className="store-loading-grid" aria-label="Preparando la colección">
-              {Array.from({ length: 8 }).map((_, index) => <span key={index}><i /><b /><small /></span>)}
-            </div>
-          ) : displayed.length ? (
-            <div className="store-product-grid">
-              {displayed.map((product, index) => (
-                <StoreProductCard
-                  product={product}
-                  index={index}
-                  key={product.id}
-                />
+            <div
+              className="store-loading-grid"
+              aria-label="Preparando la colección"
+            >
+              {Array.from({ length: 8 }).map((_, index) => (
+                <span key={index}>
+                  <i />
+                  <b />
+                  <small />
+                </span>
               ))}
             </div>
+          ) : displayed.length ? (
+            <>
+              <div className="store-product-grid">
+                {visibleProducts.map((product, index) => (
+                  <StoreProductCard
+                    product={product}
+                    index={index}
+                    key={product.id}
+                  />
+                ))}
+              </div>
+              <div className="store-catalog-more" aria-live="polite">
+                <span>
+                  Mostrando {visibleProducts.length} de {displayed.length}
+                </span>
+                {visibleProducts.length < displayed.length && (
+                  <button
+                    onClick={() => setVisibleCount((current) => current + 16)}
+                  >
+                    Mostrar más productos <ArrowDown />
+                  </button>
+                )}
+              </div>
+            </>
           ) : (
             <div className="store-empty">
               <h3>No encontramos esa prenda.</h3>
@@ -290,11 +390,30 @@ export default function Storefront({ initialSection = '' }: { initialSection?: s
             </a>
           </section>
         )}
-        <section className="store-service-band" aria-label="Beneficios de compra">
-          <div><span>01</span><strong>10% OFF</strong><small>Pagando por transferencia</small></div>
-          <div><span>02</span><strong>RETIRO GRATIS</strong><small>Cuando tu pedido esté listo</small></div>
-          <div><span>03</span><strong>STOCK REAL</strong><small>Conectado con el local</small></div>
-          <div><span>04</span><strong>SEGUIMIENTO</strong><small>Desde Mi FRAGUAN</small></div>
+        <section
+          className="store-service-band"
+          aria-label="Beneficios de compra"
+        >
+          <div>
+            <span>01</span>
+            <strong>10% OFF</strong>
+            <small>Pagando por transferencia</small>
+          </div>
+          <div>
+            <span>02</span>
+            <strong>RETIRO GRATIS</strong>
+            <small>Cuando tu pedido esté listo</small>
+          </div>
+          <div>
+            <span>03</span>
+            <strong>STOCK REAL</strong>
+            <small>Conectado con el local</small>
+          </div>
+          <div>
+            <span>04</span>
+            <strong>SEGUIMIENTO</strong>
+            <small>Desde Mi FRAGUAN</small>
+          </div>
         </section>
       </main>
       <StoreFooter />

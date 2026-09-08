@@ -52,6 +52,9 @@ assert.equal(
 );
 const wrongAdminPin = await request('admin-pin', { pin: '000000' });
 assert.equal(wrongAdminPin.status, 403);
+const lockedAdminApi = await request('dashboard');
+assert.equal(lockedAdminApi.status, 403);
+assert.match(lockedAdminApi.body.error, /PIN de Administración/);
 const correctAdminPin = await request('admin-pin', { pin: '197313' });
 assert.equal(correctAdminPin.status, 200);
 assert.match(correctAdminPin.setCookie, /fraguan_admin_access=/);
@@ -64,8 +67,9 @@ const lockedAdminPage = await fetch(origin + '/admin/dashboard', {
 assert([302, 307, 308].includes(lockedAdminPage.status));
 assert.match(lockedAdminPage.headers.get('location'), /admin-access/);
 const adminCookie = correctAdminPin.setCookie.split(';', 1)[0];
+headers.Cookie = `${headers.Cookie}; ${adminCookie}`;
 const unlockedAdminPage = await fetch(origin + '/admin/dashboard', {
-  headers: { Cookie: `${headers.Cookie}; ${adminCookie}` },
+  headers: { Cookie: headers.Cookie },
 });
 assert.equal(unlockedAdminPage.status, 200);
 assert.match(await unlockedAdminPage.text(), /Vista general/);
