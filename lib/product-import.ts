@@ -407,7 +407,7 @@ export async function productImportTemplate(actor: Actor) {
       stock_minimo: '2',
       stock_ideal: '8',
       fecha_ingreso: new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Argentina/Buenos_Aires',
+        timeZone: 'America/Argentina/Cordoba',
       }).format(new Date()),
     },
     moneyFormat:

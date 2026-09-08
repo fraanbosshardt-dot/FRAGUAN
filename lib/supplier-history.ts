@@ -10,7 +10,7 @@ export async function supplierHistory(a: Actor, supplierId: string) {
   );
   if (!supplier) throw new AppError(404, 'Proveedor no encontrado.');
   const to = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'America/Argentina/Cordoba',
   }).format(new Date());
   const from = new Date(Date.parse(`${to}T12:00:00Z`) - 364 * 86400000)
     .toISOString()

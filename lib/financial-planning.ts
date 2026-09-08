@@ -58,7 +58,7 @@ function addDays(date: string, days: number) {
 }
 function businessToday() {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'America/Argentina/Cordoba',
   }).format(new Date());
 }
 async function validateSupplier(supplierId: string | null) {

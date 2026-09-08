@@ -27,7 +27,11 @@ export function StoreFooter() {
     <footer className="store-footer">
       <div className="store-footer-brand">
         <a href="/">FRAGUAN</a>
-        <p>Forjá tu estilo.<br />Buenos Aires · Argentina</p>
+        <p>
+          Forjá tu estilo.
+          <br />
+          Isla Verde · Córdoba
+        </p>
       </div>
       <nav aria-label="Ayuda y políticas">
         <strong>AYUDA</strong>
@@ -61,7 +65,9 @@ export function StoreFooter() {
             aria-label="Email para newsletter"
             required
           />
-          <button type="submit">Unirme <ArrowRight /></button>
+          <button type="submit">
+            Unirme <ArrowRight />
+          </button>
         </form>
         {state && <output>{state}</output>}
       </div>

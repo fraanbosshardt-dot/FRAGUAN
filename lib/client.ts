@@ -28,7 +28,7 @@ export const date = (value: string) =>
     ? new Date(
         value.length === 10 ? value + 'T12:00:00Z' : value,
       ).toLocaleString('es-AR', {
-        timeZone: 'America/Argentina/Buenos_Aires',
+        timeZone: 'America/Argentina/Cordoba',
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -61,7 +61,7 @@ export function useClock() {
         new Date().toLocaleTimeString('es-AR', {
           hour: '2-digit',
           minute: '2-digit',
-          timeZone: 'America/Argentina/Buenos_Aires',
+          timeZone: 'America/Argentina/Cordoba',
         }),
       );
     update();

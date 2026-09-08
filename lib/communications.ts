@@ -4,7 +4,7 @@ export async function communicationSuggestions(a: Actor) {
   requirePermission(a, 'communications');
   requirePermission(a, 'customer-intelligence');
   const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires',
+    timeZone: 'America/Argentina/Cordoba',
   }).format(new Date());
   const cutoff = new Date(
     Date.parse(`${today}T12:00:00Z`) - 90 * 86400000,

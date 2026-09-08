@@ -232,7 +232,7 @@ export async function bankingWrite(a: Actor, raw: unknown) {
     if (!allowed[check.status]?.includes(input.status))
       throw new AppError(409, 'Transición de cheque no permitida.');
     const today = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Argentina/Buenos_Aires',
+      timeZone: 'America/Argentina/Cordoba',
     }).format(new Date());
     if (input.status === 'cleared' && check.dueAt > today)
       throw new AppError(409, 'El cheque todavía no venció.');

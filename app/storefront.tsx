@@ -175,8 +175,8 @@ export default function Storefront({
         </section>
         <div className="store-marquee" aria-hidden="true">
           <span>
-            NUEVO DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES — NUEVO
-            DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES —{' '}
+            NUEVO DROP — HECHO PARA USARLO A TU MANERA — ISLA VERDE — NUEVO DROP
+            — HECHO PARA USARLO A TU MANERA — ISLA VERDE —{' '}
           </span>
         </div>
         <section className="store-worlds" aria-label="Colecciones FRAGUAN">

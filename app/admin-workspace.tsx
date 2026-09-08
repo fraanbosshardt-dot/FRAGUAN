@@ -325,7 +325,8 @@ const descriptions: Record<string, string> = {
     'Pagos, referencias, preparación, envíos y seguimiento en una sola cola.',
   'online-catalog':
     'Elegí qué productos se publican y completá su información de venta online.',
-  marketing: 'Medí el embudo y gestioná recuperación, reposiciones, reseñas y campañas desde los mismos datos de la tienda.',
+  marketing:
+    'Medí el embudo y gestioná recuperación, reposiciones, reseñas y campañas desde los mismos datos de la tienda.',
   products:
     'Productos, variantes, precios y existencias reunidos en un solo lugar.',
   stock: 'Consultá y ajustá las unidades de cada variante.',
@@ -401,11 +402,11 @@ export default function Admin({ section }: { section: string }) {
     [authorization, setAuthorization] = useState<Row | null>(null),
     [reportFrom, setReportFrom] = useState(
       () =>
-        `${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date()).slice(0, 7)}-01`,
+        `${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Cordoba' }).format(new Date()).slice(0, 7)}-01`,
     ),
     [reportTo, setReportTo] = useState(() =>
       new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Argentina/Buenos_Aires',
+        timeZone: 'America/Argentina/Cordoba',
       }).format(new Date()),
     ),
     [financialPlans, setFinancialPlans] = useState<Row>({
@@ -896,7 +897,7 @@ export default function Admin({ section }: { section: string }) {
       }
       if (modal === 'recurring-expense') {
         const today = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'America/Argentina/Buenos_Aires',
+          timeZone: 'America/Argentina/Cordoba',
         }).format(new Date());
         await mutate('recurring-expenses', {
           description: form.description,
@@ -913,7 +914,7 @@ export default function Admin({ section }: { section: string }) {
       }
       if (modal === 'installment-obligation') {
         const today = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'America/Argentina/Buenos_Aires',
+          timeZone: 'America/Argentina/Cordoba',
         }).format(new Date());
         await mutate('installment-obligations', {
           description: form.description,
@@ -1439,7 +1440,12 @@ export default function Admin({ section }: { section: string }) {
                 </Button>
               )}
               {section === 'marketing' && (
-                <Button onClick={() => mutate('marketing', { action: 'run-automations' })} disabled={busy}>
+                <Button
+                  onClick={() =>
+                    mutate('marketing', { action: 'run-automations' })
+                  }
+                  disabled={busy}
+                >
                   <RefreshCw size={15} /> Ejecutar automatizaciones
                 </Button>
               )}
@@ -2797,20 +2803,208 @@ export default function Admin({ section }: { section: string }) {
                   ['Agregaron', data.funnel?.addToCart ?? 0],
                   ['Iniciaron compra', data.funnel?.checkout ?? 0],
                   ['Compraron', data.funnel?.purchases ?? 0],
-                ].map(([label, value]) => <article className="metric" key={String(label)}><p>{label}</p><strong>{value}</strong><small>Últimos {data.periodDays} días</small></article>)}
+                ].map(([label, value]) => (
+                  <article className="metric" key={String(label)}>
+                    <p>{label}</p>
+                    <strong>{value}</strong>
+                    <small>Últimos {data.periodDays} días</small>
+                  </article>
+                ))}
               </section>
               <div className="growth-grid">
-                <section className="panel"><div className="panel-heading"><h2>Embudo de compra</h2><span>Sesiones únicas</span></div><div className="growth-funnel">{[
-                  ['Visitas', data.funnel?.visitors], ['Producto', data.funnel?.productViews], ['Carrito', data.funnel?.addToCart], ['Checkout', data.funnel?.checkout], ['Compra', data.funnel?.purchases],
-                ].map(([label, value], index) => { const max = Math.max(1, data.funnel?.visitors || 1); return <div key={String(label)}><span>{label}</span><i><b style={{ width: `${Math.max(3, Number(value || 0) / max * 100)}%` }} /></i><strong>{value || 0}{index ? ` · ${Math.round(Number(value || 0) / Math.max(1, Number(Object.values(data.funnel)[index - 1] || 1)) * 100)}%` : ''}</strong></div>; })}</div></section>
-                <section className="panel"><div className="panel-heading"><h2>Origen de ventas</h2><span>Campañas y canales</span></div><div className="growth-list">{(data.sources ?? []).map((row: Row, index: number) => <div key={`${row.source}-${row.campaign}-${index}`}><span><strong>{row.source}</strong><small>{row.campaign}</small></span><b>{row.sessions} sesiones</b><em>{money(row.revenue)}</em></div>)}{!data.sources?.length && <p className="quiet">Los canales aparecerán cuando haya visitas.</p>}</div></section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Embudo de compra</h2>
+                    <span>Sesiones únicas</span>
+                  </div>
+                  <div className="growth-funnel">
+                    {[
+                      ['Visitas', data.funnel?.visitors],
+                      ['Producto', data.funnel?.productViews],
+                      ['Carrito', data.funnel?.addToCart],
+                      ['Checkout', data.funnel?.checkout],
+                      ['Compra', data.funnel?.purchases],
+                    ].map(([label, value], index) => {
+                      const max = Math.max(1, data.funnel?.visitors || 1);
+                      return (
+                        <div key={String(label)}>
+                          <span>{label}</span>
+                          <i>
+                            <b
+                              style={{
+                                width: `${Math.max(3, (Number(value || 0) / max) * 100)}%`,
+                              }}
+                            />
+                          </i>
+                          <strong>
+                            {value || 0}
+                            {index
+                              ? ` · ${Math.round((Number(value || 0) / Math.max(1, Number(Object.values(data.funnel)[index - 1] || 1))) * 100)}%`
+                              : ''}
+                          </strong>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Origen de ventas</h2>
+                    <span>Campañas y canales</span>
+                  </div>
+                  <div className="growth-list">
+                    {(data.sources ?? []).map((row: Row, index: number) => (
+                      <div key={`${row.source}-${row.campaign}-${index}`}>
+                        <span>
+                          <strong>{row.source}</strong>
+                          <small>{row.campaign}</small>
+                        </span>
+                        <b>{row.sessions} sesiones</b>
+                        <em>{money(row.revenue)}</em>
+                      </div>
+                    ))}
+                    {!data.sources?.length && (
+                      <p className="quiet">
+                        Los canales aparecerán cuando haya visitas.
+                      </p>
+                    )}
+                  </div>
+                </section>
               </div>
               <div className="growth-grid">
-                <section className="panel"><div className="panel-heading"><h2>Carritos por recuperar</h2><span>{data.configured ? 'Emails automáticos listos' : 'Falta configurar Resend'}</span></div><div className="growth-list">{(data.carts ?? []).map((cart: Row) => <div key={cart.id}><span><strong>{cart.email || 'Visitante sin email'}</strong><small>{date(cart.lastActivityAt)} · {cart.source || 'Directo'}</small></span><b>{money(cart.subtotal)}</b><em>{cart.secondReminderAt ? '2 avisos' : cart.firstReminderAt ? '1 aviso' : 'Pendiente'}</em></div>)}{!data.carts?.length && <p className="quiet">No hay carritos pendientes.</p>}</div></section>
-                <section className="panel"><div className="panel-heading"><h2>Productos más mirados</h2><span>Interés y agregado</span></div><div className="growth-list">{(data.products ?? []).map((product: Row) => <div key={product.name}><span><strong>{product.name}</strong><small>{product.views} vistas</small></span><b>{product.adds} agregados</b></div>)}</div></section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Carritos por recuperar</h2>
+                    <span>
+                      {data.configured
+                        ? 'Emails automáticos listos'
+                        : 'Falta configurar Resend'}
+                    </span>
+                  </div>
+                  <div className="growth-list">
+                    {(data.carts ?? []).map((cart: Row) => (
+                      <div key={cart.id}>
+                        <span>
+                          <strong>{cart.email || 'Visitante sin email'}</strong>
+                          <small>
+                            {date(cart.lastActivityAt)} ·{' '}
+                            {cart.source || 'Directo'}
+                          </small>
+                        </span>
+                        <b>{money(cart.subtotal)}</b>
+                        <em>
+                          {cart.secondReminderAt
+                            ? '2 avisos'
+                            : cart.firstReminderAt
+                              ? '1 aviso'
+                              : 'Pendiente'}
+                        </em>
+                      </div>
+                    ))}
+                    {!data.carts?.length && (
+                      <p className="quiet">No hay carritos pendientes.</p>
+                    )}
+                  </div>
+                </section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Productos más mirados</h2>
+                    <span>Interés y agregado</span>
+                  </div>
+                  <div className="growth-list">
+                    {(data.products ?? []).map((product: Row) => (
+                      <div key={product.name}>
+                        <span>
+                          <strong>{product.name}</strong>
+                          <small>{product.views} vistas</small>
+                        </span>
+                        <b>{product.adds} agregados</b>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               </div>
-              <section className="panel"><div className="panel-heading"><h2>Reseñas para moderar</h2><span>Las compras verificadas quedan identificadas</span></div><div className="growth-review-list">{(data.reviews ?? []).map((review: Row) => <article key={review.id}><div><strong>{review.product} · {review.rating}/5</strong><small>{review.displayName}{review.verified ? ' · Compra verificada' : ''}</small><p>{review.body}</p></div><span className={'status ' + review.status}>{review.status}</span>{review.status === 'pending' && <div><Button variant="outline" onClick={() => mutate('marketing', { action: 'moderate-review', reviewId: review.id, status: 'rejected' })}>Rechazar</Button><Button onClick={() => mutate('marketing', { action: 'moderate-review', reviewId: review.id, status: 'published' })}>Publicar</Button></div>}</article>)}{!data.reviews?.length && <p className="quiet">Todavía no hay opiniones.</p>}</div></section>
-              <section className="panel"><div className="panel-heading"><h2>Avisos de reposición</h2><span>Conectados al stock de variantes</span></div><div className="growth-list">{(data.waits ?? []).map((wait: Row) => <div key={wait.id}><span><strong>{wait.product}</strong><small>{wait.color} · talle {wait.size} · {wait.email}</small></span><em>{wait.status === 'waiting' ? 'Esperando stock' : 'Avisado'}</em></div>)}{!data.waits?.length && <p className="quiet">No hay avisos pendientes.</p>}</div></section>
+              <section className="panel">
+                <div className="panel-heading">
+                  <h2>Reseñas para moderar</h2>
+                  <span>Las compras verificadas quedan identificadas</span>
+                </div>
+                <div className="growth-review-list">
+                  {(data.reviews ?? []).map((review: Row) => (
+                    <article key={review.id}>
+                      <div>
+                        <strong>
+                          {review.product} · {review.rating}/5
+                        </strong>
+                        <small>
+                          {review.displayName}
+                          {review.verified ? ' · Compra verificada' : ''}
+                        </small>
+                        <p>{review.body}</p>
+                      </div>
+                      <span className={'status ' + review.status}>
+                        {review.status}
+                      </span>
+                      {review.status === 'pending' && (
+                        <div>
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              mutate('marketing', {
+                                action: 'moderate-review',
+                                reviewId: review.id,
+                                status: 'rejected',
+                              })
+                            }
+                          >
+                            Rechazar
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              mutate('marketing', {
+                                action: 'moderate-review',
+                                reviewId: review.id,
+                                status: 'published',
+                              })
+                            }
+                          >
+                            Publicar
+                          </Button>
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                  {!data.reviews?.length && (
+                    <p className="quiet">Todavía no hay opiniones.</p>
+                  )}
+                </div>
+              </section>
+              <section className="panel">
+                <div className="panel-heading">
+                  <h2>Avisos de reposición</h2>
+                  <span>Conectados al stock de variantes</span>
+                </div>
+                <div className="growth-list">
+                  {(data.waits ?? []).map((wait: Row) => (
+                    <div key={wait.id}>
+                      <span>
+                        <strong>{wait.product}</strong>
+                        <small>
+                          {wait.color} · talle {wait.size} · {wait.email}
+                        </small>
+                      </span>
+                      <em>
+                        {wait.status === 'waiting'
+                          ? 'Esperando stock'
+                          : 'Avisado'}
+                      </em>
+                    </div>
+                  ))}
+                  {!data.waits?.length && (
+                    <p className="quiet">No hay avisos pendientes.</p>
+                  )}
+                </div>
+              </section>
             </div>
           )}
           {columns[section] && data && (
@@ -3271,16 +3465,35 @@ export default function Admin({ section }: { section: string }) {
                     : `${selected.address}${selected.addressExtra ? ` · ${selected.addressExtra}` : ''}, ${selected.city}, ${selected.province} · CP ${selected.postalCode}`}
                 </span>
                 {selected.document && <span>DNI: {selected.document}</span>}
-                {selected.couponCode && <span>Cupón aplicado: {selected.couponCode}</span>}
-                {selected.attributionJson && (() => { try { const source = JSON.parse(selected.attributionJson); return <span>Origen: {source.source || 'Directo'}{source.campaign ? ` · ${source.campaign}` : ''}</span>; } catch { return null; } })()}
+                {selected.couponCode && (
+                  <span>Cupón aplicado: {selected.couponCode}</span>
+                )}
+                {selected.attributionJson &&
+                  (() => {
+                    try {
+                      const source = JSON.parse(selected.attributionJson);
+                      return (
+                        <span>
+                          Origen: {source.source || 'Directo'}
+                          {source.campaign ? ` · ${source.campaign}` : ''}
+                        </span>
+                      );
+                    } catch {
+                      return null;
+                    }
+                  })()}
               </div>
               {!!selected.returnRequests?.length && (
                 <div className="online-return-alert">
                   <strong>Solicitudes del cliente</strong>
                   {selected.returnRequests.map((request: Row) => (
                     <div key={request.code}>
-                      <span>{request.code} · {labels[request.kind] ?? request.kind}</span>
-                      <small>{request.reason} · {date(request.createdAt)}</small>
+                      <span>
+                        {request.code} · {labels[request.kind] ?? request.kind}
+                      </span>
+                      <small>
+                        {request.reason} · {date(request.createdAt)}
+                      </small>
                       {request.detail && <p>{request.detail}</p>}
                     </div>
                   ))}
@@ -3314,52 +3527,65 @@ export default function Admin({ section }: { section: string }) {
               </div>
               {['pending', 'reported'].includes(selected.paymentStatus) &&
                 selected.paymentMethod === 'transfer' && (
-                <div className="online-order-action">
-                  {field('paymentReference', 'Referencia bancaria confirmada', {
-                    value:
-                      selected.paymentReference || selected.transferReference,
-                  })}
-                  {field('confirmedAmount', 'Importe acreditado en el banco', {
-                    type: 'number',
-                    value: Number(selected.total) / 100,
-                  })}
-                  <Button
-                    disabled={busy}
-                    onClick={() =>
-                      mutate('online-orders', {
-                        action: 'mark-paid',
-                        orderId: selected.id,
-                        paymentReference:
-                          form.paymentReference ||
+                  <div className="online-order-action">
+                    {field(
+                      'paymentReference',
+                      'Referencia bancaria confirmada',
+                      {
+                        value:
                           selected.paymentReference ||
                           selected.transferReference,
-                        confirmedAmount: minor(
-                          String(form.confirmedAmount ?? Number(selected.total) / 100),
-                        ),
-                      })
-                    }
-                  >
-                    <Check /> Confirmar pago
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() =>
-                      mutate('online-orders', {
-                        action: 'cancel',
-                        orderId: selected.id,
-                        reason: 'Cancelado desde administración',
-                      })
-                    }
-                  >
-                    Cancelar pedido
-                  </Button>
-                </div>
-              )}
+                      },
+                    )}
+                    {field(
+                      'confirmedAmount',
+                      'Importe acreditado en el banco',
+                      {
+                        type: 'number',
+                        value: Number(selected.total) / 100,
+                      },
+                    )}
+                    <Button
+                      disabled={busy}
+                      onClick={() =>
+                        mutate('online-orders', {
+                          action: 'mark-paid',
+                          orderId: selected.id,
+                          paymentReference:
+                            form.paymentReference ||
+                            selected.paymentReference ||
+                            selected.transferReference,
+                          confirmedAmount: minor(
+                            String(
+                              form.confirmedAmount ??
+                                Number(selected.total) / 100,
+                            ),
+                          ),
+                        })
+                      }
+                    >
+                      <Check /> Confirmar pago
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() =>
+                        mutate('online-orders', {
+                          action: 'cancel',
+                          orderId: selected.id,
+                          reason: 'Cancelado desde administración',
+                        })
+                      }
+                    >
+                      Cancelar pedido
+                    </Button>
+                  </div>
+                )}
               {['pending', 'reported'].includes(selected.paymentStatus) &&
                 selected.paymentMethod === 'card' && (
                   <p className="notice neutral">
-                    La tarjeta se acredita únicamente con la confirmación firmada de Mercado Pago.
+                    La tarjeta se acredita únicamente con la confirmación
+                    firmada de Mercado Pago.
                   </p>
                 )}
               {selected.paymentStatus === 'paid' &&
@@ -4635,7 +4861,7 @@ export default function Admin({ section }: { section: string }) {
                   {field('startsOn', 'Primer vencimiento', {
                     type: 'date',
                     value: new Intl.DateTimeFormat('en-CA', {
-                      timeZone: 'America/Argentina/Buenos_Aires',
+                      timeZone: 'America/Argentina/Cordoba',
                     }).format(new Date()),
                   })}
                   {field('endsOn', 'Último vencimiento', {
@@ -4665,7 +4891,7 @@ export default function Admin({ section }: { section: string }) {
                   {field('firstDueOn', 'Primer vencimiento', {
                     type: 'date',
                     value: new Intl.DateTimeFormat('en-CA', {
-                      timeZone: 'America/Argentina/Buenos_Aires',
+                      timeZone: 'America/Argentina/Cordoba',
                     }).format(new Date()),
                   })}
                   {field('intervalMonths', 'Meses entre cuotas', {

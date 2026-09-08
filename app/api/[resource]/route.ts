@@ -286,7 +286,7 @@ export async function GET(
       return reply(await supplierHistory(a, url.searchParams.get('id') ?? ''));
     if (resource === 'seller-commissions') {
       const today = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Argentina/Buenos_Aires',
+        timeZone: 'America/Argentina/Cordoba',
       }).format(new Date());
       return reply(
         await sellerCommissions(
@@ -461,7 +461,7 @@ export async function GET(
       return reply(await productImportTemplate(a));
     if (resource === 'reports') {
       const today = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Argentina/Buenos_Aires',
+        timeZone: 'America/Argentina/Cordoba',
       }).format(new Date());
       const optional = (key: string) => url.searchParams.get(key) || undefined;
       return reply(

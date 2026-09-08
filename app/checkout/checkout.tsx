@@ -22,6 +22,8 @@ import {
   trackStore,
 } from '@/lib/store-client';
 
+const STORE_PICKUP_POSTAL_CODE = '2661';
+
 type Order = Record<string, any>;
 type CheckoutQuote = {
   subtotal: number;
@@ -97,7 +99,10 @@ export default function Checkout() {
             couponCode: appliedCouponCode,
             paymentMethod: payment,
             shippingMethod,
-            postalCode: shippingMethod === 'pickup' ? '1000' : postalCode,
+            postalCode:
+              shippingMethod === 'pickup'
+                ? STORE_PICKUP_POSTAL_CODE
+                : postalCode,
           }),
         })
           .then((result) => {
@@ -145,15 +150,17 @@ export default function Checkout() {
           document: form.get('document') || '',
           paymentMethod: payment,
           shippingMethod,
-          postalCode: shippingMethod === 'pickup' ? '1000' : postalCode,
+          postalCode:
+            shippingMethod === 'pickup' ? STORE_PICKUP_POSTAL_CODE : postalCode,
           address:
             shippingMethod === 'pickup'
               ? 'Retiro en local'
               : form.get('address'),
           addressExtra:
             shippingMethod === 'pickup' ? '' : form.get('addressExtra') || '',
-          city: shippingMethod === 'pickup' ? 'Buenos Aires' : form.get('city'),
-          province: shippingMethod === 'pickup' ? 'CABA' : form.get('province'),
+          city: shippingMethod === 'pickup' ? 'Isla Verde' : form.get('city'),
+          province:
+            shippingMethod === 'pickup' ? 'Córdoba' : form.get('province'),
           notes: form.get('notes') || '',
           idempotencyKey: idempotency.current,
           accessToken: accessToken.current,
@@ -187,7 +194,8 @@ export default function Checkout() {
           couponCode,
           paymentMethod: payment,
           shippingMethod,
-          postalCode: shippingMethod === 'pickup' ? '1000' : postalCode,
+          postalCode:
+            shippingMethod === 'pickup' ? STORE_PICKUP_POSTAL_CODE : postalCode,
         }),
       });
       setAppliedCouponCode(couponCode);
