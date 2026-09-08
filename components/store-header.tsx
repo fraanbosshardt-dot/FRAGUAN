@@ -29,7 +29,8 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
   return (
     <>
       <div className="store-promo">
-        10% OFF POR TRANSFERENCIA <span>·</span> ENVÍOS A TODO EL PAÍS
+        <span className="store-promo-message">10% OFF POR TRANSFERENCIA · ENVÍOS A TODO EL PAÍS</span>
+        <a href="/arrepentimiento">BOTÓN DE ARREPENTIMIENTO</a>
       </div>
       <header className={`store-header ${dark ? 'on-dark' : ''}`}>
         <button

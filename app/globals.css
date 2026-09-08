@@ -2683,13 +2683,19 @@ textarea {
   height: 31px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 10px;
+  padding: 0 clamp(16px, 4vw, 68px);
   background: var(--store-bone);
   color: var(--store-charcoal);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.09em;
+}
+.store-promo a {
+  padding-bottom: 1px;
+  border-bottom: 1px solid currentColor;
+  white-space: nowrap;
 }
 .store-header {
   height: 82px;
@@ -3369,27 +3375,40 @@ textarea {
 }
 .store-footer {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1.2fr .8fr .9fr 1.35fr;
   gap: 30px;
   padding: 60px clamp(20px, 4vw, 68px);
   background: var(--store-sand);
   color: var(--store-charcoal);
 }
-.store-footer > a {
+.store-footer-brand > a {
   font-size: 32px;
   font-weight: 950;
   letter-spacing: -0.07em;
 }
-.store-footer > div {
+.store-footer nav,
+.store-footer-brand {
   display: grid;
   gap: 8px;
-  justify-content: start;
+  align-content: start;
+  justify-items: start;
   font-size: 14px;
 }
-.store-footer p {
-  text-align: right;
+.store-footer nav strong {
+  margin-bottom: 5px;
+  font-size: 11px;
+  letter-spacing: .13em;
+}
+.store-footer-brand p {
+  margin-top: 18px;
   font-size: 13px;
   line-height: 1.6;
+}
+.store-withdrawal-link {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid currentColor;
+  font-weight: 800;
 }
 .store-newsletter {
   display: grid;
@@ -3398,7 +3417,8 @@ textarea {
   margin-left: auto;
 }
 .store-newsletter > span,
-.store-newsletter > small {
+.store-newsletter > small,
+.store-newsletter > output {
   color: #4c4a41;
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -5083,4 +5103,202 @@ textarea {
   .store-product-copy h3 {
     font-size: 21px;
   }
+}
+
+.store-fields select,
+.store-withdrawal-grid select,
+.store-withdrawal-grid input,
+.store-withdrawal-grid textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--store-line);
+  border-radius: 0;
+  background: var(--store-cream);
+  color: var(--store-ink);
+}
+.store-checkout-login {
+  display: inline-block;
+  margin-top: 7px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--store-copper);
+  font-size: 13px;
+  font-weight: 800;
+}
+.store-checkout-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 20px 30px;
+  background: var(--store-paper);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.store-checkout-consent input,
+.store-consent input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--store-copper);
+}
+.store-checkout-consent a,
+.store-form-legal a,
+.store-auth-note a {
+  text-decoration: underline;
+}
+.store-google-signin,
+.store-google-placeholder {
+  width: 100%;
+  min-height: 44px;
+}
+.store-google-signin > div {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+.store-google-signin small {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+}
+.store-google-placeholder {
+  border: 1px solid var(--store-line);
+  background: var(--store-cream);
+  color: #696b67;
+  font-weight: 750;
+}
+.store-auth-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #74756f;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.store-auth-separator::before,
+.store-auth-separator::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--store-line);
+}
+.store-withdrawal-page {
+  padding: 35px clamp(20px, 5vw, 85px) 110px;
+}
+.store-withdrawal-grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(360px, .72fr);
+  gap: clamp(45px, 8vw, 120px);
+  align-items: start;
+  padding-top: clamp(35px, 6vw, 85px);
+}
+.store-withdrawal-grid > section > span,
+.store-withdrawal-success > span {
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .15em;
+}
+.store-withdrawal-grid h1,
+.store-withdrawal-success h1 {
+  margin: 13px 0 24px;
+  font-size: clamp(50px, 7vw, 96px);
+  line-height: .88;
+  letter-spacing: -.065em;
+}
+.store-withdrawal-grid > section > p {
+  max-width: 620px;
+  color: #5f615d;
+  font-size: 17px;
+  line-height: 1.6;
+}
+.store-withdrawal-grid ul {
+  display: grid;
+  gap: 14px;
+  margin-top: 35px;
+  padding: 0;
+  list-style: none;
+}
+.store-withdrawal-grid li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.store-withdrawal-grid li svg { width: 18px; flex: none; }
+.store-withdrawal-grid form {
+  display: grid;
+  gap: 17px;
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid var(--store-ink);
+  background: var(--store-cream);
+}
+.store-withdrawal-grid label {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 750;
+}
+.store-withdrawal-grid label small { color: #6c6e68; font-weight: 500; }
+.store-form-legal { color: #696b66; font-size: 12px; line-height: 1.5; }
+.store-withdrawal-success {
+  min-height: 66vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}
+.store-withdrawal-success > div {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 22px;
+  border-radius: 50%;
+  background: var(--store-sand);
+}
+.store-withdrawal-success > p { max-width: 620px; color: #5f615d; line-height: 1.6; }
+.store-withdrawal-success > strong {
+  margin: 24px 0;
+  padding: 16px 20px;
+  background: var(--store-sand);
+  font-size: clamp(20px, 4vw, 34px);
+  letter-spacing: .04em;
+}
+.store-withdrawal-success > a { margin-top: 25px; padding-bottom: 5px; border-bottom: 1px solid; font-weight: 800; }
+.store-tracking-help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--store-line);
+  font-size: 14px;
+  font-weight: 750;
+}
+.online-return-alert {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #a55b35;
+  background: color-mix(in srgb, #a55b35 9%, var(--card));
+}
+.online-return-alert > div { display: grid; gap: 3px; padding-top: 9px; border-top: 1px solid var(--border); }
+.online-return-alert small,
+.online-return-alert p { color: var(--muted-foreground); }
+
+@media (max-width: 1050px) {
+  .store-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .store-newsletter { margin-left: 0; }
+}
+@media (max-width: 760px) {
+  .store-promo-message { display: none; }
+  .store-promo { justify-content: center; }
+  .store-withdrawal-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .store-footer { grid-template-columns: 1fr; }
+  .store-checkout-consent { padding: 18px 20px; }
+  .store-withdrawal-page { padding: 24px 16px 70px; }
 }

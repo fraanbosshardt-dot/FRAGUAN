@@ -15,5 +15,12 @@ declare namespace Cloudflare {
     BOOTSTRAP_OWNER_EMAIL?: string;
     ADMIN_PIN?: string;
     SITE_ORIGIN?: string;
+    GOOGLE_CLIENT_ID?: string;
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID?: string;
+    STORE_LEGAL_NAME?: string;
+    STORE_CUIT?: string;
+    STORE_ADDRESS?: string;
+    STORE_SUPPORT_EMAIL?: string;
+    STORE_SUPPORT_PHONE?: string;
   }
 }

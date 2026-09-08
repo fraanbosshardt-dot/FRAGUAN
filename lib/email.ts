@@ -150,6 +150,44 @@ export async function sendOrderEmails(
     });
 }
 
+export async function sendReturnRequestEmails(requestId: string) {
+  const request = await one<Record<string, any>>(
+    'SELECT * FROM online_return_requests WHERE id=?',
+    requestId,
+  );
+  if (!request) return;
+  const kind = request.kind === 'withdrawal'
+    ? 'arrepentimiento'
+    : request.kind === 'exchange'
+      ? 'cambio'
+      : 'devolución';
+  await deliver({
+    to: request.email,
+    subject: `RECIBIMOS TU SOLICITUD ${request.code}`,
+    html: emailFrame(
+      'SOLICITUD RECIBIDA.',
+      `Código ${request.code}`,
+      `<p>Hola ${escapeHtml(request.customerName)},</p><p>Registramos tu solicitud de ${kind} para el pedido <strong>#${request.orderNumber}</strong>.</p><p>Código de identificación: <strong>${escapeHtml(request.code)}</strong>.</p><p>Atención al Cliente continuará la gestión por este mismo email.</p>`,
+    ),
+    kind: 'return_request_customer',
+    orderId: request.orderId,
+    idempotencyKey: `return-${requestId}-customer`,
+  });
+  if (env.RESEND_ORDER_TO)
+    await deliver({
+      to: env.RESEND_ORDER_TO,
+      subject: `Solicitud de ${kind} ${request.code}`,
+      html: emailFrame(
+        'NUEVA SOLICITUD.',
+        `Pedido #${request.orderNumber}`,
+        `<p><strong>${escapeHtml(request.customerName)}</strong> · ${escapeHtml(request.email)}</p><p>${escapeHtml(request.reason)}</p><p>${escapeHtml(request.detail)}</p>`,
+      ),
+      kind: 'return_request_internal',
+      orderId: request.orderId,
+      idempotencyKey: `return-${requestId}-internal`,
+    });
+}
+
 const subscriberInput = z
   .object({
     email: z.email().trim().toLowerCase().max(200),

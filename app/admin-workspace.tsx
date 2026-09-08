@@ -367,6 +367,9 @@ const labels: Record<string, string> = {
   unfulfilled: 'Pendiente',
   transfer: 'Transferencia',
   card: 'Tarjeta',
+  withdrawal: 'Arrepentimiento',
+  exchange: 'Cambio',
+  return: 'Devolución',
   not_registered: 'Sin obligación registrada',
   approved: 'Aprobado',
   cash: 'Efectivo',
@@ -3228,9 +3231,22 @@ export default function Admin({ section }: { section: string }) {
                 <span>
                   {selected.shippingMethod === 'pickup'
                     ? 'Retiro en el local'
-                    : `${selected.address}, ${selected.city}, ${selected.province} · CP ${selected.postalCode}`}
+                    : `${selected.address}${selected.addressExtra ? ` · ${selected.addressExtra}` : ''}, ${selected.city}, ${selected.province} · CP ${selected.postalCode}`}
                 </span>
+                {selected.document && <span>DNI: {selected.document}</span>}
               </div>
+              {!!selected.returnRequests?.length && (
+                <div className="online-return-alert">
+                  <strong>Solicitudes del cliente</strong>
+                  {selected.returnRequests.map((request: Row) => (
+                    <div key={request.code}>
+                      <span>{request.code} · {labels[request.kind] ?? request.kind}</span>
+                      <small>{request.reason} · {date(request.createdAt)}</small>
+                      {request.detail && <p>{request.detail}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="online-order-reference">
                 <span>Referencia de transferencia</span>
                 <strong>{selected.transferReference}</strong>

@@ -14,7 +14,7 @@ import {
   calculateLoyaltyLevel,
   readCustomerIntelligenceConfig,
 } from './customer-intelligence';
-import { sendOrderEmails } from './email';
+import { sendOrderEmails, sendReturnRequestEmails } from './email';
 
 const SESSION_COOKIE = 'fraguan_customer';
 const encoder = new TextEncoder();
@@ -473,7 +473,7 @@ async function createMercadoPagoPreference(order: Record<string, any>) {
 
 const accountInput = z
   .object({
-    action: z.enum(['register', 'login', 'logout', 'update']),
+    action: z.enum(['register', 'login', 'google', 'logout', 'update']),
     email: z.email().trim().toLowerCase().max(200).optional(),
     password: z.string().min(8).max(128).optional(),
     name: z.string().trim().min(2).max(80).optional(),
@@ -482,8 +482,34 @@ const accountInput = z
     marketingConsent: z.boolean().optional(),
     locality: z.string().trim().max(100).optional(),
     usualSizes: z.string().trim().max(120).optional(),
+    credential: z.string().min(100).max(10000).optional(),
   })
   .strict();
+
+async function verifyGoogleCredential(credential: string) {
+  if (!env.GOOGLE_CLIENT_ID)
+    throw new AppError(503, 'Google Login todavía no está configurado.');
+  const response = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
+  );
+  const claims: any = await response.json().catch(() => ({}));
+  if (
+    !response.ok ||
+    claims.aud !== env.GOOGLE_CLIENT_ID ||
+    !['accounts.google.com', 'https://accounts.google.com'].includes(claims.iss) ||
+    claims.email_verified !== 'true' ||
+    Number(claims.exp) * 1000 <= Date.now() ||
+    !claims.sub ||
+    !claims.email
+  )
+    throw new AppError(401, 'No pudimos validar tu cuenta de Google.');
+  return {
+    sub: String(claims.sub),
+    email: String(claims.email).trim().toLowerCase(),
+    name: String(claims.given_name || claims.name || 'Cliente').trim().slice(0, 80),
+    surname: String(claims.family_name || 'FRAGUAN').trim().slice(0, 80),
+  };
+}
 
 export async function storeAccountWrite(req: Request, raw: unknown) {
   const input = accountInput.parse(raw);
@@ -523,15 +549,66 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
     ]);
     return { data: { ok: true }, cookie: null };
   }
-  if (!input.email || !input.password)
-    throw new AppError(400, 'Completá email y contraseña.');
+  let loginEmail = input.email;
   let account: {
     id: string;
     customerId: string;
     passwordHash: string;
     passwordSalt: string;
   } | null;
-  if (input.action === 'register') {
+  if (input.action === 'google') {
+    if (!input.credential)
+      throw new AppError(400, 'Falta la credencial de Google.');
+    const profile = await verifyGoogleCredential(input.credential);
+    loginEmail = profile.email;
+    account = await one(
+      'SELECT id,customerId,passwordHash,passwordSalt FROM customer_accounts WHERE googleSub=? OR email=?',
+      profile.sub,
+      profile.email,
+    );
+    if (account) {
+      const collision = await one<{ googleSub: string | null }>(
+        'SELECT googleSub FROM customer_accounts WHERE id=?',
+        account.id,
+      );
+      if (collision?.googleSub && collision.googleSub !== profile.sub)
+        throw new AppError(409, 'Ese email ya está vinculado con otra cuenta de Google.');
+      await statement(
+        "UPDATE customer_accounts SET googleSub=?,authProvider='google',emailVerified=1,lastLoginAt=? WHERE id=?",
+        profile.sub,
+        now(),
+        account.id,
+      ).run();
+    } else {
+      const customerId = id(), accountId = id(), createdAt = now();
+      await db().batch([
+        statement(
+          'INSERT INTO customers(id,name,surname,phone,email,whatsapp,createdAt) VALUES (?,?,?,?,?,?,?)',
+          customerId,
+          profile.name,
+          profile.surname,
+          '',
+          profile.email,
+          '',
+          createdAt,
+        ),
+        statement(
+          "INSERT INTO customer_accounts(id,customerId,email,passwordHash,passwordSalt,emailVerified,marketingConsent,authProvider,googleSub,createdAt,lastLoginAt) VALUES (?,?,?,?,?,1,0,'google',?,?,?)",
+          accountId,
+          customerId,
+          profile.email,
+          '',
+          '',
+          profile.sub,
+          createdAt,
+          createdAt,
+        ),
+      ]);
+      account = { id: accountId, customerId, passwordHash: '', passwordSalt: '' };
+    }
+  } else if (input.action === 'register') {
+    if (!input.email || !input.password)
+      throw new AppError(400, 'Completá email y contraseña.');
     if (!input.name || !input.surname || !input.phone)
       throw new AppError(400, 'Completá tus datos personales.');
     if (
@@ -572,6 +649,8 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
       passwordSalt: salt,
     };
   } else {
+    if (!input.email || !input.password)
+      throw new AppError(400, 'Completá email y contraseña.');
     account = await one(
       'SELECT id,customerId,passwordHash,passwordSalt FROM customer_accounts WHERE email=?',
       input.email,
@@ -603,7 +682,7 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
     account.customerId,
   );
   return {
-    data: { account: { email: input.email, ...customer } },
+    data: { account: { email: loginEmail, ...customer } },
     cookie: customerCookie(token, new URL(req.url).protocol === 'https:'),
   };
 }
@@ -658,6 +737,71 @@ export async function storeAccount(req: Request) {
   };
 }
 
+const returnRequestInput = z
+  .object({
+    orderNumber: z.coerce.number().int().min(1000).max(999999999),
+    email: z.email().trim().toLowerCase().max(200),
+    phone: z.string().trim().max(40).default(''),
+    kind: z.enum(['withdrawal', 'exchange', 'return']),
+    reason: z.string().trim().min(3).max(160),
+    detail: z.string().trim().max(1000).default(''),
+  })
+  .strict();
+
+export async function createOnlineReturnRequest(raw: unknown) {
+  const input = returnRequestInput.parse(raw);
+  const order = await one<Record<string, any>>(
+    'SELECT id,orderNumber,email,customerName FROM online_orders WHERE orderNumber=? AND lower(email)=?',
+    input.orderNumber,
+    input.email,
+  );
+  if (!order)
+    throw new AppError(404, 'No encontramos un pedido con ese número y email.');
+  const duplicate = await one<{ code: string }>(
+    `SELECT code FROM online_return_requests
+      WHERE orderId=? AND kind=? AND reason=? AND createdAt>=?
+      ORDER BY createdAt DESC LIMIT 1`,
+    order.id,
+    input.kind,
+    input.reason,
+    new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  );
+  if (duplicate)
+    return { ok: true, code: duplicate.code, orderNumber: order.orderNumber, status: 'received' };
+  const requestId = id();
+  const prefix = input.kind === 'withdrawal' ? 'ARR' : input.kind === 'exchange' ? 'CAM' : 'DEV';
+  const code = `${prefix}-${input.orderNumber}-${randomToken(4).toUpperCase()}`;
+  const createdAt = now();
+  await db().batch([
+    statement(
+      `INSERT INTO online_return_requests(id,code,orderId,orderNumber,email,customerName,phone,kind,reason,detail,status,createdAt,updatedAt)
+       VALUES (?,?,?,?,?,?,?,?,?,?,'received',?,?)`,
+      requestId,
+      code,
+      order.id,
+      order.orderNumber,
+      order.email,
+      order.customerName,
+      input.phone,
+      input.kind,
+      input.reason,
+      input.detail,
+      createdAt,
+      createdAt,
+    ),
+    statement(
+      'INSERT INTO online_order_events(id,orderId,kind,detail,createdAt) VALUES (?,?,?,?,?)',
+      id(),
+      order.id,
+      'return_requested',
+      `${code} · ${input.reason}`,
+      createdAt,
+    ),
+  ]);
+  await sendReturnRequestEmails(requestId).catch(() => undefined);
+  return { ok: true, code, orderNumber: order.orderNumber, status: 'received' };
+}
+
 const checkoutInput = z
   .object({
     items: z
@@ -674,10 +818,12 @@ const checkoutInput = z
     email: z.email().trim().toLowerCase().max(200),
     customerName: z.string().trim().min(3).max(160),
     phone: z.string().trim().min(6).max(40),
+    document: z.string().trim().max(20).default(''),
     paymentMethod: z.enum(['transfer', 'card']),
     shippingMethod: z.enum(['correo-argentino-home', 'pickup']),
     postalCode: z.string().trim().min(4).max(10),
     address: z.string().trim().min(4).max(240),
+    addressExtra: z.string().trim().max(120).default(''),
     city: z.string().trim().min(2).max(100),
     province: z.string().trim().min(2).max(100),
     notes: z.string().trim().max(500).default(''),
@@ -712,7 +858,7 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
   const effectiveName = customer
     ? `${customer.name} ${customer.surname}`
     : input.customerName;
-  const effectivePhone = customer?.phone ?? input.phone;
+  const effectivePhone = customer?.phone || input.phone;
   const lines: Record<string, any>[] = [];
   let subtotal = 0;
   for (const item of input.items) {
@@ -758,14 +904,15 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       createdAt,
     ),
     statement(
-      `INSERT INTO online_orders(id,orderNumber,customerId,email,customerName,phone,status,paymentStatus,paymentMethod,fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,city,province,notes,accessTokenHash,transferReference,expiresAt,createdAt,updatedAt)
-       VALUES (?,?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO online_orders(id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,addressExtra,city,province,notes,accessTokenHash,transferReference,expiresAt,createdAt,updatedAt)
+       VALUES (?,?,?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId,
       orderNumber,
       customer?.customerId ?? null,
       effectiveEmail,
       effectiveName,
       effectivePhone,
+      input.document,
       input.paymentMethod,
       subtotal,
       discount,
@@ -774,6 +921,7 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       input.shippingMethod,
       input.postalCode,
       input.address,
+      input.addressExtra,
       input.city,
       input.province,
       input.notes,
@@ -844,22 +992,28 @@ export async function onlineOrderDetail(
   orderId: string,
 ): Promise<Record<string, any>> {
   const order = await one<Record<string, any>>(
-    `SELECT id,orderNumber,customerId,email,customerName,phone,status,paymentStatus,paymentMethod,
+    `SELECT id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,
             fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,city,
-            province,notes,transferReference,paymentReference,trackingNumber,expiresAt,paidAt,createdAt,updatedAt
+            addressExtra,province,notes,transferReference,paymentReference,trackingNumber,expiresAt,paidAt,createdAt,updatedAt
        FROM online_orders WHERE id=?`,
     orderId,
   );
   if (!order) throw new AppError(404, 'Pedido no encontrado.');
-  const items = await rows(
-    `SELECT oi.productName,oi.sku,oi.color,oi.size,oi.quantity,oi.unitPrice,oi.lineTotal,
+  const [items, returnRequests] = await Promise.all([
+    rows(
+      `SELECT oi.productName,oi.sku,oi.color,oi.size,oi.quantity,oi.unitPrice,oi.lineTotal,
             COALESCE((SELECT l.name||CASE WHEN l.detail<>'' THEN ' · '||l.detail ELSE '' END
               FROM variant_location_stock vls JOIN stock_locations l ON l.id=vls.locationId
              WHERE vls.variantId=oi.variantId AND vls.quantity>0 ORDER BY l.priority,l.name LIMIT 1),'Sin ubicación') AS location
        FROM online_order_items oi WHERE oi.orderId=?`,
-    orderId,
-  );
-  return { ...order, items };
+      orderId,
+    ),
+    rows(
+      'SELECT code,kind,reason,detail,status,createdAt FROM online_return_requests WHERE orderId=? ORDER BY createdAt DESC',
+      orderId,
+    ),
+  ]);
+  return { ...order, items, returnRequests };
 }
 
 export async function publicOnlineOrder(

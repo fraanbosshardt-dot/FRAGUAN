@@ -9,14 +9,16 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
+import { StoreFooter } from '@/components/store-footer';
 import { StoreProductCard } from '@/components/store-product-card';
+import { GoogleSignIn } from '@/components/google-sign-in';
 import {
   StoreProduct,
   storeApi,
   storeMoney,
   useStoreFavorites,
 } from '@/lib/store-client';
-export default function Account() {
+export default function Account({ googleClientId }: { googleClientId: string }) {
   const [data, setData] = useState<any>(null);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState('');
@@ -220,6 +222,8 @@ export default function Account() {
               </div>
             </div>
             <form onSubmit={submit}>
+              <GoogleSignIn clientId={googleClientId} onError={setError} />
+              <div className="store-auth-separator"><span>o continuá con email</span></div>
               <div className="store-auth-tabs">
                 <button
                   type="button"
@@ -276,13 +280,12 @@ export default function Account() {
                     : 'Crear mi cuenta'}
                 <ArrowRight />
               </button>
-              <p className="store-auth-note">
-                Google Login se sumará en la conexión final.
-              </p>
+              <p className="store-auth-note">Al continuar aceptás los <a href="/informacion/terminos">Términos</a> y la <a href="/informacion/privacidad">Política de privacidad</a>.</p>
             </form>
           </section>
         )}
       </main>
+      <StoreFooter />
     </div>
   );
 }

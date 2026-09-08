@@ -90,6 +90,7 @@ import {
 import { storageOverview, storageWrite } from '@/lib/storage';
 import {
   createOnlineOrder,
+  createOnlineReturnRequest,
   listOnlineOrders,
   listOnlineCatalog,
   onlineOrderWrite,
@@ -580,6 +581,8 @@ export async function POST(
       return reply(await createOnlineOrder(req, body), 201);
     if (resource === 'store-transfer')
       return reply(await reportTransfer(req, body));
+    if (resource === 'store-return-request')
+      return reply(await createOnlineReturnRequest(body), 201);
     if (resource === 'store-newsletter')
       return reply(await subscribeNewsletter(body), 201);
     if (resource === 'store-shipping') {

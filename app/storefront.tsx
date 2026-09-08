@@ -2,6 +2,7 @@
 import { ArrowDown, ArrowRight, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
+import { StoreFooter } from '@/components/store-footer';
 import { StoreProductCard } from '@/components/store-product-card';
 import { StoreProduct, storeApi, useStoreFavorites } from '@/lib/store-client';
 
@@ -19,8 +20,6 @@ export default function Storefront() {
   const [sort, setSort] = useState('recommended');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterState, setNewsletterState] = useState('');
   const { favorites } = useStoreFavorites();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -56,22 +55,6 @@ export default function Storefront() {
     );
     return () => clearTimeout(timer);
   }, [query, section]);
-  async function subscribe(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setNewsletterState('Enviando…');
-    try {
-      await storeApi('store-newsletter', {
-        method: 'POST',
-        body: JSON.stringify({ email: newsletterEmail, source: 'storefront' }),
-      });
-      setNewsletterEmail('');
-      setNewsletterState(
-        'Listo. Te avisamos cuando haya algo que valga la pena.',
-      );
-    } catch (cause: any) {
-      setNewsletterState(cause.message || 'No pudimos suscribirte.');
-    }
-  }
   const featured = useMemo(
     () => products.filter((product) => product.featured).slice(0, 6),
     [products],
@@ -306,39 +289,7 @@ export default function Storefront() {
           <div><span>04</span><strong>SEGUIMIENTO</strong><small>Desde Mi FRAGUAN</small></div>
         </section>
       </main>
-      <footer className="store-footer">
-        <a href="/tienda">FRAGUAN</a>
-        <div>
-          <a href="/cuenta">Mi cuenta</a>
-          <a href="#coleccion">Productos</a>
-          <a href="/informacion/envios">Envíos</a>
-          <a href="/informacion/cambios">Cambios</a>
-          <a href="/informacion/pagos">Pagos</a>
-          <a href="/informacion/privacidad">Privacidad</a>
-        </div>
-        <p>
-          Buenos Aires · Argentina
-          <br />© 2026 FRAGUAN
-        </p>
-        <div className="store-newsletter">
-          <span>NEWSLETTER FRAGUAN</span>
-          <strong>Novedades, drops y beneficios.</strong>
-          <form onSubmit={subscribe}>
-            <input
-              type="email"
-              value={newsletterEmail}
-              onChange={(event) => setNewsletterEmail(event.target.value)}
-              placeholder="Tu email"
-              required
-              aria-label="Email para newsletter"
-            />
-            <button type="submit">
-              Unirme <ArrowRight />
-            </button>
-          </form>
-          {newsletterState && <small>{newsletterState}</small>}
-        </div>
-      </footer>
+      <StoreFooter />
     </div>
   );
 }

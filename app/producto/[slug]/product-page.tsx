@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
+import { StoreFooter } from '@/components/store-footer';
 import { StoreProductCard } from '@/components/store-product-card';
 import {
   Dialog,
@@ -375,6 +376,7 @@ export default function ProductPage({ slug }: { slug: string }) {
           </section>
         )}
       </main>
+      <StoreFooter />
     </div>
   );
 }

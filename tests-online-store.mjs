@@ -302,3 +302,56 @@ test('public order tracking requires the private order token', async (t) => {
     /Acceso denegado/,
   );
 });
+
+test('public withdrawal request verifies the order and issues a traceable code', async (t) => {
+  const f = fixture(t);
+  f.database.exec(`
+    INSERT INTO online_product_profiles(productId,slug,shortDescription,description,fit,section,updatedAt)
+    VALUES ('product','camisa-arrepentimiento','Una camisa lista para todos los días.','Descripción completa de la camisa para comprar online.','Regular','Camisas','2026-01-01T12:00:00Z');
+    INSERT INTO payment_methods(id,name) VALUES ('transfer','Transferencia'),('credit','Tarjeta');
+  `);
+  const store = f.load('lib/online-store.ts');
+  const order = await store.createOnlineOrder(new Request('http://localhost'), {
+    items: [{ variantId: 'variant', quantity: 1 }],
+    email: 'arrepentimiento@example.com',
+    customerName: 'Cliente Arrepentimiento',
+    phone: '1122334455',
+    paymentMethod: 'transfer',
+    shippingMethod: 'pickup',
+    postalCode: '1000',
+    address: 'Retiro en local',
+    city: 'Buenos Aires',
+    province: 'CABA',
+    notes: '',
+    idempotencyKey: crypto.randomUUID(),
+    accessToken: crypto.randomUUID(),
+  });
+  const result = await store.createOnlineReturnRequest({
+    orderNumber: order.orderNumber,
+    email: 'ARREPENTIMIENTO@example.com',
+    phone: '',
+    kind: 'withdrawal',
+    reason: 'Me arrepentí de la compra',
+    detail: '',
+  });
+  assert.match(result.code, new RegExp(`^ARR-${order.orderNumber}-`));
+  assert.equal(
+    f.database.prepare('SELECT status FROM online_return_requests WHERE code=?').get(result.code).status,
+    'received',
+  );
+  assert.equal(
+    f.database.prepare("SELECT COUNT(*) AS total FROM online_order_events WHERE orderId=? AND kind='return_requested'").get(order.id).total,
+    1,
+  );
+  await assert.rejects(
+    () => store.createOnlineReturnRequest({
+      orderNumber: order.orderNumber,
+      email: 'otro@example.com',
+      phone: '',
+      kind: 'withdrawal',
+      reason: 'Me arrepentí',
+      detail: '',
+    }),
+    /No encontramos/,
+  );
+});

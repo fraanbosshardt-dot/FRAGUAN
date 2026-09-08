@@ -27,7 +27,9 @@ La experiencia local cubre el recorrido completo: navegación editorial, catálo
 secciones, filtros, ordenamiento, favoritos, agregado rápido, ficha de producto, variantes,
 asistente orientativo de talle, carrito, umbral de envío gratis, checkout invitado, cuenta,
 edición de datos, Club, pedidos y seguimiento privado. Incluye páginas de envíos, cambios,
-pagos y privacidad, metadata, datos estructurados de producto, `robots.txt` y sitemap.
+pagos, talles, contacto, términos, privacidad y cookies; Botón de arrepentimiento público
+con código trazable; Google Sign-In preparado; metadata, datos estructurados de producto,
+cabeceras de seguridad, `robots.txt` y sitemap.
 
 El lanzamiento real continúa condicionado a credenciales y servicios externos: base de datos
 productiva, Google Auth, Mercado Pago, Correo Argentino, Resend, dominio y pruebas físicas.
@@ -45,7 +47,8 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 | Ventas y devoluciones   | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde.                                                                                                                                                   |
 | Clientes                | Perfil completo administrativo, historial, talles/preferencias, segmentos configurables, niveles del Club y saldos.                                                                                                                                                                                                                  |
 | Club                    | Puntos, cashback por nivel con vencimiento, catálogo de beneficios, reserva, entrega y cancelación de canjes con restitución única.                                                                                                                                                                                                  |
-| Tienda online           | Sitio público sin fotografías de producto, identidad y logo oficial, navegación mobile first, colecciones editoriales, búsqueda, filtros por sección/talle/color/disponibilidad, ordenamiento, favoritos locales, agregado rápido, ficha con variantes y asistente de talle, carrito con progreso de envío gratis, checkout invitado, retiro o Correo Argentino, 10% por transferencia y tarjeta preparada para Mercado Pago. Cuenta con pedidos, favoritos, nivel, puntos y cashback. |
+| Tienda online           | Sitio público sin fotografías de producto, identidad y logo oficial, navegación mobile first, colecciones editoriales, búsqueda, filtros por sección/talle/color/disponibilidad, ordenamiento, favoritos locales, agregado rápido, ficha con variantes y asistente de talle, carrito con progreso de envío gratis, checkout invitado con datos completos de entrega, retiro o Correo Argentino, 10% por transferencia y tarjeta preparada para Mercado Pago. Cuenta con Google Sign-In preparado, pedidos, favoritos, nivel, puntos y cashback. |
+| Legales y postventa     | Términos, privacidad, cookies, envíos, pagos, talles, contacto, cambios y devoluciones. Botón de arrepentimiento público y visible sin cuenta, validación de pedido/email, código inmediato, email, evento trazable y visualización desde el pedido administrativo. |
 | Pedidos online          | Reserva de stock anti-sobreventa, referencia única de cobro, trazabilidad de prendas/cliente/ubicación, venta conectada, puntos/cashback, estados de preparación, despacho, cancelación, página privada de seguimiento, tracking y auditoría. Catálogo web editable desde administración. |
 | Promociones             | Porcentaje, monto fijo, 2x1, segunda unidad, categoría, marca, nivel, cumpleaños, cupones, prioridad y exclusividad. Vigencia hasta medianoche argentina. Reporte de resultado por promoción.                                                                                                                                        |
 | Compras                 | Órdenes multilínea, impuestos, transporte, descuentos, vencimiento y condiciones. Entrega prevista, transportista, seguimiento y dirección. Recepción parcial/completa. Pago separado de recepción; una orden recibida y saldada se muestra pagada. Exportación de orden completa.                                                   |
@@ -82,7 +85,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 ## Verificación
 
 - 25 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, movimientos de stock, ubicaciones, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
-- 12 escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, newsletter, seguimiento privado, stock y permisos.
+- 13 escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, newsletter, seguimiento privado, arrepentimiento, stock y permisos.
 - tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.
 - tests-reporting.mjs: totales netos, filtros, productos sin ventas y permisos.
 - tests-database-recovery.mjs: instalación limpia, repetición, detección de alteraciones, copia, restauración y conservación de datos.
@@ -96,9 +99,10 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
 2. Conectar base definitiva y autenticación Google con identidades/roles reales.
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0018_email_newsletter.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0019_store_auth_returns_legal.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
-6. Cargar credenciales productivas de Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos y probar cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
+6. Cargar credenciales productivas de Google Identity Services, Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos y probar login/cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
+7. Cargar razón social, CUIT, domicilio, email y horario reales del comercio y completar la revisión legal previa a ventas.
 
 ## Continuidad
 
@@ -112,7 +116,7 @@ Mantener datos reales fuera del entorno demo hasta completar la puesta en produc
 
 Continuar con QA visual local y pruebas de checkout/envío. Cuando el usuario habilite la
 etapa de integraciones, decidir el runtime definitivo (D1/Cloudflare o una base compatible
-con Vercel), crear la base productiva y ejecutar las migraciones hasta `0018`, configurar
+con Vercel), crear la base productiva y ejecutar las migraciones hasta `0019`, configurar
 Google Auth, Mercado Pago, Correo Argentino y Resend, cargar sus variables secretas y
 conectar `fraguan.com`.
 

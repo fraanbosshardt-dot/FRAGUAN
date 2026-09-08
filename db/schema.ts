@@ -318,6 +318,8 @@ export const customerAccounts = table('customer_accounts', {
   passwordSalt: text().notNull(),
   emailVerified: integer().notNull().default(0),
   marketingConsent: integer().notNull().default(0),
+  authProvider: text().notNull().default('password'),
+  googleSub: text(),
   createdAt: text().notNull(),
   lastLoginAt: text(),
 });
@@ -337,6 +339,7 @@ export const onlineOrders = table('online_orders', {
   email: text().notNull(),
   customerName: text().notNull(),
   phone: text().notNull(),
+  document: text().notNull().default(''),
   status: text().notNull().default('awaiting_payment'),
   paymentStatus: text().notNull().default('pending'),
   paymentMethod: text().notNull(),
@@ -348,6 +351,7 @@ export const onlineOrders = table('online_orders', {
   shippingMethod: text().notNull(),
   postalCode: text().notNull(),
   address: text().notNull(),
+  addressExtra: text().notNull().default(''),
   city: text().notNull(),
   province: text().notNull(),
   notes: text().notNull().default(''),
@@ -357,6 +361,23 @@ export const onlineOrders = table('online_orders', {
   trackingNumber: text().notNull().default(''),
   expiresAt: text().notNull(),
   paidAt: text(),
+  createdAt: text().notNull(),
+  updatedAt: text().notNull(),
+});
+export const onlineReturnRequests = table('online_return_requests', {
+  id: text().primaryKey(),
+  code: text().notNull().unique(),
+  orderId: text()
+    .notNull()
+    .references(() => onlineOrders.id),
+  orderNumber: integer().notNull(),
+  email: text().notNull(),
+  customerName: text().notNull(),
+  phone: text().notNull().default(''),
+  kind: text().notNull(),
+  reason: text().notNull(),
+  detail: text().notNull().default(''),
+  status: text().notNull().default('received'),
   createdAt: text().notNull(),
   updatedAt: text().notNull(),
 });

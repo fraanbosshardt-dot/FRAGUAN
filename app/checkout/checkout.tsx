@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
+import { StoreFooter } from '@/components/store-footer';
 import { storeApi, storeMoney, useStoreCart } from '@/lib/store-client';
 
 type Order = Record<string, any>;
@@ -85,6 +86,7 @@ export default function Checkout() {
           email: form.get('email'),
           customerName: form.get('customerName'),
           phone: form.get('phone'),
+          document: form.get('document') || '',
           paymentMethod: payment,
           shippingMethod,
           postalCode: shippingMethod === 'pickup' ? '1000' : postalCode,
@@ -92,6 +94,8 @@ export default function Checkout() {
             shippingMethod === 'pickup'
               ? 'Retiro en local'
               : form.get('address'),
+          addressExtra:
+            shippingMethod === 'pickup' ? '' : form.get('addressExtra') || '',
           city: shippingMethod === 'pickup' ? 'Buenos Aires' : form.get('city'),
           province: shippingMethod === 'pickup' ? 'CABA' : form.get('province'),
           notes: form.get('notes') || '',
@@ -216,6 +220,7 @@ export default function Checkout() {
             Seguir este pedido <ArrowRight />
           </a>
         </main>
+        <StoreFooter />
       </div>
     );
   if (!cart.length)
@@ -228,6 +233,7 @@ export default function Checkout() {
             <ArrowLeft /> Volver a la tienda
           </a>
         </main>
+        <StoreFooter />
       </div>
     );
   return (
@@ -253,6 +259,7 @@ export default function Checkout() {
                       ? 'Usamos los datos de tu cuenta.'
                       : 'Podés comprar sin cuenta y registrarte después.'}
                   </p>
+                  {!session?.customer && <a className="store-checkout-login" href="/cuenta">Ingresar para completar más rápido</a>}
                 </div>
               </div>
               <div className="store-fields">
@@ -260,6 +267,7 @@ export default function Checkout() {
                   Nombre y apellido
                   <input
                     name="customerName"
+                    autoComplete="name"
                     defaultValue={
                       session?.customer
                         ? `${session.customer.name} ${session.customer.surname}`
@@ -273,6 +281,7 @@ export default function Checkout() {
                   <input
                     name="email"
                     type="email"
+                    autoComplete="email"
                     defaultValue={session?.customer?.email || ''}
                     required
                   />
@@ -281,9 +290,15 @@ export default function Checkout() {
                   Teléfono
                   <input
                     name="phone"
+                    type="tel"
+                    autoComplete="tel"
                     defaultValue={session?.customer?.phone || ''}
                     required
                   />
+                </label>
+                <label>
+                  DNI <small>Para identificar la entrega</small>
+                  <input name="document" inputMode="numeric" autoComplete="off" maxLength={20} />
                 </label>
               </div>
             </section>
@@ -325,20 +340,29 @@ export default function Checkout() {
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
                       inputMode="numeric"
+                      autoComplete="postal-code"
+                      maxLength={8}
                       required
                     />
                   </label>
                   <label>
                     Dirección
-                    <input name="address" required />
+                    <input name="address" autoComplete="street-address" placeholder="Calle y número" required />
+                  </label>
+                  <label>
+                    Piso / departamento <small>Opcional</small>
+                    <input name="addressExtra" autoComplete="address-line2" />
                   </label>
                   <label>
                     Ciudad
-                    <input name="city" required />
+                    <input name="city" autoComplete="address-level2" required />
                   </label>
                   <label>
                     Provincia
-                    <input name="province" required />
+                    <select name="province" autoComplete="address-level1" required defaultValue="">
+                      <option value="" disabled>Seleccionar</option>
+                      {['Buenos Aires','CABA','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'].map((province) => <option key={province}>{province}</option>)}
+                    </select>
                   </label>
                 </div>
               )}
@@ -390,6 +414,10 @@ export default function Checkout() {
             <label className="store-notes">
               Notas para el pedido
               <textarea name="notes" rows={3} placeholder="Opcional" />
+            </label>
+            <label className="store-checkout-consent">
+              <input type="checkbox" required />
+              <span>Confirmo que los datos son correctos y acepto los <a href="/informacion/terminos" target="_blank">Términos y condiciones</a> y la <a href="/informacion/privacidad" target="_blank">Política de privacidad</a>.</span>
             </label>
             {error && <p className="store-buy-error">{error}</p>}
             <button
@@ -449,6 +477,7 @@ export default function Checkout() {
           </aside>
         </div>
       </main>
+      <StoreFooter />
     </div>
   );
 }

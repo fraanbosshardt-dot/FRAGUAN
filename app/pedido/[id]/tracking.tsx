@@ -2,6 +2,7 @@
 import { ArrowLeft, Check, Clock, PackageCheck, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
+import { StoreFooter } from '@/components/store-footer';
 import { storeApi, storeMoney } from '@/lib/store-client';
 
 const fulfillment: Record<string, string> = {
@@ -73,9 +74,15 @@ export default function OrderTracking({ orderId }: { orderId: string }) {
                 <small>Te avisaremos por email cada vez que cambie el estado.</small>
               </aside>
             </section>
+            <div className="store-tracking-help">
+              <a href="/informacion/cambios">Ver política de cambios</a>
+              <a href="/arrepentimiento">Solicitar arrepentimiento</a>
+              <a href="/informacion/contacto">Necesito ayuda</a>
+            </div>
           </>
         )}
       </main>
+      <StoreFooter />
     </div>
   );
 }
