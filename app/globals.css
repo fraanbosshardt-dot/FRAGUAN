@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import 'animate.css/animate.min.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -2882,10 +2883,10 @@ textarea {
   --store-paper: #f1ede4;
   --store-bone: #e8e2d7;
   --store-cream: #faf7f0;
-  --store-sand: #c8b79c;
-  --store-steel: #6f7472;
+  --store-sand: #d8cbbd;
+  --store-steel: #6d7482;
   --store-concrete: #bebcb5;
-  --store-copper: #a55b35;
+  --store-copper: #c65a3d;
   --store-line: #b9b5ac;
   min-height: 100vh;
   overflow: hidden;
@@ -2910,22 +2911,41 @@ textarea {
   outline-offset: 3px;
 }
 .store-promo {
-  height: 31px;
+  height: 34px;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 0 clamp(16px, 4vw, 68px);
-  background: var(--store-bone);
-  color: var(--store-charcoal);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.09em;
+  background: var(--store-copper);
+  color: var(--store-cream);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
-.store-promo a {
-  padding-bottom: 1px;
-  border-bottom: 1px solid currentColor;
+.store-promo-track {
+  display: flex;
+  align-items: center;
+  min-width: max-content;
+  animation: store-promo-scroll 22s linear infinite;
+}
+.store-promo-track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 28px;
   white-space: nowrap;
+}
+.store-promo-track span::after {
+  content: '✦';
+  opacity: 0.62;
+}
+@keyframes store-promo-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .store-promo-track { animation: none; }
+  .store-shell .animate__animated { animation: none !important; }
 }
 .store-header {
   height: 82px;
@@ -3682,11 +3702,17 @@ textarea {
   white-space: nowrap;
 }
 .store-cart-sheet {
+  --store-ink: #151512;
+  --store-paper: #f1ede4;
+  --store-cream: #faf7f0;
+  --store-line: #b9b5ac;
+  --store-copper: #c65a3d;
   width: min(100%, 480px) !important;
   max-width: none !important;
   gap: 0 !important;
   background: var(--store-paper) !important;
   color: var(--store-ink) !important;
+  border-left: 1px solid var(--store-ink);
 }
 .store-cart-sheet [data-slot='sheet-header'] {
   padding: 28px 25px 22px;
@@ -3879,7 +3905,9 @@ textarea {
     font-size: 9px;
     letter-spacing: 0.06em;
   }
-  .store-promo span,
+  .store-promo-track span {
+    padding: 0 18px;
+  }
   .store-header-actions > a {
     display: none;
   }
@@ -5528,7 +5556,6 @@ textarea {
   .store-newsletter { margin-left: 0; }
 }
 @media (max-width: 760px) {
-  .store-promo-message { display: none; }
   .store-promo { justify-content: center; }
   .store-withdrawal-grid { grid-template-columns: 1fr; }
 }

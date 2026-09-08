@@ -29,8 +29,12 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
   return (
     <>
       <div className="store-promo">
-        <span className="store-promo-message">10% OFF POR TRANSFERENCIA · ENVÍOS A TODO EL PAÍS</span>
-        <a href="/arrepentimiento">BOTÓN DE ARREPENTIMIENTO</a>
+        <div className="store-promo-track" aria-label="Beneficios de compra">
+          <span>10% OFF PAGANDO POR TRANSFERENCIA</span>
+          <span aria-hidden="true">ENVÍOS A TODO EL PAÍS</span>
+          <span aria-hidden="true">10% OFF PAGANDO POR TRANSFERENCIA</span>
+          <span aria-hidden="true">ENVÍOS A TODO EL PAÍS</span>
+        </div>
       </div>
       <header className={`store-header ${dark ? 'on-dark' : ''}`}>
         <button
@@ -89,6 +93,7 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
                     </p>
                     <div>
                       <button
+                        type="button"
                         onClick={() => update(item.id, item.quantity - 1)}
                         aria-label="Quitar una unidad"
                       >
@@ -96,6 +101,7 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
                       </button>
                       <span>{item.quantity}</span>
                       <button
+                        type="button"
                         onClick={() => update(item.id, item.quantity + 1)}
                         aria-label="Agregar una unidad"
                       >

@@ -151,16 +151,16 @@ export default function Storefront({
       <StoreHeader />
       <main>
         <section className="store-hero">
-          <div className="store-hero-kicker">
-            <span>FRAGUAN / ARGENTINA</span>
+          <div className="store-hero-kicker animate__animated animate__fadeInDown">
+            <span>FRAGUAN / ISLA VERDE</span>
             <span>NUEVA TEMPORADA</span>
           </div>
-          <h1>
+          <h1 className="animate__animated animate__fadeInUp">
             FORJÁ
             <br />
             <em>TU ESTILO.</em>
           </h1>
-          <div className="store-hero-bottom">
+          <div className="store-hero-bottom animate__animated animate__fadeInUp">
             <p>
               Hecho para usarlo a tu manera. Elegí tu talle, tu color y armá un
               estilo propio.
@@ -214,7 +214,7 @@ export default function Storefront({
               <span>01 / COLECCIÓN</span>
               <h2>{section || 'Elegí sin vueltas'}</h2>
             </div>
-            <p>{displayed.length} productos · Stock actualizado</p>
+            <p>{displayed.length} prendas para elegir</p>
           </div>
           <div className="store-search">
             <Search />
@@ -390,31 +390,6 @@ export default function Storefront({
             </a>
           </section>
         )}
-        <section
-          className="store-service-band"
-          aria-label="Beneficios de compra"
-        >
-          <div>
-            <span>01</span>
-            <strong>10% OFF</strong>
-            <small>Pagando por transferencia</small>
-          </div>
-          <div>
-            <span>02</span>
-            <strong>RETIRO GRATIS</strong>
-            <small>Cuando tu pedido esté listo</small>
-          </div>
-          <div>
-            <span>03</span>
-            <strong>STOCK REAL</strong>
-            <small>Conectado con el local</small>
-          </div>
-          <div>
-            <span>04</span>
-            <strong>SEGUIMIENTO</strong>
-            <small>Desde Mi FRAGUAN</small>
-          </div>
-        </section>
       </main>
       <StoreFooter />
     </div>
