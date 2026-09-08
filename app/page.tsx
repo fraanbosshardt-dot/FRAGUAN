@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import ComingSoon from './coming-soon';
 import { isProductionComingSoon } from '@/lib/release-mode';
 
@@ -6,9 +7,7 @@ export default function Home() {
   if (isProductionComingSoon()) return <ComingSoon />;
   return (
     <main className="coming-soon">
-      <div className="coming-soon-mark" aria-hidden="true">
-        FG
-      </div>
+      <Image className="coming-soon-logo" src="/fraguan-logo.jpg" alt="FRAGUAN" width={112} height={112} priority />
       <p className="eyebrow">FRAGUAN · FORJÁ TU ESTILO</p>
       <h1>La tienda está tomando forma.</h1>
       <p className="coming-soon-copy">

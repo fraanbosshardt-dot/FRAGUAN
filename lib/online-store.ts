@@ -83,12 +83,15 @@ type StoreCustomer = {
   surname: string;
   phone: string;
   points: number;
+  locality: string;
+  usualSizes: string;
+  marketingConsent: number;
 };
 export async function currentStoreCustomer(req: Request) {
   const token = cookieValue(req, SESSION_COOKIE);
   if (!token) return null;
   return one<StoreCustomer>(
-    `SELECT a.id AS accountId,a.customerId,a.email,c.name,c.surname,c.phone,c.points
+    `SELECT a.id AS accountId,a.customerId,a.email,a.marketingConsent,c.name,c.surname,c.phone,c.points,c.locality,c.usualSizes
        FROM customer_sessions s JOIN customer_accounts a ON a.id=s.accountId
        JOIN customers c ON c.id=a.customerId
       WHERE s.tokenHash=? AND s.expiresAt>? AND c.active=1`,
@@ -470,13 +473,15 @@ async function createMercadoPagoPreference(order: Record<string, any>) {
 
 const accountInput = z
   .object({
-    action: z.enum(['register', 'login', 'logout']),
+    action: z.enum(['register', 'login', 'logout', 'update']),
     email: z.email().trim().toLowerCase().max(200).optional(),
     password: z.string().min(8).max(128).optional(),
     name: z.string().trim().min(2).max(80).optional(),
     surname: z.string().trim().min(2).max(80).optional(),
     phone: z.string().trim().min(6).max(40).optional(),
     marketingConsent: z.boolean().optional(),
+    locality: z.string().trim().max(100).optional(),
+    usualSizes: z.string().trim().max(120).optional(),
   })
   .strict();
 
@@ -493,6 +498,30 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
       data: { ok: true },
       cookie: customerCookie('', new URL(req.url).protocol === 'https:', 0),
     };
+  }
+  if (input.action === 'update') {
+    const customer = await currentStoreCustomer(req);
+    if (!customer) throw new AppError(401, 'Iniciá sesión para actualizar tus datos.');
+    if (!input.name || !input.surname || !input.phone)
+      throw new AppError(400, 'Completá tus datos personales.');
+    await db().batch([
+      statement(
+        'UPDATE customers SET name=?,surname=?,phone=?,locality=?,usualSizes=?,updatedAt=? WHERE id=?',
+        input.name,
+        input.surname,
+        input.phone,
+        input.locality ?? '',
+        input.usualSizes ?? '',
+        now(),
+        customer.customerId,
+      ),
+      statement(
+        'UPDATE customer_accounts SET marketingConsent=? WHERE id=?',
+        input.marketingConsent ? 1 : 0,
+        customer.accountId,
+      ),
+    ]);
+    return { data: { ok: true }, cookie: null };
   }
   if (!input.email || !input.password)
     throw new AppError(400, 'Completá email y contraseña.');
@@ -623,7 +652,7 @@ export async function storeAccount(req: Request) {
     config,
   );
   return {
-    customer: { ...customer, level },
+    customer: { ...customer, level, marketingConsent: Boolean(customer.marketingConsent) },
     orders,
     cashback: Number(cashback?.balance ?? 0),
   };

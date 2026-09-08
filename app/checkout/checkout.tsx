@@ -212,6 +212,9 @@ export default function Checkout() {
           <a href="/cuenta">
             Ver mi cuenta <ArrowRight />
           </a>
+          <a href={`/pedido/${order.id}`}>
+            Seguir este pedido <ArrowRight />
+          </a>
         </main>
       </div>
     );
@@ -221,7 +224,7 @@ export default function Checkout() {
         <StoreHeader />
         <main className="store-empty-checkout">
           <h1>Tu carrito está vacío.</h1>
-          <a href="/">
+          <a href="/tienda">
             <ArrowLeft /> Volver a la tienda
           </a>
         </main>
@@ -231,7 +234,7 @@ export default function Checkout() {
     <div className="store-shell">
       <StoreHeader />
       <main className="store-checkout">
-        <a href="/">
+        <a href="/tienda">
           <ArrowLeft /> Seguir comprando
         </a>
         <div className="store-checkout-heading">

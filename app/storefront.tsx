@@ -135,6 +135,29 @@ export default function Storefront() {
             SIMPLE PARA COMBINAR —{' '}
           </span>
         </div>
+        <section className="store-worlds" aria-label="Colecciones FRAGUAN">
+          <header>
+            <span>ENTRÁ POR TU ESTILO</span>
+            <h2>Una forma distinta de elegir.</h2>
+          </header>
+          <div>
+            <a href="/tienda?section=Nuevos">
+              <small>01 / NEW DROP</small>
+              <strong>LO NUEVO</strong>
+              <span>Primeras piezas de la temporada <ArrowRight /></span>
+            </a>
+            <a href="/tienda?section=Camisas">
+              <small>02 / THE UNIFORM</small>
+              <strong>CAMISAS</strong>
+              <span>Para todos los días <ArrowRight /></span>
+            </a>
+            <a href="/tienda?section=Pantalones">
+              <small>03 / ESSENTIALS</small>
+              <strong>BASES</strong>
+              <span>Lo que combina con todo <ArrowRight /></span>
+            </a>
+          </div>
+        </section>
         <section className="store-catalog-section" id="coleccion">
           <div className="store-section-head">
             <div>
@@ -276,13 +299,22 @@ export default function Storefront() {
             </a>
           </section>
         )}
+        <section className="store-service-band" aria-label="Beneficios de compra">
+          <div><span>01</span><strong>10% OFF</strong><small>Pagando por transferencia</small></div>
+          <div><span>02</span><strong>RETIRO GRATIS</strong><small>Cuando tu pedido esté listo</small></div>
+          <div><span>03</span><strong>STOCK REAL</strong><small>Conectado con el local</small></div>
+          <div><span>04</span><strong>SEGUIMIENTO</strong><small>Desde Mi FRAGUAN</small></div>
+        </section>
       </main>
       <footer className="store-footer">
         <a href="/tienda">FRAGUAN</a>
         <div>
           <a href="/cuenta">Mi cuenta</a>
           <a href="#coleccion">Productos</a>
-          <a href="/pos">Acceso interno</a>
+          <a href="/informacion/envios">Envíos</a>
+          <a href="/informacion/cambios">Cambios</a>
+          <a href="/informacion/pagos">Pagos</a>
+          <a href="/informacion/privacidad">Privacidad</a>
         </div>
         <p>
           Buenos Aires · Argentina

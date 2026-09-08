@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     description: 'Indumentaria FRAGUAN con envíos a todo el país.',
   },
   twitter: { card: 'summary', title: 'FRAGUAN | Tienda oficial' },
+  icons: { icon: '/fraguan-logo.jpg' },
 };
 export default function RootLayout({
   children,

@@ -573,7 +573,7 @@ export async function POST(
     if (resource === 'store-account') {
       const result = await storeAccountWrite(req, body);
       const response = reply(result.data, 201);
-      response.headers.append('Set-Cookie', result.cookie);
+      if (result.cookie) response.headers.append('Set-Cookie', result.cookie);
       return response;
     }
     if (resource === 'store-checkout')

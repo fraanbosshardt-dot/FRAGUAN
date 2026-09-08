@@ -181,6 +181,19 @@ test('customer account connects an online order with Club cashback and history',
       .get(order.customerId).email,
     'socio@example.com',
   );
+  await store.storeAccountWrite(request, {
+    action: 'update',
+    name: 'Socio',
+    surname: 'Actualizado',
+    phone: '1144445555',
+    locality: 'Isla Verde',
+    usualSizes: 'Remeras L, pantalones 42',
+    marketingConsent: false,
+  });
+  const updated = await store.storeAccount(request);
+  assert.equal(updated.customer.surname, 'Actualizado');
+  assert.equal(updated.customer.locality, 'Isla Verde');
+  assert.equal(updated.customer.marketingConsent, false);
 });
 
 test('signed-provider callback reconciles a transfer once by reference and amount', async (t) => {
@@ -250,5 +263,42 @@ test('newsletter subscription is idempotent and supports unsubscribe', async (t)
       .prepare('SELECT status FROM newsletter_subscribers WHERE id=?')
       .get(subscriber.id).status,
     'unsubscribed',
+  );
+});
+
+test('public order tracking requires the private order token', async (t) => {
+  const f = fixture(t);
+  f.database.exec(`
+    INSERT INTO online_product_profiles(productId,slug,shortDescription,description,fit,section,updatedAt)
+    VALUES ('product','camisa-seguimiento','Una camisa lista para todos los días.','Descripción completa de la camisa para comprar online.','Regular','Camisas','2026-01-01T12:00:00Z');
+    INSERT INTO payment_methods(id,name) VALUES ('transfer','Transferencia'),('credit','Tarjeta');
+  `);
+  const store = f.load('lib/online-store.ts');
+  const accessToken = crypto.randomUUID();
+  const order = await store.createOnlineOrder(new Request('http://localhost'), {
+    items: [{ variantId: 'variant', quantity: 1 }],
+    email: 'seguimiento@example.com',
+    customerName: 'Cliente Seguimiento',
+    phone: '1122334455',
+    paymentMethod: 'transfer',
+    shippingMethod: 'pickup',
+    postalCode: '1000',
+    address: 'Retiro en local',
+    city: 'Buenos Aires',
+    province: 'CABA',
+    notes: '',
+    idempotencyKey: crypto.randomUUID(),
+    accessToken,
+  });
+  const detail = await store.publicOnlineOrder(
+    new Request('http://localhost'),
+    order.id,
+    accessToken,
+  );
+  assert.equal(detail.orderNumber, order.orderNumber);
+  assert.equal(detail.items[0].productName, 'Camisa');
+  await assert.rejects(
+    () => store.publicOnlineOrder(new Request('http://localhost'), order.id, crypto.randomUUID()),
+    /Acceso denegado/,
   );
 });

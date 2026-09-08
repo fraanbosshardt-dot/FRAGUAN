@@ -9,16 +9,29 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
-import { storeApi, storeMoney } from '@/lib/store-client';
+import { StoreProductCard } from '@/components/store-product-card';
+import {
+  StoreProduct,
+  storeApi,
+  storeMoney,
+  useStoreFavorites,
+} from '@/lib/store-client';
 export default function Account() {
   const [data, setData] = useState<any>(null);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [catalog, setCatalog] = useState<StoreProduct[]>([]);
+  const [profileState, setProfileState] = useState('');
+  const { favorites } = useStoreFavorites();
   const load = () => storeApi('store-account').then(setData);
   useEffect(() => {
     load().catch((e) => setError(e.message));
+    storeApi<{ products: StoreProduct[] }>('store-catalog')
+      .then((result) => setCatalog(result.products))
+      .catch(() => undefined);
   }, []);
+  const savedProducts = catalog.filter((product) => favorites.includes(product.id));
   async function submit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -50,6 +63,32 @@ export default function Account() {
       body: JSON.stringify({ action: 'logout' }),
     });
     setData({ customer: null, orders: [], cashback: 0 });
+  }
+  async function updateProfile(event: React.SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setProfileState('Guardando…');
+    const form = new FormData(event.currentTarget);
+    try {
+      await storeApi('store-account', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'update',
+          name: form.get('name'),
+          surname: form.get('surname'),
+          phone: form.get('phone'),
+          locality: form.get('locality'),
+          usualSizes: form.get('usualSizes'),
+          marketingConsent: Boolean(form.get('marketingConsent')),
+        }),
+      });
+      await load();
+      setProfileState('Datos actualizados.');
+    } catch (cause: any) {
+      setProfileState(cause.message);
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <div className="store-shell">
@@ -83,6 +122,23 @@ export default function Account() {
                 <small>Saldo disponible en tu cuenta.</small>
               </article>
             </section>
+            <section className="store-account-profile">
+              <div>
+                <span>TUS DATOS</span>
+                <h2>Todo listo para comprar más rápido.</h2>
+                <p>Guardá tu contacto, localidad y talles habituales.</p>
+              </div>
+              <form onSubmit={updateProfile}>
+                <label>Nombre<input name="name" defaultValue={data.customer.name} required /></label>
+                <label>Apellido<input name="surname" defaultValue={data.customer.surname} required /></label>
+                <label>Teléfono<input name="phone" defaultValue={data.customer.phone} required /></label>
+                <label>Localidad<input name="locality" defaultValue={data.customer.locality} /></label>
+                <label className="wide">Talles habituales<input name="usualSizes" defaultValue={data.customer.usualSizes} placeholder="Ej. Remeras L, pantalones 42" /></label>
+                <label className="store-consent wide"><input name="marketingConsent" type="checkbox" defaultChecked={data.customer.marketingConsent} /> Quiero recibir novedades y beneficios.</label>
+                <button className="store-auth-submit wide" disabled={busy}>Guardar mis datos <ArrowRight /></button>
+                {profileState && <small className="wide">{profileState}</small>}
+              </form>
+            </section>
             <section className="store-account-orders">
               <div>
                 <span>TUS COMPRAS</span>
@@ -90,7 +146,7 @@ export default function Account() {
               </div>
               {data.orders.length ? (
                 data.orders.map((order: any) => (
-                  <article key={order.id}>
+                  <a className="store-account-order-link" href={`/pedido/${order.id}`} key={order.id}>
                     <Package />
                     <span>
                       <strong>Pedido #{order.orderNumber}</strong>
@@ -110,15 +166,34 @@ export default function Account() {
                           ? 'Preparando'
                           : 'Recibido'}
                     </em>
-                  </article>
+                  </a>
                 ))
               ) : (
                 <div className="store-account-empty">
                   <Package />
                   <h3>Todavía no tenés pedidos online.</h3>
-                  <a href="/">
+                  <a href="/tienda">
                     Explorar la colección <ArrowRight />
                   </a>
+                </div>
+              )}
+            </section>
+            <section className="store-account-orders">
+              <div>
+                <span>TUS FAVORITOS</span>
+                <h2>Prendas guardadas</h2>
+              </div>
+              {savedProducts.length ? (
+                <div className="store-product-grid">
+                  {savedProducts.map((product, index) => (
+                    <StoreProductCard product={product} index={index} key={product.id} />
+                  ))}
+                </div>
+              ) : (
+                <div className="store-account-empty">
+                  <Gift />
+                  <h3>Todavía no guardaste prendas.</h3>
+                  <a href="/tienda">Explorar la colección <ArrowRight /></a>
                 </div>
               )}
             </section>

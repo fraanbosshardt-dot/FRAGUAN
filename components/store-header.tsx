@@ -11,6 +11,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useState } from 'react';
+import Image from 'next/image';
 import { useStoreCart, useStoreFavorites, storeMoney } from '@/lib/store-client';
 import {
   Sheet,
@@ -39,7 +40,8 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           <Menu />
         </button>
         <a className="store-logo" href="/tienda">
-          FRAGUAN
+          <Image src="/fraguan-logo.jpg" alt="" width={38} height={38} />
+          <span>FRAGUAN</span>
         </a>
         <nav aria-label="Tienda">
           <a href="/tienda?section=Nuevos">Nuevos</a>
@@ -103,6 +105,16 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
                 ))}
               </div>
               <div className="store-cart-total">
+                {subtotal > 0 && (
+                  <div className="store-shipping-progress">
+                    <span>
+                      {subtotal >= 18000000
+                        ? 'Tenés envío gratis'
+                        : `Te faltan ${storeMoney(18000000 - subtotal)} para envío gratis`}
+                    </span>
+                    <i><b style={{ width: `${Math.min(100, subtotal / 180000)}%` }} /></i>
+                  </div>
+                )}
                 <span>Subtotal</span>
                 <strong>{storeMoney(subtotal)}</strong>
                 <small>

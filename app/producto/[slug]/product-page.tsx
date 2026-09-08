@@ -14,6 +14,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
 import { StoreProductCard } from '@/components/store-product-card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   StoreProduct,
   StoreVariant,
   storeApi,
@@ -30,6 +38,10 @@ export default function ProductPage({ slug }: { slug: string }) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [error, setError] = useState('');
+  const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
+  const [fitPreference, setFitPreference] = useState('normal');
+  const [recommendedSize, setRecommendedSize] = useState('');
   const { add } = useStoreCart();
   const { favorites, toggle } = useStoreFavorites();
   useEffect(() => {
@@ -53,6 +65,21 @@ export default function ProductPage({ slug }: { slug: string }) {
   );
   const variants = product?.variants.filter((v) => v.color === color) || [];
   const selected = variants.find((v) => v.size === size);
+  function recommendSize() {
+    const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    const available = [...new Set((product?.variants || []).filter((v) => v.stock > 0).map((v) => v.size))]
+      .sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    if (!available.length) return setRecommendedSize('Sin talles disponibles');
+    const h = Number(height);
+    const w = Number(weight);
+    if (h < 130 || h > 230 || w < 35 || w > 220)
+      return setRecommendedSize('Revisá altura y peso');
+    const score = w / Math.pow(h / 100, 2);
+    let position = score < 20 ? 0 : score < 24 ? 1 : score < 28 ? 2 : 3;
+    position += h > 188 ? 1 : h < 165 ? -1 : 0;
+    position += fitPreference === 'oversize' ? 1 : fitPreference === 'ajustado' ? -1 : 0;
+    setRecommendedSize(available[Math.max(0, Math.min(available.length - 1, position))]);
+  }
   function addSelected() {
     if (!product || !selected) return setError('Elegí un talle disponible.');
     add(product, selected, quantity);
@@ -123,6 +150,28 @@ export default function ProductPage({ slug }: { slug: string }) {
     );
   return (
     <div className="store-shell">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name,
+            description: product.description,
+            brand: { '@type': 'Brand', name: product.brand },
+            sku: product.variants[0]?.sku,
+            offers: {
+              '@type': 'AggregateOffer',
+              priceCurrency: 'ARS',
+              lowPrice: product.price / 100,
+              offerCount: product.variants.filter((variant) => variant.stock > 0).length,
+              availability: product.variants.some((variant) => variant.stock > 0)
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+            },
+          }).replaceAll('<', '\\u003c'),
+        }}
+      />
       <StoreHeader />
       <main className="store-detail">
         <a className="store-back" href="/tienda">
@@ -181,9 +230,36 @@ export default function ProductPage({ slug }: { slug: string }) {
             <fieldset>
               <legend>
                 Talle{' '}
-                <a href="#medidas">
-                  <Ruler /> Guía de talles
-                </a>
+                <Dialog>
+                  <DialogTrigger className="store-size-helper-trigger">
+                    <Ruler /> ¿Qué talle soy?
+                  </DialogTrigger>
+                  <DialogContent className="store-size-dialog">
+                    <DialogHeader>
+                      <DialogTitle>Encontrá tu talle</DialogTitle>
+                      <DialogDescription>
+                        Una recomendación orientativa según tus medidas y el calce que preferís.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <label>Altura (cm)<input inputMode="numeric" value={height} onChange={(e) => setHeight(e.target.value)} /></label>
+                    <label>Peso (kg)<input inputMode="numeric" value={weight} onChange={(e) => setWeight(e.target.value)} /></label>
+                    <label>¿Cómo te gusta usar la ropa?
+                      <select value={fitPreference} onChange={(e) => setFitPreference(e.target.value)}>
+                        <option value="ajustado">Ajustada</option>
+                        <option value="normal">Normal</option>
+                        <option value="oversize">Oversize</option>
+                      </select>
+                    </label>
+                    <button className="store-size-recommend" onClick={recommendSize}>Recomendar talle</button>
+                    {recommendedSize && (
+                      <div className="store-size-result">
+                        <span>TE RECOMENDAMOS</span>
+                        <strong>{recommendedSize}</strong>
+                        <small>Confirmá siempre con la guía de medidas de la prenda.</small>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </legend>
               <div className="store-size-options">
                 {variants.map((variant) => (

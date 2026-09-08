@@ -15,6 +15,18 @@ productos se mantiene; el logo es un activo de marca.
 
 Implementación local con datos de demostración. En producción, la tienda, el POS y la administración muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`). En local el ecommerce completo continúa accesible en `/tienda`, junto con POS y administración, para desarrollo. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
 
+### Tienda online: estado local terminado
+
+La experiencia local cubre el recorrido completo: navegación editorial, catálogo, búsqueda,
+secciones, filtros, ordenamiento, favoritos, agregado rápido, ficha de producto, variantes,
+asistente orientativo de talle, carrito, umbral de envío gratis, checkout invitado, cuenta,
+edición de datos, Club, pedidos y seguimiento privado. Incluye páginas de envíos, cambios,
+pagos y privacidad, metadata, datos estructurados de producto, `robots.txt` y sitemap.
+
+El lanzamiento real continúa condicionado a credenciales y servicios externos: base de datos
+productiva, Google Auth, Mercado Pago, Correo Argentino, Resend, dominio y pruebas físicas.
+Hasta autorización explícita, Vercel mantiene solamente “Próximamente disponible”.
+
 ## Funciones implementadas
 
 | Área                    | Alcance local                                                                                                                                                                                                                                                                                                                        |
@@ -27,8 +39,8 @@ Implementación local con datos de demostración. En producción, la tienda, el 
 | Ventas y devoluciones   | Devoluciones parciales/sucesivas/totales, autorización, stock, caja, saldo a favor y cashback. Cambios mediante devolución y nueva venta, usando saldo a favor cuando corresponde.                                                                                                                                                   |
 | Clientes                | Perfil completo administrativo, historial, talles/preferencias, segmentos configurables, niveles del Club y saldos.                                                                                                                                                                                                                  |
 | Club                    | Puntos, cashback por nivel con vencimiento, catálogo de beneficios, reserva, entrega y cancelación de canjes con restitución única.                                                                                                                                                                                                  |
-| Tienda online           | Sitio público sin fotografías, catálogo por secciones, búsqueda, filtros, ficha con talle/color/stock, precios online independientes, carrito, checkout, retiro o Correo Argentino, 10% por transferencia y pago con tarjeta preparado para Mercado Pago. Cuenta de cliente con historial, nivel, puntos y cashback.                 |
-| Pedidos online          | Reserva de stock anti-sobreventa, referencia única de cobro, trazabilidad de prendas/cliente/ubicación, venta conectada, puntos/cashback, estados de preparación, despacho, cancelación, tracking y auditoría. Catálogo web editable desde administración.                                                                           |
+| Tienda online           | Sitio público sin fotografías de producto, identidad y logo oficial, navegación mobile first, colecciones editoriales, búsqueda, filtros por sección/talle/color/disponibilidad, ordenamiento, favoritos locales, agregado rápido, ficha con variantes y asistente de talle, carrito con progreso de envío gratis, checkout invitado, retiro o Correo Argentino, 10% por transferencia y tarjeta preparada para Mercado Pago. Cuenta con pedidos, favoritos, nivel, puntos y cashback. |
+| Pedidos online          | Reserva de stock anti-sobreventa, referencia única de cobro, trazabilidad de prendas/cliente/ubicación, venta conectada, puntos/cashback, estados de preparación, despacho, cancelación, página privada de seguimiento, tracking y auditoría. Catálogo web editable desde administración. |
 | Promociones             | Porcentaje, monto fijo, 2x1, segunda unidad, categoría, marca, nivel, cumpleaños, cupones, prioridad y exclusividad. Vigencia hasta medianoche argentina. Reporte de resultado por promoción.                                                                                                                                        |
 | Compras                 | Órdenes multilínea, impuestos, transporte, descuentos, vencimiento y condiciones. Entrega prevista, transportista, seguimiento y dirección. Recepción parcial/completa. Pago separado de recepción; una orden recibida y saldada se muestra pagada. Exportación de orden completa.                                                   |
 | Proveedores             | Edición/archivo, historial, ventas netas, rentabilidad, capital actual en stock y cumplimiento de entregas con fecha pactada.                                                                                                                                                                                                        |
@@ -64,7 +76,7 @@ Implementación local con datos de demostración. En producción, la tienda, el 
 ## Verificación
 
 - 25 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, movimientos de stock, ubicaciones, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
-- 11 escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, newsletter, stock y permisos.
+- 12 escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, newsletter, seguimiento privado, stock y permisos.
 - tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.
 - tests-reporting.mjs: totales netos, filtros, productos sin ventas y permisos.
 - tests-database-recovery.mjs: instalación limpia, repetición, detección de alteraciones, copia, restauración y conservación de datos.

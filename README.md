@@ -1,4 +1,4 @@
-> Actualización: consultar primero [ESTADO-FRAGUAN.md](ESTADO-FRAGUAN.md). La tienda online está implementada sin fotos; base definitiva, Google Login, credenciales externas y Vercel se conectarán al final.
+> Actualización: consultar primero [ESTADO-FRAGUAN.md](ESTADO-FRAGUAN.md). La tienda online local está implementada sin fotos de producto; base definitiva, Google Login, credenciales externas y el deploy funcional de Vercel se conectarán únicamente con autorización explícita.
 
 # FRAGUAN · Business Studio
 
@@ -11,6 +11,10 @@ Las migraciones existentes son inmutables después de publicar. Generar nuevas c
 En producción, Sites autentica la identidad. `BOOTSTRAP_OWNER_EMAIL` debe coincidir con el propietario para permitir la primera activación. `ADMIN_PIN` configura el PIN administrativo; el entorno local usa `197313` como valor solicitado. `SITE_ORIGIN` establece el origen absoluto de las vistas previas sociales. Copiar `.env.example` a `.env` únicamente para desarrollo; no subir secretos.
 
 La primera activación permite cargar demostración o comenzar vacío. El servidor local admite la identidad de prueba de Sites. La aplicación no define contraseñas ni roles en el navegador.
+
+Rutas locales principales: `/tienda`, `/producto/[slug]`, `/checkout`, `/cuenta`,
+`/pedido/[id]`, `/pos` y `/admin-access`. La producción pública mantiene una pantalla
+estática de “Próximamente disponible” hasta el lanzamiento autorizado.
 
 Pruebas: `npm test` y `node tests-admin.mjs` con la demo local activada y el servidor ejecutándose. Las pruebas modifican datos de demostración. Verificación de tipos: `npx tsc --noEmit`. Publicación: `npm run build`.
 
