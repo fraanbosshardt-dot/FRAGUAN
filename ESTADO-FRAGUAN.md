@@ -109,3 +109,11 @@ deploy a Vercel, automático ni manual, hasta recibir autorización explícita d
 El proyecto incluye `ignoreCommand` para que los pushes a GitHub no creen nuevos deploys por
 defecto. Para habilitar un lanzamiento se deberá activar expresamente
 `FRAGUAN_DEPLOY_ENABLED=true` y revisar la configuración productiva.
+
+## Evolución futura: sucursales y usuarios
+
+La operación actual contempla una sola tienda, una caja y un depósito. A futuro se
+incorporará el modelo multi-sucursal con usuarios asignados a una o más tiendas y roles
+con alcance por sucursal: vendedor, encargado y administración central. El stock, las
+cajas, los pedidos, las transferencias y los reportes podrán filtrarse por tienda o
+consolidarse globalmente sin cambiar la operación actual.
