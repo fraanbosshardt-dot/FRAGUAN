@@ -8,6 +8,7 @@ import {
   Ruler,
   ShieldCheck,
   Truck,
+  Heart,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
@@ -18,6 +19,7 @@ import {
   storeApi,
   storeMoney,
   useStoreCart,
+  useStoreFavorites,
 } from '@/lib/store-client';
 
 export default function ProductPage({ slug }: { slug: string }) {
@@ -29,6 +31,7 @@ export default function ProductPage({ slug }: { slug: string }) {
   const [added, setAdded] = useState(false);
   const [error, setError] = useState('');
   const { add } = useStoreCart();
+  const { favorites, toggle } = useStoreFavorites();
   useEffect(() => {
     storeApi<{ product: StoreProduct; related: StoreProduct[] }>(
       `store-product?slug=${encodeURIComponent(slug)}`,
@@ -105,7 +108,7 @@ export default function ProductPage({ slug }: { slug: string }) {
         <StoreHeader />
         <main className="store-page-error">
           <h1>{error}</h1>
-          <a href="/">
+          <a href="/tienda">
             <ArrowLeft /> Volver a la tienda
           </a>
         </main>
@@ -122,7 +125,7 @@ export default function ProductPage({ slug }: { slug: string }) {
     <div className="store-shell">
       <StoreHeader />
       <main className="store-detail">
-        <a className="store-back" href="/">
+        <a className="store-back" href="/tienda">
           <ArrowLeft /> Volver
         </a>
         <section className="store-detail-grid">
@@ -235,6 +238,13 @@ export default function ProductPage({ slug }: { slug: string }) {
                   Agregar al carrito <ArrowRight />
                 </>
               )}
+            </button>
+            <button
+              className={`store-detail-favorite ${favorites.includes(product.id) ? 'active' : ''}`}
+              onClick={() => toggle(product.id)}
+            >
+              <Heart fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
+              {favorites.includes(product.id) ? 'Guardado en favoritos' : 'Guardar en favoritos'}
             </button>
             <div className="store-buy-benefits">
               <p>

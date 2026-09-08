@@ -55,6 +55,49 @@ export const storeMoney = (value: number) =>
   }).format(value / 100);
 
 const CART_KEY = 'fraguan-online-cart';
+const FAVORITES_KEY = 'fraguan-online-favorites';
+
+export function useStoreFavorites() {
+  const [favorites, setFavorites] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
+    } catch {
+      setFavorites([]);
+    }
+  }, []);
+  const toggle = useCallback((productId: string) => {
+    let current: string[] = [];
+    try {
+      current = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    } catch {
+      current = [];
+    }
+    const next = current.includes(productId)
+      ? current.filter((id) => id !== productId)
+      : [...current, productId];
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+    setFavorites(next);
+    dispatchEvent(new Event('fraguan-favorites'));
+  }, []);
+  useEffect(() => {
+    const sync = () => {
+      try {
+        setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
+      } catch {
+        setFavorites([]);
+      }
+    };
+    addEventListener('fraguan-favorites', sync);
+    addEventListener('storage', sync);
+    return () => {
+      removeEventListener('fraguan-favorites', sync);
+      removeEventListener('storage', sync);
+    };
+  }, []);
+  return { favorites, toggle };
+}
+
 export function useStoreCart() {
   const [cart, setCartState] = useState<StoreCartItem[]>([]);
   useEffect(() => {

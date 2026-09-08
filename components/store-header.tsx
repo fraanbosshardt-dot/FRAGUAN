@@ -4,13 +4,14 @@ import {
   Search,
   ShoppingBag,
   UserRound,
+  Heart,
   X,
   ArrowRight,
   Minus,
   Plus,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useStoreCart, storeMoney } from '@/lib/store-client';
+import { useStoreCart, useStoreFavorites, storeMoney } from '@/lib/store-client';
 import {
   Sheet,
   SheetContent,
@@ -22,6 +23,7 @@ import {
 
 export function StoreHeader({ dark = false }: { dark?: boolean }) {
   const { cart, count, subtotal, update } = useStoreCart();
+  const { favorites } = useStoreFavorites();
   const [menu, setMenu] = useState(false);
   return (
     <>
@@ -36,19 +38,23 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
         >
           <Menu />
         </button>
-        <a className="store-logo" href="/">
+        <a className="store-logo" href="/tienda">
           FRAGUAN
         </a>
         <nav aria-label="Tienda">
-          <a href="/?section=Nuevos">Nuevos</a>
-          <a href="/?section=Camisas">Camisas</a>
-          <a href="/?section=Remeras">Remeras</a>
-          <a href="/?section=Pantalones">Pantalones</a>
-          <a href="/?section=Camperas">Abrigos</a>
+          <a href="/tienda?section=Nuevos">Nuevos</a>
+          <a href="/tienda?section=Camisas">Camisas</a>
+          <a href="/tienda?section=Remeras">Remeras</a>
+          <a href="/tienda?section=Pantalones">Pantalones</a>
+          <a href="/tienda?section=Camperas">Abrigos</a>
         </nav>
         <div className="store-header-actions">
-          <a href="/?search=1" aria-label="Buscar">
+          <a href="/tienda?search=1" aria-label="Buscar">
             <Search />
+          </a>
+          <a href="/tienda?favorites=1" aria-label={`${favorites.length} favoritos`}>
+            <Heart />
+            {!!favorites.length && <span className="store-favorite-count">{favorites.length}</span>}
           </a>
           <a href="/cuenta" aria-label="Mi cuenta">
             <UserRound />
@@ -119,13 +125,14 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           <button onClick={() => setMenu(false)} aria-label="Cerrar menú">
             <X />
           </button>
-          <a href="/">FRAGUAN</a>
+          <a href="/tienda">FRAGUAN</a>
           <nav>
-            <a href="/?section=Nuevos">Nuevos ingresos</a>
-            <a href="/?section=Camisas">Camisas</a>
-            <a href="/?section=Remeras">Remeras</a>
-            <a href="/?section=Pantalones">Pantalones</a>
-            <a href="/?section=Camperas">Abrigos</a>
+            <a href="/tienda?section=Nuevos">Nuevos ingresos</a>
+            <a href="/tienda?section=Camisas">Camisas</a>
+            <a href="/tienda?section=Remeras">Remeras</a>
+            <a href="/tienda?section=Pantalones">Pantalones</a>
+            <a href="/tienda?section=Camperas">Abrigos</a>
+            <a href="/tienda?favorites=1">Favoritos</a>
             <a href="/cuenta">Mi cuenta / Club</a>
           </nav>
         </div>

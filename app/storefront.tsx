@@ -3,7 +3,7 @@ import { ArrowDown, ArrowRight, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
 import { StoreProductCard } from '@/components/store-product-card';
-import { StoreProduct, storeApi } from '@/lib/store-client';
+import { StoreProduct, storeApi, useStoreFavorites } from '@/lib/store-client';
 
 export default function Storefront() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
@@ -12,13 +12,20 @@ export default function Storefront() {
   >([]);
   const [query, setQuery] = useState('');
   const [section, setSection] = useState('');
+  const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [sort, setSort] = useState('recommended');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterState, setNewsletterState] = useState('');
+  const { favorites } = useStoreFavorites();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     setSection(params.get('section') || '');
+    setOnlyFavorites(params.get('favorites') === '1');
     if (params.get('search'))
       setTimeout(
         () =>
@@ -69,6 +76,32 @@ export default function Storefront() {
     () => products.filter((product) => product.featured).slice(0, 6),
     [products],
   );
+  const sizes = useMemo(
+    () => [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.size)))],
+    [products],
+  );
+  const colors = useMemo(
+    () => [...new Set(products.flatMap((product) => product.variants.map((variant) => variant.color)))],
+    [products],
+  );
+  const displayed = useMemo(() => {
+    const filtered = products.filter((product) => {
+      if (onlyFavorites && !favorites.includes(product.id)) return false;
+      return product.variants.some((variant) => {
+        if (size && variant.size !== size) return false;
+        if (color && variant.color !== color) return false;
+        if (onlyAvailable && variant.stock < 1) return false;
+        return true;
+      });
+    });
+    return [...filtered].sort((a, b) => {
+      if (sort === 'price-asc') return a.price - b.price;
+      if (sort === 'price-desc') return b.price - a.price;
+      if (sort === 'name') return a.name.localeCompare(b.name, 'es');
+      return Number(b.featured) - Number(a.featured);
+    });
+  }, [products, favorites, onlyFavorites, size, color, onlyAvailable, sort]);
+  const hasActiveFilters = Boolean(size || color || onlyAvailable || onlyFavorites);
   return (
     <div className="store-shell">
       <StoreHeader />
@@ -108,7 +141,7 @@ export default function Storefront() {
               <span>01 / COLECCIÓN</span>
               <h2>{section || 'Elegí sin vueltas'}</h2>
             </div>
-            <p>{products.length} productos · Stock actualizado</p>
+            <p>{displayed.length} productos · Stock actualizado</p>
           </div>
           <div className="store-search">
             <Search />
@@ -145,12 +178,66 @@ export default function Storefront() {
               </button>
             ))}
           </div>
+          <div className="store-catalog-tools" aria-label="Filtrar y ordenar productos">
+            <label>
+              Talle
+              <select value={size} onChange={(event) => setSize(event.target.value)}>
+                <option value="">Todos</option>
+                {sizes.map((value) => <option key={value}>{value}</option>)}
+              </select>
+            </label>
+            <label>
+              Color
+              <select value={color} onChange={(event) => setColor(event.target.value)}>
+                <option value="">Todos</option>
+                {colors.map((value) => <option key={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className="store-check-filter">
+              <input
+                type="checkbox"
+                checked={onlyAvailable}
+                onChange={(event) => setOnlyAvailable(event.target.checked)}
+              />
+              Solo disponibles
+            </label>
+            <label className="store-check-filter">
+              <input
+                type="checkbox"
+                checked={onlyFavorites}
+                onChange={(event) => setOnlyFavorites(event.target.checked)}
+              />
+              Mis favoritos
+            </label>
+            <label className="store-sort">
+              Ordenar
+              <select value={sort} onChange={(event) => setSort(event.target.value)}>
+                <option value="recommended">Recomendados</option>
+                <option value="price-asc">Menor precio</option>
+                <option value="price-desc">Mayor precio</option>
+                <option value="name">Nombre</option>
+              </select>
+            </label>
+            {hasActiveFilters && (
+              <button
+                className="store-clear-filters"
+                onClick={() => {
+                  setSize('');
+                  setColor('');
+                  setOnlyAvailable(false);
+                  setOnlyFavorites(false);
+                }}
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
           {error && <p className="store-error">{error}</p>}
           {loading ? (
             <div className="store-loading">Preparando la colección…</div>
-          ) : products.length ? (
+          ) : displayed.length ? (
             <div className="store-product-grid">
-              {products.map((product, index) => (
+              {displayed.map((product, index) => (
                 <StoreProductCard
                   product={product}
                   index={index}
@@ -191,7 +278,7 @@ export default function Storefront() {
         )}
       </main>
       <footer className="store-footer">
-        <a href="/">FRAGUAN</a>
+        <a href="/tienda">FRAGUAN</a>
         <div>
           <a href="/cuenta">Mi cuenta</a>
           <a href="#coleccion">Productos</a>

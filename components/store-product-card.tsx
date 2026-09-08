@@ -1,5 +1,6 @@
-import { ArrowUpRight } from 'lucide-react';
-import { StoreProduct, storeMoney } from '@/lib/store-client';
+'use client';
+import { ArrowUpRight, Heart } from 'lucide-react';
+import { StoreProduct, storeMoney, useStoreFavorites } from '@/lib/store-client';
 
 const tones = ['acid', 'ink', 'clay', 'forest', 'silver', 'ink'];
 export function StoreProductCard({
@@ -11,6 +12,8 @@ export function StoreProductCard({
   index?: number;
   wide?: boolean;
 }) {
+  const { favorites, toggle } = useStoreFavorites();
+  const favorite = favorites.includes(product.id);
   const stock = product.variants.reduce(
     (total, variant) => total + variant.stock,
     0,
@@ -19,12 +22,16 @@ export function StoreProductCard({
     ...new Set(product.variants.filter((v) => v.stock > 0).map((v) => v.color)),
   ];
   return (
-    <a
-      aria-label={`Ver ${product.name}`}
-      className={`store-product-card ${tones[index % tones.length]} ${wide ? 'wide' : ''}`}
-      href={`/producto/${product.slug}`}
-    >
-      <div className="store-product-art" aria-hidden="true">
+    <article className={`store-product-card ${tones[index % tones.length]} ${wide ? 'wide' : ''}`}>
+      <button
+        className={`store-favorite-button ${favorite ? 'active' : ''}`}
+        onClick={() => toggle(product.id)}
+        aria-label={favorite ? `Quitar ${product.name} de favoritos` : `Guardar ${product.name} en favoritos`}
+      >
+        <Heart fill={favorite ? 'currentColor' : 'none'} />
+      </button>
+      <a aria-label={`Ver ${product.name}`} href={`/producto/${product.slug}`}>
+        <div className="store-product-art" aria-hidden="true">
         <span>{String(index + 1).padStart(2, '0')}</span>
         <strong>
           {product.name
@@ -34,8 +41,8 @@ export function StoreProductCard({
             .slice(0, 3)}
         </strong>
         <i>{product.category}</i>
-      </div>
-      <div className="store-product-copy">
+        </div>
+        <div className="store-product-copy">
         <span>{product.category}</span>
         <h3>{product.name}</h3>
         <p>{colors.slice(0, 3).join(' · ') || 'Sin stock'}</p>
@@ -44,7 +51,8 @@ export function StoreProductCard({
           <small>{stock ? `${stock} disponibles` : 'Agotado'}</small>
           <ArrowUpRight />
         </div>
-      </div>
-    </a>
+        </div>
+      </a>
+    </article>
   );
 }

@@ -124,3 +124,8 @@ El POS tendrá por ahora un único rol: `VENDEDOR`. Este usuario puede realizar 
 completo de venta, consultar información comercial y gestionar únicamente las funciones
 operativas autorizadas. La administración continúa separada y protegida. Los roles de
 encargado, caja, depósito y alcance por sucursal quedan reservados para una etapa futura.
+
+Cada empleado tendrá un usuario vendedor individual. En la terminal autorizada seleccionará
+su nombre e ingresará un PIN personal corto; no se utilizará una cuenta compartida ni será
+necesario Google Login para cada vendedor. Todas las ventas y acciones quedarán asociadas a
+ese usuario. Google Auth y el PIN administrativo quedan reservados para Administración.
