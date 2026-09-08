@@ -1160,6 +1160,114 @@ export async function listOnlineOrders(actor: Actor, orderId = '') {
   );
 }
 
+/** Operational online-order queue for POS users. Its response intentionally omits
+ * prices, totals, email, payment references and marketing attribution. */
+export async function listPosOnlineOrders(actor: Actor, orderId = '') {
+  requirePermission(actor, 'pos-online-orders');
+  if (orderId) {
+    const order = await one<Record<string, any>>(
+      `SELECT id,orderNumber,customerName,phone,status,paymentStatus,fulfillmentStatus,
+              shippingMethod,trackingNumber,createdAt,updatedAt
+         FROM online_orders WHERE id=? AND paymentStatus='paid' AND status<>'cancelled'`,
+      orderId,
+    );
+    if (!order) throw new AppError(404, 'Pedido operativo no encontrado.');
+    const items = await rows(
+      `SELECT oi.productName,oi.sku,oi.color,oi.size,oi.quantity,
+              COALESCE((SELECT l.name||CASE WHEN l.detail<>'' THEN ' · '||l.detail ELSE '' END
+                FROM variant_location_stock vls JOIN stock_locations l ON l.id=vls.locationId
+               WHERE vls.variantId=oi.variantId AND vls.quantity>0 ORDER BY l.priority,l.name LIMIT 1),'Sin ubicación') AS location
+         FROM online_order_items oi WHERE oi.orderId=?`,
+      orderId,
+    );
+    return { ...order, items };
+  }
+  return rows(
+    `SELECT id,orderNumber,customerName,phone,status,paymentStatus,fulfillmentStatus,
+            shippingMethod,trackingNumber,createdAt,updatedAt
+       FROM online_orders
+      WHERE paymentStatus='paid' AND status<>'cancelled'
+      ORDER BY CASE fulfillmentStatus WHEN 'unfulfilled' THEN 0 WHEN 'preparing' THEN 1
+               WHEN 'ready_pickup' THEN 2 WHEN 'shipped' THEN 3 ELSE 4 END, createdAt DESC
+      LIMIT 100`,
+  );
+}
+
+export async function posOnlineOrderWrite(actor: Actor, raw: unknown) {
+  requirePermission(actor, 'pos-online-orders');
+  const input = z
+    .object({
+      action: z.enum(['prepare', 'ready-pickup', 'deliver']),
+      orderId: z.uuid(),
+    })
+    .strict()
+    .parse(raw);
+  const order = await one<Record<string, any>>(
+    `SELECT id,paymentStatus,status,fulfillmentStatus,shippingMethod
+       FROM online_orders WHERE id=?`,
+    input.orderId,
+  );
+  if (!order || order.status === 'cancelled')
+    throw new AppError(404, 'Pedido operativo no encontrado.');
+  if (order.paymentStatus !== 'paid')
+    throw new AppError(409, 'El pedido todavía no tiene el pago confirmado.');
+  const timestamp = now();
+  let nextStatus = order.status;
+  let nextFulfillment = order.fulfillmentStatus;
+  let kind = '';
+  let detail = '';
+  let emailEvent: 'preparing' | 'ready_pickup' | 'delivered';
+  if (input.action === 'prepare') {
+    if (order.fulfillmentStatus !== 'unfulfilled')
+      throw new AppError(409, 'El pedido ya inició su preparación.');
+    nextStatus = 'preparing';
+    nextFulfillment = 'preparing';
+    kind = 'preparing';
+    detail = 'Preparación iniciada desde POS';
+    emailEvent = 'preparing';
+  } else if (input.action === 'ready-pickup') {
+    if (order.shippingMethod !== 'pickup')
+      throw new AppError(409, 'Esta acción corresponde solamente a retiros en el local.');
+    if (order.fulfillmentStatus !== 'preparing')
+      throw new AppError(409, 'Primero iniciá la preparación del pedido.');
+    nextStatus = 'ready_pickup';
+    nextFulfillment = 'ready_pickup';
+    kind = 'ready_pickup';
+    detail = 'Listo para retirar, marcado desde POS';
+    emailEvent = 'ready_pickup';
+  } else {
+    if (order.shippingMethod !== 'pickup' || order.fulfillmentStatus !== 'ready_pickup')
+      throw new AppError(409, 'Solo se puede entregar un retiro que ya esté listo.');
+    nextStatus = 'completed';
+    nextFulfillment = 'delivered';
+    kind = 'delivered';
+    detail = 'Entregado al cliente desde POS';
+    emailEvent = 'delivered';
+  }
+  await db().batch([
+    statement(
+      'UPDATE online_orders SET status=?,fulfillmentStatus=?,updatedAt=? WHERE id=?',
+      nextStatus,
+      nextFulfillment,
+      timestamp,
+      input.orderId,
+    ),
+    statement(
+      'INSERT INTO online_order_events(id,orderId,kind,detail,actorId,createdAt) VALUES (?,?,?,?,?,?)',
+      id(),
+      input.orderId,
+      kind,
+      detail,
+      actor.id,
+      timestamp,
+    ),
+  ]);
+  if (emailEvent === 'preparing')
+    await importCorreoOrder(input.orderId, actor.id).catch(() => undefined);
+  await sendOrderEmails(input.orderId, emailEvent).catch(() => undefined);
+  return listPosOnlineOrders(actor, input.orderId);
+}
+
 export async function listOnlineCatalog(actor: Actor) {
   requirePermission(actor, 'products');
   await ensureOnlineProfiles();
@@ -1494,6 +1602,8 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
         })
         .strict(),
       z.object({ action: z.literal('prepare'), orderId: z.uuid() }).strict(),
+      z.object({ action: z.literal('ready-pickup'), orderId: z.uuid() }).strict(),
+      z.object({ action: z.literal('deliver'), orderId: z.uuid() }).strict(),
       z
         .object({
           action: z.literal('ship'),
@@ -1512,6 +1622,8 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
     .parse(raw);
   if (input.action === 'mark-paid')
     return confirmOnlinePayment(actor, input.orderId, input.paymentReference);
+  if (input.action === 'ready-pickup' || input.action === 'deliver')
+    return posOnlineOrderWrite(actor, input);
   const order = await one<Record<string, any>>(
     'SELECT * FROM online_orders WHERE id=?',
     input.orderId,

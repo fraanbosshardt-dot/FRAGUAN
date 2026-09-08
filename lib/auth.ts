@@ -81,10 +81,11 @@ const grants: Record<string, string[]> = {
     'newsletter',
     'seller-commissions',
     'online-orders',
+    'pos-online-orders',
     'online-catalog',
     'marketing',
   ],
-  VENDEDOR: ['pos', 'customers', 'own-sales'],
+  VENDEDOR: ['pos', 'customers', 'own-sales', 'pos-online-orders'],
   CAJA: ['pos', 'customers', 'own-sales', 'cash'],
   STOCK: [
     'stock',

@@ -10,6 +10,7 @@ Actualizado: 8 de septiembre de 2026.
 - Carrito persistente, cantidades, progreso de envío gratis y total con transferencia.
 - Checkout como invitado o con cuenta, autocompletado, DNI, datos de entrega, retiro, Correo Argentino, transferencia con 10% y tarjeta mediante adaptador de Mercado Pago.
 - Reserva de stock, protección contra sobreventa, referencia única, conciliación de pago, emails y seguimiento privado.
+- Cola conectada con POS para pedidos pagos: prendas y ubicación, preparación, aviso de retiro listo y registro de entrega; el vendedor recibe una respuesta sin importes ni datos financieros.
 - Mi FRAGUAN con Google Sign-In preparado, email/contraseña, perfil, Club, puntos, cashback, favoritos y pedidos.
 - Footer completo en todas las superficies públicas, newsletter, ayuda y navegación legal.
 - Envíos, pagos, guía de talles, contacto, cambios y devoluciones, privacidad, cookies, términos y condiciones.

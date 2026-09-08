@@ -5,6 +5,7 @@ export const configurablePermissions = [
   'pos',
   'customers',
   'own-sales',
+  'pos-online-orders',
   'sales',
   'dashboard',
   'products',

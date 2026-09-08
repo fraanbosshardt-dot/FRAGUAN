@@ -18,6 +18,8 @@ import {
   Moon,
   RotateCcw,
   ShieldCheck,
+  PackageCheck,
+  Store,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +68,8 @@ export default function Workspace() {
     [busy, setBusy] = useState(false),
     [receipt, setReceipt] = useState<Row | null>(null),
     [recent, setRecent] = useState<Row[]>([]),
+    [onlineOrders, setOnlineOrders] = useState<Row[]>([]),
+    [onlineOrder, setOnlineOrder] = useState<Row | null>(null),
     [quote, setQuote] = useState<Row | null>(null),
     [dark, setDark] = useState(false),
     [reference, setReference] = useState(''),
@@ -220,10 +224,14 @@ export default function Workspace() {
         e.preventDefault();
         openPayment();
       }
+      if (e.key === 'F6' && session?.permissions?.includes('pos-online-orders')) {
+        e.preventDefault();
+        void showOnlineOrders();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [openPayment]);
+  }, [openPayment, session]);
   useEffect(() => {
     const context = (document as any).modelContext;
     if (!context?.registerTool) return;
@@ -340,6 +348,49 @@ export default function Workspace() {
       setModal('recent');
     } catch (e: any) {
       setError(e.message);
+    }
+  }
+  async function showOnlineOrders() {
+    setError('');
+    setBusy(true);
+    try {
+      setOnlineOrders(await api('pos-online-orders'));
+      setModal('online-orders');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function showOnlineOrder(orderId: string) {
+    setError('');
+    setBusy(true);
+    try {
+      setOnlineOrder(
+        await api('pos-online-orders?id=' + encodeURIComponent(orderId)),
+      );
+      setModal('online-order');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function updateOnlineOrder(action: 'prepare' | 'ready-pickup' | 'deliver') {
+    if (!onlineOrder) return;
+    setError('');
+    setBusy(true);
+    try {
+      const updated = await api('pos-online-orders', {
+        action,
+        orderId: onlineOrder.id,
+      });
+      setOnlineOrder(updated);
+      setOnlineOrders(await api('pos-online-orders'));
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
     }
   }
   function openAuthorizedRefund() {
@@ -499,9 +550,16 @@ export default function Workspace() {
               </h1>
               <p>Buscá por nombre o SKU, o escaneá el código de barras.</p>
             </div>
-            <Button variant="outline" onClick={showRecent}>
-              <Clock3 /> Ventas recientes
-            </Button>
+            <div className="pos-heading-actions">
+              <Button variant="outline" onClick={showRecent}>
+                <Clock3 /> Ventas recientes
+              </Button>
+              {session?.permissions?.includes('pos-online-orders') && (
+                <Button variant="outline" onClick={showOnlineOrders}>
+                  <PackageCheck /> Pedidos online
+                </Button>
+              )}
+            </div>
           </div>
           {error && !modal && (
             <p className="notice" role="alert">
@@ -601,7 +659,7 @@ export default function Workspace() {
           )}
           <footer className="catalog-footer">
             <ScanBarcode size={15} /> Listo para escanear{' '}
-            <span>F2 Buscar · F4 Cliente · F8 Cobrar</span>
+            <span>F2 Buscar · F4 Cliente · F6 Pedidos · F8 Cobrar</span>
           </footer>
         </main>
         <aside className="cart" id="current-cart">
@@ -805,6 +863,8 @@ export default function Workspace() {
           className={
             modal === 'receipt'
               ? 'fraguan-modal receipt-modal'
+              : modal === 'online-orders' || modal === 'online-order'
+                ? 'fraguan-modal pos-online-modal'
               : 'fraguan-modal'
           }
         >
@@ -815,6 +875,10 @@ export default function Workspace() {
                 payment: 'Cobrar venta',
                 receipt: 'Venta completada',
                 recent: 'Ventas recientes',
+                'online-orders': 'Pedidos de la tienda online',
+                'online-order': onlineOrder
+                  ? `Pedido #${onlineOrder.orderNumber}`
+                  : 'Pedido online',
                 refund: 'Cambio o devolución autorizada',
               } as Row
             )[modal] ?? 'FRAGUAN'}
@@ -824,6 +888,10 @@ export default function Workspace() {
               ? 'Elegí cómo paga el cliente.'
               : modal === 'recent'
                 ? 'Consultá un ticket para una operación autorizada.'
+                : modal === 'online-orders'
+                  ? 'Prepará y entregá pedidos pagos con la información necesaria para trabajar.'
+                  : modal === 'online-order'
+                    ? 'Ubicá las prendas y avanzá el pedido sin acceder a datos financieros.'
                 : modal === 'refund'
                   ? 'Ingresá la autorización del responsable y las prendas que vuelven al stock.'
                   : 'FRAGUAN · Punto de venta'}
@@ -1285,6 +1353,89 @@ export default function Workspace() {
               ) : (
                 <p className="empty-state">Todavía no hay ventas recientes.</p>
               )}
+            </div>
+          )}
+          {modal === 'online-orders' && (
+            <div className="pos-online-list">
+              {onlineOrders.length ? (
+                onlineOrders.map((order) => (
+                  <button
+                    key={order.id}
+                    onClick={() => showOnlineOrder(String(order.id))}
+                  >
+                    <span className="pos-online-icon"><Store size={18} /></span>
+                    <span className="pos-online-copy">
+                      <strong>#{order.orderNumber} · {order.customerName}</strong>
+                      <small>
+                        {order.shippingMethod === 'pickup' ? 'Retiro en local' : 'Envío por Correo Argentino'} · {date(order.createdAt)}
+                      </small>
+                    </span>
+                    <span className={`pos-order-status status-${order.fulfillmentStatus}`}>
+                      {{
+                        unfulfilled: 'Por preparar',
+                        preparing: 'Preparando',
+                        ready_pickup: 'Listo para retirar',
+                        shipped: 'Despachado',
+                        delivered: 'Entregado',
+                      }[order.fulfillmentStatus as string] ?? order.fulfillmentStatus}
+                    </span>
+                    <ArrowUpRight size={16} />
+                  </button>
+                ))
+              ) : (
+                <p className="empty-state">No hay pedidos pagos pendientes.</p>
+              )}
+            </div>
+          )}
+          {modal === 'online-order' && onlineOrder && (
+            <div className="pos-online-detail">
+              <div className="pos-online-summary">
+                <span>
+                  <small>Cliente</small>
+                  <strong>{onlineOrder.customerName}</strong>
+                  <small>{onlineOrder.phone}</small>
+                </span>
+                <span>
+                  <small>Entrega</small>
+                  <strong>{onlineOrder.shippingMethod === 'pickup' ? 'Retiro en local' : 'Correo Argentino'}</strong>
+                  {onlineOrder.trackingNumber && <small>{onlineOrder.trackingNumber}</small>}
+                </span>
+              </div>
+              <div className="pos-picking-list">
+                <h3>Prendas a preparar</h3>
+                {onlineOrder.items?.map((item: Row, index: number) => (
+                  <article key={`${item.sku}-${index}`}>
+                    <span>
+                      <strong>{item.productName}</strong>
+                      <small>{item.color} · Talle {item.size} · SKU {item.sku}</small>
+                      <em>{item.location}</em>
+                    </span>
+                    <b>{item.quantity} u.</b>
+                  </article>
+                ))}
+              </div>
+              {onlineOrder.fulfillmentStatus === 'unfulfilled' && (
+                <Button className="activate" disabled={busy} onClick={() => updateOnlineOrder('prepare')}>
+                  <PackageCheck /> {busy ? 'Actualizando…' : 'Empezar preparación'}
+                </Button>
+              )}
+              {onlineOrder.fulfillmentStatus === 'preparing' && onlineOrder.shippingMethod === 'pickup' && (
+                <Button className="activate" disabled={busy} onClick={() => updateOnlineOrder('ready-pickup')}>
+                  <Check /> {busy ? 'Actualizando…' : 'Marcar listo para retirar'}
+                </Button>
+              )}
+              {onlineOrder.fulfillmentStatus === 'ready_pickup' && (
+                <Button className="activate" disabled={busy} onClick={() => updateOnlineOrder('deliver')}>
+                  <Check /> {busy ? 'Actualizando…' : 'Registrar entrega al cliente'}
+                </Button>
+              )}
+              {onlineOrder.fulfillmentStatus === 'preparing' && onlineOrder.shippingMethod !== 'pickup' && (
+                <p className="notice neutral">Administración completará el despacho y el seguimiento de Correo Argentino.</p>
+              )}
+              {['shipped', 'delivered'].includes(onlineOrder.fulfillmentStatus) && (
+                <p className="notice neutral">Este pedido ya fue {onlineOrder.fulfillmentStatus === 'delivered' ? 'entregado' : 'despachado'}.</p>
+              )}
+              <Button variant="ghost" disabled={busy} onClick={showOnlineOrders}>Volver a pedidos</Button>
             </div>
           )}
         </DialogContent>

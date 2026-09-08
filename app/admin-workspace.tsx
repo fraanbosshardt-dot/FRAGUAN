@@ -368,6 +368,9 @@ const labels: Record<string, string> = {
   preparing: 'Preparando',
   shipped: 'Despachado',
   unfulfilled: 'Pendiente',
+  ready_pickup: 'Listo para retirar',
+  delivered: 'Entregado',
+  completed: 'Completado',
   transfer: 'Transferencia',
   card: 'Tarjeta',
   withdrawal: 'Arrepentimiento',
@@ -3360,7 +3363,8 @@ export default function Admin({ section }: { section: string }) {
                   </Button>
                 )}
               {selected.paymentStatus === 'paid' &&
-                selected.fulfillmentStatus === 'preparing' && (
+                selected.fulfillmentStatus === 'preparing' &&
+                selected.shippingMethod !== 'pickup' && (
                   <div className="online-order-action">
                     {field('trackingNumber', 'Seguimiento de Correo Argentino')}
                     <Button
@@ -3376,6 +3380,35 @@ export default function Admin({ section }: { section: string }) {
                       Marcar despachado
                     </Button>
                   </div>
+                )}
+              {selected.paymentStatus === 'paid' &&
+                selected.fulfillmentStatus === 'preparing' &&
+                selected.shippingMethod === 'pickup' && (
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      mutate('online-orders', {
+                        action: 'ready-pickup',
+                        orderId: selected.id,
+                      })
+                    }
+                  >
+                    <Check /> Marcar listo para retirar
+                  </Button>
+                )}
+              {selected.paymentStatus === 'paid' &&
+                selected.fulfillmentStatus === 'ready_pickup' && (
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      mutate('online-orders', {
+                        action: 'deliver',
+                        orderId: selected.id,
+                      })
+                    }
+                  >
+                    <Check /> Registrar entrega al cliente
+                  </Button>
                 )}
             </div>
           ) : modal === 'labels' && selected ? (

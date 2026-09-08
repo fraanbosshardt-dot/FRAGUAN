@@ -92,8 +92,10 @@ import {
   createOnlineOrder,
   createOnlineReturnRequest,
   listOnlineOrders,
+  listPosOnlineOrders,
   listOnlineCatalog,
   onlineOrderWrite,
+  posOnlineOrderWrite,
   onlineCatalogWrite,
   publicOnlineOrder,
   reportTransfer,
@@ -221,6 +223,7 @@ export async function GET(
           'newsletter',
           'seller-commissions',
           'online-orders',
+          'pos-online-orders',
           'online-catalog',
           'marketing',
         ].filter((p) => can(a, p)),
@@ -233,6 +236,8 @@ export async function GET(
     if (resource === 'storage') return reply(await storageOverview(a));
     if (resource === 'online-orders')
       return reply(await listOnlineOrders(a, url.searchParams.get('id') ?? ''));
+    if (resource === 'pos-online-orders')
+      return reply(await listPosOnlineOrders(a, url.searchParams.get('id') ?? ''));
     if (resource === 'online-catalog') return reply(await listOnlineCatalog(a));
     if (resource === 'newsletter') return reply(await newsletterOverview(a));
     if (resource === 'marketing') return reply(await storeGrowthDashboard(a));
@@ -649,6 +654,8 @@ export async function POST(
     if (resource === 'storage') return reply(await storageWrite(a, body), 201);
     if (resource === 'online-orders')
       return reply(await onlineOrderWrite(a, body));
+    if (resource === 'pos-online-orders')
+      return reply(await posOnlineOrderWrite(a, body));
     if (resource === 'online-catalog')
       return reply(await onlineCatalogWrite(a, body));
     if (resource === 'newsletter')

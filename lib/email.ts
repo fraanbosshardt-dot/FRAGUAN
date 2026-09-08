@@ -125,7 +125,7 @@ export async function sendMarketingEmail(input: {
 
 export async function sendOrderEmails(
   orderId: string,
-  event: 'created' | 'paid' | 'preparing' | 'shipped',
+  event: 'created' | 'paid' | 'preparing' | 'ready_pickup' | 'shipped' | 'delivered',
 ) {
   const order = await one<Record<string, any>>(
     'SELECT * FROM online_orders WHERE id=?',
@@ -136,7 +136,9 @@ export async function sendOrderEmails(
     created: 'RECIBIMOS TU PEDIDO.',
     paid: 'PAGO CONFIRMADO.',
     preparing: 'ESTAMOS PREPARANDO TU COMPRA.',
+    ready_pickup: 'TU PEDIDO ESTÁ LISTO.',
     shipped: 'TU PEDIDO YA SALIÓ.',
+    delivered: 'PEDIDO ENTREGADO.',
   } as const;
   const statusText =
     event === 'created'
@@ -145,7 +147,11 @@ export async function sendOrderEmails(
         ? `Confirmamos el pago del pedido <strong>#${order.orderNumber}</strong>. Ya quedó en nuestra cola de preparación.`
         : event === 'preparing'
           ? `El pedido <strong>#${order.orderNumber}</strong> está siendo preparado por el equipo FRAGUAN.`
-          : `Despachamos el pedido <strong>#${order.orderNumber}</strong>. Seguimiento: <strong>${escapeHtml(order.trackingNumber || 'se informará pronto')}</strong>.`;
+          : event === 'ready_pickup'
+            ? `El pedido <strong>#${order.orderNumber}</strong> ya está listo para retirar en FRAGUAN. Presentá tu documento al buscarlo.`
+            : event === 'shipped'
+              ? `Despachamos el pedido <strong>#${order.orderNumber}</strong>. Seguimiento: <strong>${escapeHtml(order.trackingNumber || 'se informará pronto')}</strong>.`
+              : `El pedido <strong>#${order.orderNumber}</strong> fue entregado. Gracias por elegir FRAGUAN.`;
   const html = emailFrame(
     titles[event],
     `Actualización del pedido #${order.orderNumber}`,
