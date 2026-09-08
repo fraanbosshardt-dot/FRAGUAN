@@ -108,37 +108,37 @@ export default function Storefront() {
       <main>
         <section className="store-hero">
           <div className="store-hero-kicker">
-            <span>FRG / 26</span>
-            <span>BUENOS AIRES</span>
+            <span>FRAGUAN / ARGENTINA</span>
+            <span>NUEVA TEMPORADA</span>
           </div>
           <h1>
-            VESTIR
+            FORJÁ
             <br />
-            <em>SE SIENTE.</em>
+            <em>TU ESTILO.</em>
           </h1>
           <div className="store-hero-bottom">
             <p>
-              Prendas que entran fácil en tu vida y se quedan. Elegí tu talle,
-              tu color y seguí.
+              Hecho para usarlo a tu manera. Elegí tu talle, tu color y armá
+              un estilo propio.
             </p>
             <a href="#coleccion">
               Ver colección <ArrowDown />
             </a>
           </div>
           <div className="store-orbit" aria-hidden="true">
-            <span>NUEVA TEMPORADA · FRAGUAN ·</span>
+            <span>HECHO PARA USARLO A TU MANERA ·</span>
           </div>
         </section>
         <div className="store-marquee" aria-hidden="true">
           <span>
-            HECHO PARA MOVERTE — SIMPLE PARA COMBINAR — HECHO PARA MOVERTE —
-            SIMPLE PARA COMBINAR —{' '}
+            NUEVO DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES —
+            NUEVO DROP — HECHO PARA USARLO A TU MANERA — BUENOS AIRES —{' '}
           </span>
         </div>
         <section className="store-worlds" aria-label="Colecciones FRAGUAN">
           <header>
             <span>ENTRÁ POR TU ESTILO</span>
-            <h2>Una forma distinta de elegir.</h2>
+            <h2>Vestirse también es una forma de decir quién sos.</h2>
           </header>
           <div>
             <a href="/tienda?section=Nuevos">

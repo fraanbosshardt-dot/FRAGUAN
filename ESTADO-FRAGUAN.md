@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 7 de septiembre de 2026.
+Actualizado: 8 de septiembre de 2026.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -10,6 +10,12 @@ Logo oficial recibido: isotipo circular negro con monograma `FG` en marfil y log
 `FRAGUAN`. Su aplicación está prevista para la tienda online, POS, administración,
 comprobantes, emails de Resend, favicon y packaging. La decisión de no usar fotos de
 productos se mantiene; el logo es un activo de marca.
+
+La tienda ya aplica la dirección editorial acordada: fondos hueso y crema, carbón como
+contraste principal, arena y acero para grandes superficies, y cobre usado de forma puntual.
+Los titulares son más grandes y condensados, los textos operativos mantienen tamaños
+legibles y el catálogo se compactó a cuatro columnas en escritorio. La especificación
+completa está en `BRANDING-FRAGUAN.md`.
 
 ## Estado general
 
@@ -104,11 +110,11 @@ Mantener datos reales fuera del entorno demo hasta completar la puesta en produc
 
 ## Punto de reanudación
 
-Cuando se restablezca el límite diario, continuar en este orden: importar `main` en Vercel,
-decidir el runtime definitivo (D1/Cloudflare o una base compatible con Vercel), crear la
-base productiva y ejecutar las migraciones hasta `0018`, configurar Google Auth, Mercado
-Pago, Correo Argentino y Resend, cargar sus variables secretas, conectar `fraguan.com`,
-integrar el logo oficial en `public/` y ejecutar QA visual y pruebas de checkout/envío.
+Continuar con QA visual local y pruebas de checkout/envío. Cuando el usuario habilite la
+etapa de integraciones, decidir el runtime definitivo (D1/Cloudflare o una base compatible
+con Vercel), crear la base productiva y ejecutar las migraciones hasta `0018`, configurar
+Google Auth, Mercado Pago, Correo Argentino y Resend, cargar sus variables secretas y
+conectar `fraguan.com`.
 
 El diseño de referencia queda registrado: inspiración conceptual COS, SSENSE, Zara,
 MILFSHAKES y Represent/Fear of God, con identidad propia FRAGUAN. Se mantiene la decisión

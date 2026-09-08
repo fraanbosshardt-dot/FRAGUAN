@@ -3,7 +3,7 @@ import { ArrowUpRight, Heart } from 'lucide-react';
 import { useState } from 'react';
 import { StoreProduct, storeMoney, useStoreCart, useStoreFavorites } from '@/lib/store-client';
 
-const tones = ['acid', 'ink', 'clay', 'forest', 'silver', 'ink'];
+const tones = ['sand', 'ink', 'copper', 'cement', 'steel', 'bone'];
 export function StoreProductCard({
   product,
   index = 0,

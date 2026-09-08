@@ -252,7 +252,7 @@
   margin-bottom: 70px;
 }
 .store-information > header > span {
-  color: var(--store-green);
+  color: var(--store-steel);
   font-size: 13px;
   font-weight: 850;
   letter-spacing: .15em;
@@ -2647,21 +2647,37 @@ textarea {
 
 /* Tienda online: dirección editorial, alto contraste y catálogo sin fotos. */
 .store-shell {
-  --store-ink: #111210;
-  --store-paper: #f5f2e9;
-  --store-acid: #d8ff45;
-  --store-green: #344d35;
-  --store-clay: #e65f3d;
-  --store-line: #c8c7c0;
+  --store-ink: #151512;
+  --store-charcoal: #151512;
+  --store-paper: #f1ede4;
+  --store-bone: #e8e2d7;
+  --store-cream: #faf7f0;
+  --store-sand: #c8b79c;
+  --store-steel: #6f7472;
+  --store-concrete: #bebcb5;
+  --store-copper: #a55b35;
+  --store-line: #b9b5ac;
   min-height: 100vh;
   overflow: hidden;
-  background: var(--store-paper);
+  background-color: var(--store-paper);
+  background-image: radial-gradient(rgba(21, 21, 18, 0.035) 0.6px, transparent 0.6px);
+  background-size: 7px 7px;
   color: var(--store-ink);
-  font-family: 'Segoe UI Variable', 'Aptos', Arial, sans-serif;
+  font-family: 'Helvetica Neue', 'Aptos', 'Segoe UI Variable', Arial, sans-serif;
 }
 .store-shell a {
   color: inherit;
   text-decoration: none;
+}
+.store-shell button,
+.store-shell input,
+.store-shell select,
+.store-shell textarea {
+  font: inherit;
+}
+.store-shell :focus-visible {
+  outline: 2px solid var(--store-copper);
+  outline-offset: 3px;
 }
 .store-promo {
   height: 31px;
@@ -2669,8 +2685,8 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: var(--store-acid);
-  color: #101110;
+  background: var(--store-bone);
+  color: var(--store-charcoal);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -2682,9 +2698,11 @@ textarea {
   align-items: center;
   padding: 0 clamp(20px, 4vw, 68px);
   border-bottom: 1px solid #242524;
-  background: var(--store-ink);
-  color: white;
-  position: relative;
+  background: rgba(21, 21, 18, 0.96);
+  color: var(--store-cream);
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(18px);
   z-index: 20;
 }
 .store-logo {
@@ -2716,7 +2734,7 @@ textarea {
   position: absolute;
   inset: auto 0 -7px;
   height: 2px;
-  background: var(--store-acid);
+  background: var(--store-copper);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.2s;
@@ -2776,8 +2794,8 @@ textarea {
   display: grid;
   place-items: center;
   padding: 0 4px;
-  background: var(--store-acid);
-  color: #111;
+  background: var(--store-copper);
+  color: var(--store-cream);
   font-size: 10px;
   font-weight: 850;
 }
@@ -2793,7 +2811,7 @@ textarea {
   padding: clamp(28px, 4vw, 65px) clamp(20px, 4vw, 68px) 46px;
   overflow: hidden;
   background: var(--store-ink);
-  color: white;
+  color: var(--store-cream);
 }
 .store-hero::after {
   content: '';
@@ -2802,8 +2820,8 @@ textarea {
   height: 100%;
   right: 10vw;
   top: 0;
-  border-left: 1px solid #363736;
-  border-right: 1px solid #363736;
+  border-left: 1px solid #3b3933;
+  border-right: 1px solid #3b3933;
   transform: skew(-11deg);
   pointer-events: none;
 }
@@ -2822,12 +2840,13 @@ textarea {
   margin: auto 0;
   font-size: clamp(74px, 13.2vw, 205px);
   line-height: 0.74;
-  font-weight: 950;
+  font-family: 'Arial Narrow', 'Aptos Display', 'Helvetica Neue', sans-serif;
+  font-weight: 900;
   letter-spacing: -0.085em;
   animation: store-rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .store-hero h1 em {
-  color: var(--store-acid);
+  color: var(--store-copper);
   font-style: normal;
 }
 .store-hero-bottom {
@@ -2851,7 +2870,7 @@ textarea {
   min-width: 220px;
   justify-content: space-between;
   padding: 16px 0;
-  border-bottom: 1px solid var(--store-acid);
+  border-bottom: 1px solid var(--store-copper);
   font-size: 14px;
   font-weight: 750;
 }
@@ -2867,7 +2886,7 @@ textarea {
   border: 1px solid #5c5e59;
   border-radius: 50%;
   background: var(--store-ink);
-  color: var(--store-acid);
+  color: var(--store-sand);
 }
 .store-orbit span {
   width: 90px;
@@ -2881,7 +2900,7 @@ textarea {
 .store-marquee {
   overflow: hidden;
   border-bottom: 1px solid var(--store-ink);
-  background: var(--store-acid);
+  background: var(--store-sand);
   white-space: nowrap;
 }
 .store-marquee span {
@@ -2913,6 +2932,7 @@ textarea {
   font-size: clamp(42px, 6vw, 82px);
   line-height: .92;
   letter-spacing: -.06em;
+  font-family: 'Arial Narrow', 'Aptos Display', 'Helvetica Neue', sans-serif;
 }
 .store-worlds > div {
   display: grid;
@@ -2929,8 +2949,8 @@ textarea {
   background: var(--store-paper);
   transition: background .2s, color .2s;
 }
-.store-worlds a:nth-child(2) { background: var(--store-green); color: white; }
-.store-worlds a:nth-child(3) { background: var(--store-acid); color: var(--store-ink); }
+.store-worlds a:nth-child(2) { background: var(--store-steel); color: var(--store-cream); }
+.store-worlds a:nth-child(3) { background: var(--store-sand); color: var(--store-ink); }
 .store-worlds a:hover { background: var(--store-ink); color: white; }
 .store-worlds a small { font-size: 12px; font-weight: 800; letter-spacing: .08em; }
 .store-worlds a strong { margin: auto 0; font-size: clamp(35px, 5vw, 70px); line-height: .9; letter-spacing: -.06em; }
@@ -2958,6 +2978,7 @@ textarea {
   line-height: 0.9;
   font-weight: 900;
   letter-spacing: -0.065em;
+  font-family: 'Arial Narrow', 'Aptos Display', 'Helvetica Neue', sans-serif;
 }
 .store-section-head > p {
   font-size: 14px;
@@ -3054,7 +3075,7 @@ textarea {
 .store-check-filter input {
   width: 18px;
   height: 18px;
-  accent-color: var(--store-green);
+  accent-color: var(--store-copper);
 }
 .store-sort {
   margin-left: auto;
@@ -3072,7 +3093,7 @@ textarea {
 }
 .store-product-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   background: var(--store-ink);
   border: 1px solid var(--store-ink);
@@ -3123,10 +3144,10 @@ textarea {
 }
 .store-favorite-button.active {
   background: var(--store-ink);
-  color: var(--store-acid);
+  color: var(--store-sand);
 }
 .store-product-art {
-  height: clamp(245px, 31vw, 470px);
+  height: clamp(220px, 23vw, 350px);
   position: relative;
   display: flex;
   align-items: center;
@@ -3157,7 +3178,7 @@ textarea {
 .store-product-art > strong {
   position: relative;
   z-index: 1;
-  font-size: clamp(68px, 9vw, 140px);
+  font-size: clamp(64px, 7vw, 112px);
   font-weight: 950;
   letter-spacing: -0.09em;
   transform: rotate(-7deg);
@@ -3177,25 +3198,29 @@ textarea {
   text-transform: uppercase;
   writing-mode: vertical-rl;
 }
-.store-product-card.acid .store-product-art {
-  background: var(--store-acid);
-  color: #101110;
-}
 .store-product-card.ink .store-product-art {
-  background: #242524;
-  color: #f5f3ed;
+  background: #282823;
+  color: var(--store-cream);
 }
-.store-product-card.clay .store-product-art {
-  background: var(--store-clay);
-  color: #1b1512;
+.store-product-card.sand .store-product-art {
+  background: var(--store-sand);
+  color: var(--store-charcoal);
 }
-.store-product-card.forest .store-product-art {
-  background: var(--store-green);
-  color: var(--store-paper);
+.store-product-card.copper .store-product-art {
+  background: var(--store-copper);
+  color: var(--store-cream);
 }
-.store-product-card.silver .store-product-art {
-  background: #d5d5d0;
-  color: #222;
+.store-product-card.cement .store-product-art {
+  background: var(--store-concrete);
+  color: var(--store-charcoal);
+}
+.store-product-card.steel .store-product-art {
+  background: var(--store-steel);
+  color: var(--store-cream);
+}
+.store-product-card.bone .store-product-art {
+  background: var(--store-bone);
+  color: var(--store-charcoal);
 }
 .store-product-copy {
   padding: 19px 18px 22px;
@@ -3245,7 +3270,7 @@ textarea {
   min-height: 52px;
   padding: 8px 14px;
   border-top: 1px solid var(--store-line);
-  background: #ebe8df;
+  background: var(--store-bone);
 }
 .store-quick-add > span {
   color: #62645f;
@@ -3312,7 +3337,7 @@ textarea {
   position: relative;
 }
 .store-club-band > span {
-  color: var(--store-acid);
+  color: var(--store-sand);
   font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.17em;
@@ -3324,6 +3349,7 @@ textarea {
   line-height: 0.82;
   font-weight: 900;
   letter-spacing: -0.07em;
+  font-family: 'Arial Narrow', 'Aptos Display', 'Helvetica Neue', sans-serif;
 }
 .store-club-band p {
   max-width: 500px;
@@ -3338,7 +3364,7 @@ textarea {
   gap: 50px;
   margin-top: 40px;
   padding: 15px 0;
-  border-bottom: 1px solid var(--store-acid);
+  border-bottom: 1px solid var(--store-copper);
   font-weight: 800;
 }
 .store-footer {
@@ -3346,8 +3372,8 @@ textarea {
   grid-template-columns: 1fr 1fr 1fr;
   gap: 30px;
   padding: 60px clamp(20px, 4vw, 68px);
-  background: var(--store-acid);
-  color: #111;
+  background: var(--store-sand);
+  color: var(--store-charcoal);
 }
 .store-footer > a {
   font-size: 32px;
@@ -3477,7 +3503,7 @@ textarea {
 .store-shipping-progress > i > b {
   display: block;
   height: 100%;
-  background: var(--store-green);
+  background: var(--store-copper);
   transition: width .25s ease;
 }
 .store-cart-total > strong {
@@ -3507,8 +3533,8 @@ textarea {
   z-index: 100;
   inset: 0;
   padding: 25px;
-  background: var(--store-acid);
-  color: #101110;
+  background: var(--store-bone);
+  color: var(--store-charcoal);
   animation: store-menu 0.25s ease-out;
 }
 .store-mobile-menu > button {
@@ -3724,7 +3750,7 @@ textarea {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--store-acid);
+  background: var(--store-sand);
   border-right: 1px solid var(--store-ink);
 }
 .store-detail-art::before,
@@ -3805,7 +3831,7 @@ textarea {
 }
 .store-detail-price span {
   padding: 7px 10px;
-  background: var(--store-acid);
+  background: var(--store-bone);
   font-size: 12px;
   font-weight: 800;
 }
@@ -3843,7 +3869,7 @@ textarea {
 }
 .store-color-options button.active {
   border-color: #111;
-  box-shadow: inset 0 -3px var(--store-acid);
+  box-shadow: inset 0 -3px var(--store-copper);
 }
 .store-size-options button {
   min-width: 70px;
@@ -3914,7 +3940,7 @@ textarea {
   font-weight: 850;
 }
 .store-add-button.added {
-  background: #416335;
+  background: var(--store-steel);
 }
 .store-detail-favorite {
   width: 100%;
@@ -4065,7 +4091,7 @@ textarea {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--store-acid);
+  background: var(--store-sand);
   font-size: 12px;
   font-weight: 850;
 }
@@ -4110,7 +4136,7 @@ textarea {
 .store-report-transfer input:focus,
 .store-login input:focus {
   border-color: #111;
-  box-shadow: 0 0 0 2px var(--store-acid);
+  box-shadow: 0 0 0 2px var(--store-copper);
 }
 .store-choice-row {
   display: grid;
@@ -4130,7 +4156,7 @@ textarea {
 }
 .store-choice-row button.active {
   border: 2px solid #111;
-  box-shadow: inset 0 -5px var(--store-acid);
+  box-shadow: inset 0 -5px var(--store-copper);
 }
 .store-choice-row svg {
   width: 20px;
@@ -4171,7 +4197,7 @@ textarea {
 }
 .store-payment-choice button.active {
   border: 2px solid #111;
-  box-shadow: inset 5px 0 var(--store-acid);
+  box-shadow: inset 5px 0 var(--store-copper);
 }
 .store-payment-choice button > span {
   display: grid;
@@ -4244,7 +4270,7 @@ textarea {
   font-size: 14px;
 }
 .store-order-summary dl > .discount {
-  color: #41652f;
+  color: var(--store-copper);
   font-weight: 750;
 }
 .store-order-summary dl > .total {
@@ -4266,7 +4292,7 @@ textarea {
   place-items: center;
   margin: 0 auto 25px;
   border-radius: 50%;
-  background: var(--store-acid);
+  background: var(--store-sand);
 }
 .store-order-success > span {
   font-size: 12px;
@@ -4313,7 +4339,7 @@ textarea {
   justify-content: space-between;
   padding: 13px;
   border: 0;
-  background: var(--store-acid);
+  background: var(--store-copper);
   font-size: 18px;
   font-weight: 900;
   cursor: pointer;
@@ -4447,11 +4473,11 @@ textarea {
   gap: clamp(30px, 6vw, 90px);
   margin-top: 80px;
   padding: clamp(25px, 5vw, 55px);
-  background: var(--store-green);
+  background: var(--store-charcoal);
   color: white;
 }
 .store-account-profile > div > span {
-  color: var(--store-acid);
+  color: var(--store-sand);
   font-size: 12px;
   font-weight: 850;
   letter-spacing: .14em;
@@ -4484,7 +4510,7 @@ textarea {
 }
 .store-account-profile .wide { grid-column: 1 / -1; }
 .store-account-profile .store-consent { display: flex; align-items: center; }
-.store-account-profile .store-auth-submit { background: var(--store-acid); color: var(--store-ink); }
+.store-account-profile .store-auth-submit { background: var(--store-sand); color: var(--store-ink); }
 @media (max-width: 760px) {
   .store-account-profile { grid-template-columns: 1fr; }
   .store-account-profile form { grid-template-columns: 1fr; }
@@ -4754,7 +4780,7 @@ textarea {
   display: grid;
   gap: 4px;
   padding: 18px;
-  background: var(--store-acid);
+  background: var(--store-sand);
   color: var(--store-ink);
 }
 .store-size-result span,
@@ -4803,13 +4829,13 @@ textarea {
   color: #8a8c86;
 }
 .store-tracking-steps article:last-child { border-right: 0; }
-.store-tracking-steps article.done { background: var(--store-green); color: white; }
+.store-tracking-steps article.done { background: var(--store-steel); color: white; }
 .store-tracking-steps svg { width: 22px; }
 .store-tracking-number {
   display: flex;
   justify-content: space-between;
   padding: 18px;
-  background: var(--store-acid);
+  background: var(--store-sand);
 }
 .store-tracking-grid {
   display: grid;
@@ -4956,5 +4982,105 @@ textarea {
   .online-picking-list > div,
   .online-order-action {
     grid-template-columns: 1fr;
+  }
+}
+
+/* FRAGUAN 2026: sistema visual hueso, arena, carbón, acero y cobre. */
+.store-shell h1,
+.store-shell h2,
+.store-shell h3,
+.store-logo,
+.store-footer > a {
+  font-family: 'Arial Narrow', 'Aptos Display', 'Helvetica Neue', sans-serif;
+}
+.store-shell h1,
+.store-shell h2 {
+  text-wrap: balance;
+}
+.store-detail-buy,
+.store-order-summary,
+.store-account-metrics article,
+.store-login-form,
+.store-transfer-box,
+.store-payment-pending,
+.store-fields input,
+.store-notes textarea,
+.store-report-transfer input,
+.store-login input,
+.store-choice-row button,
+.store-payment-choice button,
+.store-color-options button,
+.store-size-options button,
+.store-quantity button {
+  background-color: var(--store-cream);
+}
+.store-product-card,
+.store-product-copy,
+.store-checkout-form > section,
+.store-checkout-form > .store-notes,
+.store-checkout-form > .store-buy-error,
+.store-checkout-form > .store-confirm-order,
+.store-checkout-form > .store-secure,
+.store-tracking-grid > div,
+.store-tracking-grid aside {
+  background-color: var(--store-paper);
+}
+.store-product-card,
+.store-worlds a,
+.store-service-band > div,
+.store-choice-row button,
+.store-payment-choice button {
+  transition: transform 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+.store-product-card:hover {
+  z-index: 2;
+  box-shadow: 0 18px 48px rgba(21, 21, 18, 0.16);
+  transform: translateY(-3px);
+}
+.store-add-button:hover,
+.store-confirm-order:hover:not(:disabled),
+.store-auth-submit:hover,
+.store-cart-total > a:hover {
+  background: #2c2c27;
+}
+.store-detail-buy h1,
+.store-checkout-heading h1,
+.store-account header h1,
+.store-order-success > h1,
+.store-related h2 {
+  font-family: 'Arial Narrow', 'Aptos Display', 'Helvetica Neue', sans-serif;
+}
+
+@media (max-width: 1200px) and (min-width: 901px) {
+  .store-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .store-product-art {
+    height: clamp(230px, 30vw, 350px);
+  }
+}
+
+@media (max-width: 900px) {
+  .store-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .store-detail-art {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 600px) {
+  .store-hero h1 {
+    font-size: clamp(56px, 18vw, 86px);
+    letter-spacing: -0.075em;
+  }
+  .store-product-grid {
+    grid-template-columns: 1fr;
+  }
+  .store-product-art {
+    height: min(88vw, 360px);
+  }
+  .store-product-copy h3 {
+    font-size: 21px;
   }
 }
