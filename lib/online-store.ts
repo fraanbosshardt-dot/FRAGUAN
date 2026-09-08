@@ -884,7 +884,13 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
         'Una variante cambió de stock. Revisá el carrito.',
       );
     lines.push({ ...variant, quantity: item.quantity });
-    subtotal += Number(variant.price) * item.quantity;
+    const unitPrice = Number(variant.price);
+    if (!Number.isSafeInteger(unitPrice) || unitPrice <= 0)
+      throw new AppError(409, 'El precio online debe revisarse antes de vender.');
+    const lineTotal = unitPrice * item.quantity;
+    if (!Number.isSafeInteger(lineTotal))
+      throw new AppError(400, 'El importe del pedido está fuera de rango.');
+    subtotal += lineTotal;
   }
   const coupon = await onlineCouponDiscount(lines, input.couponCode, input.paymentMethod);
   const transferDiscount = input.paymentMethod === 'transfer' ? Math.floor(subtotal * 0.1) : 0;
@@ -896,6 +902,13 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
     lines.reduce((sum, line) => sum + line.quantity, 0),
   );
   const total = subtotal - discount + shipping.amount;
+  if (
+    ![subtotal, coupon.discount, transferDiscount, discount, shipping.amount, total].every(
+      (amount) => Number.isSafeInteger(amount) && amount >= 0,
+    ) ||
+    total <= 0
+  )
+    throw new AppError(400, 'El importe del pedido no es válido.');
   const orderNumber = Number(
     (
       await one<{ next: number }>(
@@ -1122,22 +1135,28 @@ export async function reportTransfer(req: Request, raw: unknown) {
   );
   if (!order) throw new AppError(404, 'Pedido no encontrado.');
   if (order.paymentStatus === 'paid') return onlineOrderDetail(input.orderId);
-  await db().batch([
-    statement(
-      "UPDATE online_orders SET paymentStatus='reported',paymentReference=?,updatedAt=? WHERE id=?",
-      input.transactionId,
-      now(),
-      input.orderId,
-    ),
-    statement(
-      'INSERT INTO online_order_events(id,orderId,kind,detail,createdAt) VALUES (?,?,?,?,?)',
-      id(),
-      input.orderId,
-      'transfer_reported',
-      input.transactionId,
-      now(),
-    ),
-  ]);
+  try {
+    await db().batch([
+      statement(
+        "UPDATE online_orders SET paymentStatus='reported',paymentReference=?,updatedAt=? WHERE id=?",
+        input.transactionId,
+        now(),
+        input.orderId,
+      ),
+      statement(
+        'INSERT INTO online_order_events(id,orderId,kind,detail,createdAt) VALUES (?,?,?,?,?)',
+        id(),
+        input.orderId,
+        'transfer_reported',
+        input.transactionId,
+        now(),
+      ),
+    ]);
+  } catch (cause) {
+    if (/UNIQUE/i.test(String((cause as any)?.message ?? cause)))
+      throw new AppError(409, 'Ese comprobante ya fue informado en otro pedido.');
+    throw cause;
+  }
   return onlineOrderDetail(input.orderId);
 }
 
@@ -1364,6 +1383,10 @@ export async function confirmOnlinePayment(
   );
   if (!order) throw new AppError(404, 'Pedido no encontrado.');
   if (order.paymentStatus === 'paid') return onlineOrderDetail(orderId);
+  if (order.status === 'cancelled' || order.fulfillmentStatus === 'cancelled')
+    throw new AppError(409, 'Un pedido cancelado no puede acreditarse.');
+  if (!Number.isSafeInteger(Number(order.total)) || Number(order.total) <= 0)
+    throw new AppError(409, 'El total guardado del pedido no es válido.');
   if (Date.parse(order.expiresAt) <= Date.now())
     throw new AppError(
       409,
@@ -1373,6 +1396,19 @@ export async function confirmOnlinePayment(
     'SELECT * FROM online_order_items WHERE orderId=?',
     orderId,
   );
+  const activeReservations = await one<{ total: number }>(
+    `SELECT COUNT(*) AS total
+       FROM online_order_items oi
+       JOIN stock_reservations r ON r.orderId=oi.orderId AND r.variantId=oi.variantId
+      WHERE oi.orderId=? AND r.status='active' AND r.quantity=oi.quantity AND r.expiresAt>?`,
+    orderId,
+    now(),
+  );
+  if (!items.length || Number(activeReservations?.total ?? 0) !== items.length)
+    throw new AppError(
+      409,
+      'La reserva de stock ya no está activa. Revisá el pedido antes de cobrar.',
+    );
   const saleId = id(),
     timestamp = now();
   const commands = [
@@ -1513,7 +1549,16 @@ export async function confirmOnlinePayment(
         ),
       );
   }
-  await db().batch(commands);
+  try {
+    await db().batch(commands);
+  } catch (cause) {
+    if (/UNIQUE/i.test(String((cause as any)?.message ?? cause)))
+      throw new AppError(
+        409,
+        'La referencia de pago ya fue utilizada o el pedido ya fue acreditado.',
+      );
+    throw cause;
+  }
   try {
     const attribution = JSON.parse(order.attributionJson || '{}');
     if (attribution.sessionId) await statement(
@@ -1556,13 +1601,23 @@ export async function confirmOnlinePaymentWebhook(input: {
   if (previous) return { ok: true, duplicate: true };
   if (!['approved', 'paid', 'accredited'].includes(input.status.toLowerCase()))
     return { ok: true, ignored: true };
-  const order = await one<Record<string, any>>(
-    'SELECT id,total FROM online_orders WHERE transferReference=? OR paymentReference=?',
+  const expectedMethod = input.provider === 'mercadopago' ? 'card' : 'transfer';
+  const matches = await rows<Record<string, any>>(
+    `SELECT id,total,paymentMethod FROM online_orders
+      WHERE transferReference=? OR paymentReference=?`,
     input.reference,
     input.reference,
   );
-  if (!order)
+  if (!matches.length)
     throw new AppError(404, 'No existe un pedido para esa referencia.');
+  const methodMatches = matches.filter(
+    (candidate) => candidate.paymentMethod === expectedMethod,
+  );
+  if (!methodMatches.length)
+    throw new AppError(409, 'El proveedor no corresponde al medio de pago del pedido.');
+  if (methodMatches.length !== 1)
+    throw new AppError(409, 'La referencia coincide con más de un pedido y requiere revisión.');
+  const order = methodMatches[0];
   if (Number(order.total) !== input.amount)
     throw new AppError(409, 'El importe recibido no coincide con el pedido.');
   const owner = await one<Actor>(
@@ -1599,6 +1654,7 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
           action: z.literal('mark-paid'),
           orderId: z.uuid(),
           paymentReference: z.string().trim().min(3).max(120),
+          confirmedAmount: z.number().int().positive(),
         })
         .strict(),
       z.object({ action: z.literal('prepare'), orderId: z.uuid() }).strict(),
@@ -1620,8 +1676,18 @@ export async function onlineOrderWrite(actor: Actor, raw: unknown) {
         .strict(),
     ])
     .parse(raw);
-  if (input.action === 'mark-paid')
+  if (input.action === 'mark-paid') {
+    const pending = await one<{ paymentMethod: string; total: number }>(
+      'SELECT paymentMethod,total FROM online_orders WHERE id=?',
+      input.orderId,
+    );
+    if (!pending) throw new AppError(404, 'Pedido no encontrado.');
+    if (pending.paymentMethod !== 'transfer')
+      throw new AppError(409, 'Los pagos con tarjeta se confirman desde Mercado Pago.');
+    if (Number(pending.total) !== input.confirmedAmount)
+      throw new AppError(409, 'El importe acreditado no coincide con el total del pedido.');
     return confirmOnlinePayment(actor, input.orderId, input.paymentReference);
+  }
   if (input.action === 'ready-pickup' || input.action === 'deliver')
     return posOnlineOrderWrite(actor, input);
   const order = await one<Record<string, any>>(

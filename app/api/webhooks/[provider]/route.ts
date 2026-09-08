@@ -58,6 +58,8 @@ async function mercadoPagoEvent(req: Request, raw: any) {
   if (!response.ok)
     throw new AppError(502, 'No pudimos verificar el pago en Mercado Pago.');
   const payment: any = await response.json();
+  if (payment.currency_id !== 'ARS')
+    throw new AppError(409, 'La moneda informada por Mercado Pago no es ARS.');
   return confirmOnlinePaymentWebhook({
     provider: 'mercadopago',
     eventId: `mercadopago:${String(raw?.id ?? paymentId)}:${String(payment.status)}`,

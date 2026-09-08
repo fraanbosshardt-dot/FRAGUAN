@@ -51,6 +51,7 @@ test('online checkout reserves stock, identifies transfers and becomes one conne
     action: 'mark-paid',
     orderId: order.id,
     paymentReference: 'BANK-778899',
+    confirmedAmount: order.total,
   });
   assert.equal(
     f.database.prepare("SELECT stock FROM variants WHERE id='variant'").get()
@@ -241,6 +242,87 @@ test('signed-provider callback reconciles a transfer once by reference and amoun
       .prepare('SELECT COUNT(*) AS total FROM sales WHERE onlineOrderId=?')
       .get(order.id).total,
     1,
+  );
+});
+
+test('payment integrity rejects wrong amounts, reused references, cancelled orders and provider mismatch', async (t) => {
+  const f = fixture(t);
+  f.database.exec(`
+    INSERT INTO online_product_profiles(productId,slug,shortDescription,description,fit,section,updatedAt)
+    VALUES ('product','camisa-integridad','Una camisa lista para todos los días.','Descripción completa de la camisa para comprar online.','Regular','Camisas','2026-01-01T12:00:00Z');
+    INSERT INTO payment_methods(id,name) VALUES ('transfer','Transferencia'),('credit','Tarjeta');
+    INSERT INTO settings(key,value) VALUES ('owner','test@example.test');
+  `);
+  const store = f.load('lib/online-store.ts');
+  const request = new Request('http://localhost');
+  const input = (paymentMethod = 'transfer') => ({
+    items: [{ variantId: 'variant', quantity: 1 }],
+    email: 'integridad@example.com',
+    customerName: 'Integridad Pago',
+    phone: '1122334455',
+    paymentMethod,
+    shippingMethod: 'pickup',
+    postalCode: '1000',
+    address: 'Retiro en local',
+    city: 'Buenos Aires',
+    province: 'CABA',
+    notes: '',
+    idempotencyKey: crypto.randomUUID(),
+    accessToken: crypto.randomUUID(),
+  });
+  const first = await store.createOnlineOrder(request, input());
+  await assert.rejects(
+    () => store.onlineOrderWrite(actor, {
+      action: 'mark-paid',
+      orderId: first.id,
+      paymentReference: 'BANK-INTEGRITY-1',
+      confirmedAmount: first.total - 1,
+    }),
+    /importe acreditado no coincide/i,
+  );
+  await store.reportTransfer(request, {
+    orderId: first.id,
+    accessToken: first.accessToken,
+    transactionId: 'BANK-INTEGRITY-1',
+  });
+  const second = await store.createOnlineOrder(request, input());
+  await assert.rejects(
+    () => store.reportTransfer(request, {
+      orderId: second.id,
+      accessToken: second.accessToken,
+      transactionId: 'BANK-INTEGRITY-1',
+    }),
+    /ya fue informado/i,
+  );
+  await store.onlineOrderWrite(actor, {
+    action: 'cancel',
+    orderId: first.id,
+    reason: 'Pedido cancelado para la prueba',
+  });
+  await assert.rejects(
+    () => store.confirmOnlinePayment(actor, first.id, 'BANK-INTEGRITY-1'),
+    /pedido cancelado/i,
+  );
+  const card = await store.createOnlineOrder(request, input('card'));
+  await assert.rejects(
+    () => store.onlineOrderWrite(actor, {
+      action: 'mark-paid',
+      orderId: card.id,
+      paymentReference: 'MANUAL-CARD',
+      confirmedAmount: card.total,
+    }),
+    /Mercado Pago/i,
+  );
+  await assert.rejects(
+    () => store.confirmOnlinePaymentWebhook({
+      provider: 'bank',
+      eventId: 'bank:wrong-method',
+      reference: card.transferReference,
+      status: 'accredited',
+      amount: card.total,
+      payload: {},
+    }),
+    /proveedor no corresponde/i,
   );
 });
 

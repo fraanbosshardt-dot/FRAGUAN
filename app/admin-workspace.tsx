@@ -3312,11 +3312,16 @@ export default function Admin({ section }: { section: string }) {
                 <span>Total del pedido</span>
                 <strong>{money(selected.total)}</strong>
               </div>
-              {['pending', 'reported'].includes(selected.paymentStatus) && (
+              {['pending', 'reported'].includes(selected.paymentStatus) &&
+                selected.paymentMethod === 'transfer' && (
                 <div className="online-order-action">
                   {field('paymentReference', 'Referencia bancaria confirmada', {
                     value:
                       selected.paymentReference || selected.transferReference,
+                  })}
+                  {field('confirmedAmount', 'Importe acreditado en el banco', {
+                    type: 'number',
+                    value: Number(selected.total) / 100,
                   })}
                   <Button
                     disabled={busy}
@@ -3328,6 +3333,9 @@ export default function Admin({ section }: { section: string }) {
                           form.paymentReference ||
                           selected.paymentReference ||
                           selected.transferReference,
+                        confirmedAmount: minor(
+                          String(form.confirmedAmount ?? Number(selected.total) / 100),
+                        ),
                       })
                     }
                   >
@@ -3348,6 +3356,12 @@ export default function Admin({ section }: { section: string }) {
                   </Button>
                 </div>
               )}
+              {['pending', 'reported'].includes(selected.paymentStatus) &&
+                selected.paymentMethod === 'card' && (
+                  <p className="notice neutral">
+                    La tarjeta se acredita únicamente con la confirmación firmada de Mercado Pago.
+                  </p>
+                )}
               {selected.paymentStatus === 'paid' &&
                 selected.fulfillmentStatus === 'unfulfilled' && (
                   <Button

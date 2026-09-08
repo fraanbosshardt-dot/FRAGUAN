@@ -44,7 +44,7 @@ function seedOrder(database, overrides = {}) {
       '',
       'hash',
       `TR-${orderId}`,
-      'bank-secret-reference',
+      `bank-${orderId}`,
       '',
       '2026-12-31T12:00:00Z',
       '2026-09-08T12:00:00Z',

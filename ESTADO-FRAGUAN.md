@@ -82,7 +82,8 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 - Cada variante puede tener un precio online propio. Si queda vacío, hereda el precio del local; el POS nunca toma el precio online y un pedido conserva el precio con el que fue creado.
 - Los cupones online se validan en el servidor con las promociones centrales y quedan trazados en el pedido y la venta. La medición comercial nunca recibe costos, márgenes, datos completos de tarjeta ni información financiera interna.
 - La transferencia usa referencia única e importe exacto. El adaptador de webhook concilia referencia, estado e importe antes de acreditar.
-- El backend valida permisos; los costos nunca forman parte de las respuestas del vendedor.
+- La confirmación manual se limita a transferencias y exige referencia e importe bancario exacto. Tarjeta se acredita únicamente por webhook firmado de Mercado Pago. Pedidos cancelados, vencidos o sin reserva activa no pueden acreditarse; una referencia de pago no puede reutilizarse.
+- El backend valida permisos; los costos nunca forman parte de las respuestas del vendedor. Las reglas completas de integridad monetaria están en `PAGOS-Y-TRANSACCIONES.md`.
 - La cola de pedidos del POS usa un endpoint propio. Solo expone pedidos pagos y los datos necesarios para preparar o entregar; los cambios de estado se validan en servidor y quedan asociados al vendedor.
 - Un conteo físico no ajusta stock hasta aprobarse; después queda congelado en base.
 - Las comisiones son estimaciones usando la tasa actual para el período elegido; no liquidan sueldos.
@@ -111,7 +112,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 1. Revisión visual completa de POS/administración y pruebas de impresora, lector USB y dispositivos del negocio.
 2. Conectar base definitiva y autenticación Google con identidades/roles reales.
 3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta 0019_store_auth_returns_legal.sql. El migrador con hashes es independiente y no adopta automáticamente la demo.
+4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta `0021_payment_integrity.sql`. El migrador con hashes es independiente y no adopta automáticamente la demo.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
 6. Cargar credenciales productivas de Google Identity Services, Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos, programar las automatizaciones y probar login/cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
 7. Agregar fotografías reales por producto y variante; después habilitar Merchant Center y previsualizaciones sociales con esos activos.
