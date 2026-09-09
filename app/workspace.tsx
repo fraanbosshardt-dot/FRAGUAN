@@ -74,7 +74,6 @@ export default function Workspace() {
     [dark, setDark] = useState(false),
     [reference, setReference] = useState(''),
     [creditBalance, setCreditBalance] = useState(0),
-    [cashbackBalance, setCashbackBalance] = useState(0),
     [refundReason, setRefundReason] = useState(''),
     [refundToken, setRefundToken] = useState(''),
     [refundMethod, setRefundMethod] = useState('original'),
@@ -122,7 +121,6 @@ export default function Workspace() {
   useEffect(() => {
     if (!customer?.id) {
       setCreditBalance(0);
-      setCashbackBalance(0);
       if (method === 'store_credit') setMethod('cash');
       if (method === 'cashback') setMethod('cash');
       return;
@@ -132,11 +130,9 @@ export default function Workspace() {
     )
       .then((result) => {
         setCreditBalance(result.balance);
-        setCashbackBalance(result.cashbackBalance ?? 0);
       })
       .catch(() => {
         setCreditBalance(0);
-        setCashbackBalance(0);
       });
   }, [customer?.id, method]);
   const groups = useMemo(() => {
@@ -1039,8 +1035,8 @@ export default function Workspace() {
                     {methods
                       .filter(
                         (m) =>
-                          !['store_credit', 'cashback'].includes(m.id) ||
-                          customer,
+                          m.id !== 'cashback' &&
+                          (m.id !== 'store_credit' || Boolean(customer)),
                       )
                       .map((m) => (
                         <Button
@@ -1054,9 +1050,7 @@ export default function Workspace() {
                           {m.name}
                           {m.id === 'store_credit' && creditBalance > 0
                             ? ` · ${money(creditBalance)}`
-                            : m.id === 'cashback' && cashbackBalance > 0
-                              ? ` · ${money(cashbackBalance)}`
-                              : ''}
+                            : ''}
                         </Button>
                       ))}
                   </div>

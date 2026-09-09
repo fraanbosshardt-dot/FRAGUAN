@@ -162,7 +162,7 @@ test('online reservation guard prevents overselling across simultaneous orders',
   );
 });
 
-test('customer account connects an online order with Club cashback and history', async (t) => {
+test('customer account connects an online order with Club benefits and history', async (t) => {
   const f = fixture(t, { rate: 100 });
   f.database.exec(`
     INSERT INTO online_product_profiles(productId,slug,shortDescription,description,fit,section,updatedAt)
@@ -203,7 +203,8 @@ test('customer account connects an online order with Club cashback and history',
   await store.confirmOnlinePayment(actor, order.id, 'BANK-CLUB-1');
   const account = await store.storeAccount(request);
   assert.equal(account.orders[0].id, order.id);
-  assert.equal(account.cashback, 90);
+  assert.equal(account.cashback, undefined);
+  assert.ok(Array.isArray(account.benefits));
   assert.equal(
     f.database
       .prepare('SELECT email FROM customers WHERE id=?')

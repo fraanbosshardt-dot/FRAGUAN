@@ -3319,9 +3319,7 @@ textarea {
   font-size: 14px;
 }
 .store-catalog-tools .store-check-filter {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+  display: block;
   min-height: 42px;
   color: var(--store-ink);
   font-size: 14px;
@@ -3329,9 +3327,41 @@ textarea {
   cursor: pointer;
 }
 .store-check-filter input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--store-copper);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.store-check-filter > span {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid var(--store-line);
+  border-radius: 999px;
+  background: var(--store-paper);
+  font-weight: 750;
+  transition: border-color .2s ease, background .2s ease, color .2s ease, transform .2s ease;
+}
+.store-check-filter svg {
+  width: 16px;
+  height: 16px;
+}
+.store-check-filter:hover > span {
+  border-color: var(--store-ink);
+  transform: translateY(-1px);
+}
+.store-check-filter input:checked + span {
+  border-color: var(--store-ink);
+  background: var(--store-ink);
+  color: white;
+}
+.store-check-filter input:focus-visible + span {
+  outline: 2px solid var(--store-copper);
+  outline-offset: 3px;
 }
 .store-sort {
   margin-left: auto;

@@ -718,9 +718,9 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
 export async function storeAccount(req: Request) {
   const customer = await currentStoreCustomer(req);
   if (!customer)
-    return { customer: null, orders: [], addresses: [], cashback: 0 };
+    return { customer: null, orders: [], addresses: [], benefits: [] };
   const cutoff = new Date(Date.now() - 365 * 86400000).toISOString();
-  const [orders, addresses, cashback, activity, config] = await Promise.all([
+  const [orders, addresses, activity, config] = await Promise.all([
     rows(
       `SELECT id,orderNumber,status,paymentStatus,fulfillmentStatus,total,trackingNumber,createdAt
          FROM online_orders WHERE customerId=? ORDER BY createdAt DESC LIMIT 50`,
@@ -729,11 +729,6 @@ export async function storeAccount(req: Request) {
     rows(
       'SELECT id,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt DESC',
       customer.customerId,
-    ),
-    one<{ balance: number }>(
-      "SELECT COALESCE(SUM(balance),0) AS balance FROM customer_cashback WHERE customerId=? AND status='active' AND balance>0 AND (expiresAt IS NULL OR expiresAt>?)",
-      customer.customerId,
-      now(),
     ),
     one<Record<string, any>>(
       `SELECT MIN(s.createdAt) AS firstPurchaseAt,MAX(s.createdAt) AS lastPurchaseAt,
@@ -771,7 +766,7 @@ export async function storeAccount(req: Request) {
     },
     orders,
     addresses,
-    cashback: Number(cashback?.balance ?? 0),
+    benefits: config.loyalty.benefits[level] ?? [],
   };
 }
 

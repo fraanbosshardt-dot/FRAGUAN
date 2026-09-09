@@ -64,7 +64,7 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
       method: 'POST',
       body: JSON.stringify({ action: 'logout' }),
     });
-    setData({ customer: null, orders: [], cashback: 0 });
+    setData({ customer: null, orders: [], addresses: [], benefits: [] });
   }
   async function updateProfile(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -114,14 +114,15 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
               </article>
               <article>
                 <Gift />
-                <span>Puntos</span>
-                <strong>{data.customer.points}</strong>
-                <small>Usalos en beneficios del Club.</small>
+                <span>Beneficios</span>
+                <strong>Por tus compras</strong>
+                <small>{data.benefits?.[0] || 'Te avisamos cuando tengas un beneficio disponible.'}</small>
               </article>
               <article>
-                <span>Cashback</span>
-                <strong>{storeMoney(data.cashback)}</strong>
-                <small>Saldo disponible en tu cuenta.</small>
+                <UserRound />
+                <span>Preferencias</span>
+                <strong>A tu manera</strong>
+                <small>Guardá tus talles y datos para comprar más rápido.</small>
               </article>
             </section>
             <section className="store-account-profile">
@@ -215,7 +216,7 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
                   <Package /> Historial y seguimiento
                 </p>
                 <p>
-                  <Gift /> Puntos y cashback
+                  <Gift /> Beneficios según tus compras
                 </p>
                 <p>
                   <UserRound /> Checkout más rápido

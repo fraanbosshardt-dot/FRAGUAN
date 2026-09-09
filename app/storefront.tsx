@@ -1,5 +1,5 @@
 'use client';
-import { ArrowDown, ArrowRight, Search, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, Check, Heart, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StoreHeader } from '@/components/store-header';
 import { StoreFooter } from '@/components/store-footer';
@@ -233,21 +233,21 @@ export default function Storefront({
                 ))}
               </select>
             </label>
-            <label className="store-check-filter">
+            <label className="store-check-filter" title="Oculta las prendas agotadas">
               <input
                 type="checkbox"
                 checked={onlyAvailable}
                 onChange={(event) => setOnlyAvailable(event.target.checked)}
               />
-              Solo disponibles
+              <span><Check /> En stock</span>
             </label>
-            <label className="store-check-filter">
+            <label className="store-check-filter" title="Muestra solamente lo que guardaste">
               <input
                 type="checkbox"
                 checked={onlyFavorites}
                 onChange={(event) => setOnlyFavorites(event.target.checked)}
               />
-              Mis favoritos
+              <span><Heart /> Favoritos</span>
             </label>
             <label className="store-sort">
               Ordenar
@@ -334,7 +334,7 @@ export default function Storefront({
             </h2>
             <p>
               Tu cuenta reúne las compras del local y de la tienda online, tus
-              puntos y beneficios.
+              preferencias y beneficios.
             </p>
             <a href="/cuenta">
               Crear mi cuenta <ArrowRight />

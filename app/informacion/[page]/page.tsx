@@ -33,10 +33,9 @@ const pages: Record<string, Page> = {
     eyebrow: 'PAGOS', title: 'Elegí cómo pagar.',
     intro: 'Siempre ves precio, descuentos, entrega y total final antes de confirmar.',
     sections: [
-      { title: 'Transferencia', body: 'Tiene 10% de descuento. Transferí el importe exacto y usá la referencia única: el sistema identifica el pedido sin revisar comprobantes manualmente.' },
+      { title: 'Transferencia', body: 'Tenés 10% de descuento. Transferí el importe exacto y usá la referencia indicada en tu pedido.' },
       { title: 'Tarjetas', body: 'Crédito y débito se procesan mediante Mercado Pago. FRAGUAN no recibe ni almacena los datos completos de tu tarjeta.' },
       { title: 'Confirmación', body: 'El stock se reserva al crear el pedido. La preparación comienza cuando el proveedor de pago confirma la acreditación.' },
-      { title: 'Precio online', body: 'El precio de la tienda online puede diferir del local. El pedido conserva el precio final mostrado al momento de confirmarlo.' },
     ],
   },
   talles: {
@@ -44,7 +43,7 @@ const pages: Record<string, Page> = {
     intro: 'El talle puede variar según el calce y la construcción de cada prenda.',
     sections: [
       { title: 'Cómo medirte', body: 'Usá una cinta flexible, sin ajustar. Para pecho y cintura medí alrededor de la parte más amplia; para pantalones, compará también con una prenda que te quede bien.' },
-      { title: 'Calce', body: 'Cada ficha informa si el calce es regular, ajustado u oversize. El asistente de talle usa las variantes disponibles de esa prenda.' },
+      { title: 'Asistente de talle', body: 'En la ficha de cada producto podés ingresar tu altura, peso y cómo preferís usar la ropa para recibir una recomendación orientativa.' },
       { title: 'Entre dos talles', body: 'Elegí el mayor si preferís comodidad o el menor si buscás un calce cercano al cuerpo. Podés solicitar un cambio sujeto a disponibilidad.' },
     ],
   },
@@ -89,7 +88,7 @@ const pages: Record<string, Page> = {
     intro: 'Incluí siempre tu número de pedido para que podamos encontrar la compra rápido.',
     sections: [
       { title: 'Email', body: 'Escribinos a atencion@fraguan.com. Las notificaciones de pedido se envían desde el dominio de emails de FRAGUAN.' },
-      { title: 'Horario', body: 'Atención al Cliente: lunes a viernes, ocho horas diarias dentro del horario comercial. El horario exacto se publicará antes de abrir la tienda.' },
+      { title: 'Horario', body: 'Atención al Cliente: lunes a sábado, de 10 a 21 hs.' },
       { title: 'Cambios', body: 'Para cambios comerciales usá Mi FRAGUAN o indicá pedido, prenda y talle requerido en tu consulta.' },
       { title: 'Arrepentimiento', body: 'La revocación de una compra online tiene un formulario público separado y genera un código inmediato.' },
     ],

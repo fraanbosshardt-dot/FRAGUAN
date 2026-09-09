@@ -248,7 +248,7 @@ export default function ProductPage({
                 Talle{' '}
                 <Dialog>
                   <DialogTrigger className="store-size-helper-trigger">
-                    <Ruler /> ¿Qué talle soy?
+                    <Ruler /> Asistente de talle
                   </DialogTrigger>
                   <DialogContent className="store-size-dialog">
                     <DialogHeader>

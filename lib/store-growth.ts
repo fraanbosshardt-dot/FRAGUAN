@@ -291,7 +291,7 @@ export async function runMarketingAutomations(actor: Actor) {
     const result = await sendMarketingEmail({
       to: subscriber.email, subject: 'ELEGIR MEJOR, SIN VUELTAS.', title: 'EMPEZÁ POR TU ESTILO.',
       preheader: 'Talles, stock y beneficios en un solo lugar.',
-      content: '<p>Explorá la colección por categoría, guardá favoritos y usá el asistente de talle. Tu cuenta conecta compras online y del local.</p>',
+      content: '<p>Explorá la colección por categoría, guardá favoritos y usá el asistente de talle. Tu cuenta reúne tus compras, preferencias y beneficios.</p>',
       action: { label: 'EXPLORAR COLECCIÓN', url: `${origin}/?utm_source=email&utm_medium=automation&utm_campaign=welcome` },
       kind: 'newsletter_nurture', entityId: subscriber.id,
     });
