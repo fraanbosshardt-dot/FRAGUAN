@@ -221,7 +221,7 @@ export default function ProductPage({
             </div>
             {selected && selected.stock <= 3 && (
               <p className="store-stock-urgency">
-                Últimas {selected.stock} unidades en este talle y color.
+                Últimas unidades en este talle y color.
               </p>
             )}
             <fieldset>
@@ -321,7 +321,7 @@ export default function ProductPage({
                   >
                     {variant.size}
                     <small>
-                      {variant.stock ? `${variant.stock} disp.` : 'Agotado'}
+                      {variant.stock ? 'Disponible' : 'Agotado'}
                     </small>
                   </button>
                 ))}

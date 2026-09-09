@@ -58,7 +58,7 @@ export function StoreProductCard({
         <p>{colors.slice(0, 3).join(' · ') || 'Sin stock'}</p>
         <div>
           <strong>{storeMoney(product.price)}</strong>
-          <small>{stock ? `${stock} disponibles` : 'Agotado'}</small>
+          <small>{stock ? 'Disponible' : 'Agotado'}</small>
           <ArrowUpRight />
         </div>
         </div>

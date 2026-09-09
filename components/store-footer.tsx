@@ -29,8 +29,6 @@ export function StoreFooter() {
         <a href="/">FRAGUAN</a>
         <p>
           Forjá tu estilo.
-          <br />
-          Isla Verde · Córdoba
         </p>
       </div>
       <nav aria-label="Ayuda y políticas">

@@ -170,7 +170,6 @@ export default function Storefront({
               <span>FRAGUAN / COLECCIÓN</span>
               <h2>{onlyFavorites ? 'Tus favoritos' : section || 'Encontrá tu próxima prenda'}</h2>
             </div>
-            <p>{displayed.length} prendas para elegir</p>
           </div>
           <div className="store-search">
             <Search />
@@ -203,7 +202,6 @@ export default function Storefront({
                 key={item.name}
               >
                 {item.name}
-                <sup>{item.products}</sup>
               </button>
             ))}
           </div>
@@ -303,9 +301,6 @@ export default function Storefront({
                 ))}
               </div>
               <div className="store-catalog-more" aria-live="polite">
-                <span>
-                  Mostrando {visibleProducts.length} de {displayed.length}
-                </span>
                 {visibleProducts.length < displayed.length && (
                   <button
                     onClick={() => setVisibleCount((current) => current + 16)}

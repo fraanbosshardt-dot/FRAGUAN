@@ -22,7 +22,7 @@ export async function generateMetadata({
   const name = names[key] || key.replaceAll('-', ' ');
   return {
     title: `${name} para hombre | FRAGUAN`,
-    description: `Comprá ${name.toLowerCase()} FRAGUAN por talle y color. Stock conectado con el local, retiro y envíos a todo el país.`,
+    description: `Comprá ${name.toLowerCase()} FRAGUAN por talle y color, con retiro y envíos a todo el país.`,
     alternates: { canonical: `/coleccion/${key}` },
   };
 }
