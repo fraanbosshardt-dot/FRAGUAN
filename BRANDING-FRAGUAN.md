@@ -67,5 +67,5 @@ cuando se conecte el servicio productivo.
 
 
 ## Dirección de tienda — 8 de septiembre de 2026
-Referencia visual revisada: https://milfshakes.es/. Adaptación propia: cabecera blanca compacta con logo centrado; campaña dividida entre novedades y remeras; catálogo inmediatamente después; blanco, negro y rojo intenso. Sin fotos por pedido del negocio. Se conservan carrito, favoritos, filtros, compra rápida, Club y newsletter. Categorías sin portada repetida. Animaciones breves y movimiento reducido. Solo local y GitHub; no habilitar despliegues sin autorización explícita.
+Referencia visual revisada: https://milfshakes.es/. Adaptación propia: cabecera blanca compacta con logo centrado; campaña dividida entre novedades y remeras; catálogo inmediatamente después; blanco, carbón y azul tinta. La interacción toma el principio de la referencia: enlaces que reaccionan, elementos vecinos que bajan intensidad, botones que se desplazan y compra rápida que aparece al enfocar o pasar el mouse. Sin fotos por pedido del negocio. Se conservan carrito, favoritos, filtros, compra rápida, Club y newsletter. Categorías sin portada repetida. Animaciones breves y movimiento reducido. Solo local y GitHub; no habilitar despliegues sin autorización explícita.
 
