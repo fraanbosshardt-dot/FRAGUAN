@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 8 de septiembre de 2026 · etapa de crecimiento online.
+Actualizado: 10 de septiembre de 2026 · PostgreSQL Railway conectado en local.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -19,7 +19,7 @@ completa está en `BRANDING-FRAGUAN.md`.
 
 ## Estado general
 
-Implementación local con datos de demostración. En producción, la tienda, el POS y la administración muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`) mientras no exista `FRAGUAN_DEPLOY_ENABLED=true`. En local el ecommerce completo está disponible en `/`, junto con POS y administración, para desarrollo. Los módulos detallados abajo están desarrollados; las comprobaciones ejecutadas no equivalen a habilitación productiva. Sin fotografías. Base definitiva, Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
+Implementación local conectada a PostgreSQL privado en Railway. La tienda, el POS y la administración comparten 66 tablas, datos migrados y reglas transaccionales. En producción, las tres superficies muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`) mientras no exista `FRAGUAN_DEPLOY_ENABLED=true`. En local el ecommerce completo está disponible en `/`, junto con POS y administración, para desarrollo. Sin fotografías. Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
 
 ### Tienda online: estado local terminado
 
@@ -110,9 +110,9 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 ## Lo que falta para operar
 
 1. Revisión visual con la sesión y los datos definitivos de POS/Administración, más pruebas de impresora, lector USB y dispositivos del negocio.
-2. Conectar base definitiva y autenticación Google con identidades/roles reales.
-3. Adaptar y desplegar en Vercel. La implementación actual usa Vinext/Cloudflare D1; requiere adaptación de runtime y persistencia, no solo variables.
-4. Reconciliar el historial Drizzle al elegir base definitiva. La demo local está aplicada hasta `0021_payment_integrity.sql`. El migrador con hashes es independiente y no adopta automáticamente la demo.
+2. Conectar autenticación Google con identidades/roles reales.
+3. Extraer la API a un servicio Railway para producción y desplegar las interfaces en Vercel solamente cuando exista autorización explícita. La API usará la red privada de Railway hacia PostgreSQL.
+4. Mantener las migraciones PostgreSQL incrementales y con checksum. La conexión, importación, recuperación y arquitectura están documentadas en `RAILWAY-DATABASE.md`.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
 6. Cargar credenciales productivas de Google Identity Services, Mercado Pago, MiCorreo y Resend, verificar el dominio remitente, configurar webhooks públicos, programar las automatizaciones y probar login/cobros/envíos/emails reales. Conectar factura fiscal y banco directo si se decide integrarlos.
 7. Agregar fotografías reales por producto y variante; después habilitar Merchant Center y previsualizaciones sociales con esos activos.
@@ -128,11 +128,10 @@ Mantener datos reales fuera del entorno demo hasta completar la puesta en produc
 
 ## Punto de reanudación
 
-Continuar con QA visual local y pruebas de checkout/envío. Cuando el usuario habilite la
-etapa de integraciones, decidir el runtime definitivo (D1/Cloudflare o una base compatible
-con Vercel), crear la base productiva y ejecutar las migraciones hasta `0020`, configurar
-Google Auth, Mercado Pago, Correo Argentino y Resend, cargar sus variables secretas y
-conectar `fraguan.com`.
+Continuar con QA visual local y pruebas de checkout/envío sobre PostgreSQL Railway. Cuando
+el usuario habilite la etapa de integraciones, extraer la API al servicio Railway privado,
+configurar Google Auth, Mercado Pago, Correo Argentino y Resend, cargar sus variables
+secretas y conectar `fraguan.com`.
 
 El diseño de referencia queda registrado: inspiración conceptual COS, SSENSE, Zara,
 MILFSHAKES y Represent/Fear of God, con identidad propia FRAGUAN. Se mantiene la decisión

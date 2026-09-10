@@ -6,9 +6,14 @@ import {
   rows,
   statement,
   auditStatement,
+  usingPostgres,
 } from '@/db/queries';
 import { Actor, AppError, requirePermission } from './auth';
-import { compareDashboardPeriod, dashboardSql } from './dashboard-metrics';
+import {
+  compareDashboardPeriod,
+  dashboardPostgresSql,
+  dashboardSql,
+} from './dashboard-metrics';
 import * as v from './validation';
 import { z } from 'zod';
 async function cashEntry(
@@ -551,6 +556,31 @@ export async function adminAction(a: Actor, raw: unknown) {
 }
 export async function dashboard() {
   const asOf = now();
+  const postgres = usingPostgres();
+  const sql = postgres ? dashboardPostgresSql : dashboardSql;
+  const localDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Cordoba',
+  }).format(new Date(asOf));
+  const dateAtStart = (date: string) => `${date}T03:00:00.000Z`;
+  const addDays = (date: string, amount: number) =>
+    new Date(Date.parse(`${date}T12:00:00.000Z`) + amount * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+  const [year, month, day] = localDate.split('-').map(Number);
+  const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const previousMonthDate = new Date(Date.UTC(year, month - 2, 1))
+    .toISOString()
+    .slice(0, 10);
+  const previousMonthEndDate = [
+    addDays(previousMonthDate, day),
+    monthStartDate,
+  ].sort()[0];
+  const todayStart = dateAtStart(localDate);
+  const tomorrowStart = dateAtStart(addDays(localDate, 1));
+  const previousDayStart = dateAtStart(addDays(localDate, -1));
+  const monthStart = dateAtStart(monthStartDate);
+  const previousMonthStart = dateAtStart(previousMonthDate);
+  const previousMonthEnd = dateAtStart(previousMonthEndDate);
   const [
     total,
     monthStats,
@@ -566,19 +596,25 @@ export async function dashboard() {
     byPayment,
     sellers,
   ] = await Promise.all([
-    one(dashboardSql.total),
-    one(dashboardSql.month, asOf, asOf),
-    one(dashboardSql.today, asOf),
-    one(dashboardSql.previousMonth, asOf, asOf, asOf, asOf),
-    one(dashboardSql.previousDay, asOf),
-    one(dashboardSql.costs),
-    one(dashboardSql.fees),
-    one(dashboardSql.expenses),
-    one(dashboardSql.inventory),
-    rows(dashboardSql.trend),
-    rows(dashboardSql.best),
-    rows(dashboardSql.byPayment),
-    rows(dashboardSql.sellers),
+    one(sql.total),
+    postgres
+      ? one(sql.month, monthStart, tomorrowStart)
+      : one(sql.month, asOf, asOf),
+    postgres ? one(sql.today, todayStart, tomorrowStart) : one(sql.today, asOf),
+    postgres
+      ? one(sql.previousMonth, previousMonthStart, previousMonthEnd)
+      : one(sql.previousMonth, asOf, asOf, asOf, asOf),
+    postgres
+      ? one(sql.previousDay, previousDayStart, todayStart)
+      : one(sql.previousDay, asOf),
+    one(sql.costs),
+    one(sql.fees),
+    one(sql.expenses),
+    one(sql.inventory),
+    rows(sql.trend),
+    rows(sql.best),
+    rows(sql.byPayment),
+    rows(sql.sellers),
   ]);
   return {
     total,

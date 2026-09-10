@@ -131,6 +131,14 @@ GROUP BY u.id, u.name
 ORDER BY total DESC`,
 } as const;
 
+export const dashboardPostgresSql = {
+  ...dashboardSql,
+  month: summary('createdAt>=? AND createdAt<?'),
+  today: summary('createdAt>=? AND createdAt<?'),
+  previousDay: summary('createdAt>=? AND createdAt<?'),
+  previousMonth: summary('createdAt>=? AND createdAt<?'),
+} as const;
+
 type PeriodSummary = {
   revenue?: number | null;
   tickets?: number | null;

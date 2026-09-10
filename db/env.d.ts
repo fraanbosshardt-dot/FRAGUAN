@@ -13,6 +13,8 @@ declare namespace Cloudflare {
     CORREO_CUSTOMER_ID?: string;
     CORREO_ORIGIN_POSTAL_CODE?: string;
     DB: D1Database;
+    DATABASE_URL?: string;
+    DATABASE_POOL_SIZE?: string;
     BOOTSTRAP_OWNER_EMAIL?: string;
     ADMIN_PIN?: string;
     SITE_ORIGIN?: string;
