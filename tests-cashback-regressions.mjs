@@ -98,6 +98,32 @@ export function fixture(t, { rate = 100, expiry = 30, timestamp } = {}) {
       },
       { filename: file },
     );
+    if (file.replaceAll('\\', '/').endsWith('lib/online-store.ts')) {
+      const service = module.exports;
+      const createOnlineOrder = service.createOnlineOrder;
+      const verifiedCreateOnlineOrder = async (request, input) => {
+        if (input.emailVerificationToken)
+          return createOnlineOrder(request, input);
+        const challenge = await service.storeEmailVerification(request, {
+          action: 'request',
+          email: input.email,
+        });
+        const verified = await service.storeEmailVerification(request, {
+          action: 'verify',
+          email: input.email,
+          challenge: challenge.challenge,
+          code: challenge.devCode,
+        });
+        return createOnlineOrder(request, {
+          ...input,
+          emailVerificationToken: verified.verificationToken,
+        });
+      };
+      module.exports = {
+        ...service,
+        createOnlineOrder: verifiedCreateOnlineOrder,
+      };
+    }
     return module.exports;
   }
   database.exec(`
