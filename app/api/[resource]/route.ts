@@ -104,6 +104,7 @@ import {
   storeAccount,
   storeAccountWrite,
   storeCatalog,
+  storeEmailVerification,
   storeProduct,
   quoteOnlineCoupon,
   quoteOnlineCheckout,
@@ -640,6 +641,8 @@ export async function POST(
     }
     if (resource === 'store-checkout')
       return reply(await createOnlineOrder(req, body), 201);
+    if (resource === 'store-email-verification')
+      return reply(await storeEmailVerification(req, body));
     if (resource === 'store-transfer')
       return reply(await reportTransfer(req, body));
     if (resource === 'store-return-request')

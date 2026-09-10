@@ -14,7 +14,11 @@ import {
   calculateLoyaltyLevel,
   readCustomerIntelligenceConfig,
 } from './customer-intelligence';
-import { sendOrderEmails, sendReturnRequestEmails } from './email';
+import {
+  sendEmailVerificationCode,
+  sendOrderEmails,
+  sendReturnRequestEmails,
+} from './email';
 import {
   evaluateCommercialRules,
   type CommercialPromotion,
@@ -44,6 +48,174 @@ async function sha256(value: string) {
       await crypto.subtle.digest('SHA-256', encoder.encode(value)),
     ),
   );
+}
+
+function base64Url(bytes: Uint8Array) {
+  return bytesToBase64(bytes)
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
+}
+
+function decodeBase64Url(value: string) {
+  const padded = value
+    .replaceAll('-', '+')
+    .replaceAll('_', '/')
+    .padEnd(Math.ceil(value.length / 4) * 4, '=');
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function isLocalRequest(req: Request) {
+  const hostname = new URL(req.url).hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function emailVerificationSecret(req: Request) {
+  const configured = env.STORE_EMAIL_VERIFICATION_SECRET?.trim();
+  if (configured) return configured;
+  if (isLocalRequest(req)) return 'fraguan-local-email-verification-only';
+  throw new AppError(
+    503,
+    'La verificación de email todavía no está configurada.',
+  );
+}
+
+async function signEmailPayload(req: Request, encodedPayload: string) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(emailVerificationSecret(req)),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  return base64Url(
+    new Uint8Array(
+      await crypto.subtle.sign('HMAC', key, encoder.encode(encodedPayload)),
+    ),
+  );
+}
+
+async function createSignedEmailToken(
+  req: Request,
+  payload: Record<string, unknown>,
+) {
+  const encoded = base64Url(encoder.encode(JSON.stringify(payload)));
+  return `${encoded}.${await signEmailPayload(req, encoded)}`;
+}
+
+async function readSignedEmailToken(req: Request, token: string) {
+  const [encoded, signature, extra] = token.split('.');
+  if (!encoded || !signature || extra)
+    throw new AppError(400, 'El código de verificación no es válido.');
+  const expected = await signEmailPayload(req, encoded);
+  if (signature.length !== expected.length) {
+    throw new AppError(400, 'El código de verificación no es válido.');
+  }
+  let difference = 0;
+  for (let index = 0; index < signature.length; index += 1)
+    difference |= signature.charCodeAt(index) ^ expected.charCodeAt(index);
+  if (difference !== 0)
+    throw new AppError(400, 'El código de verificación no es válido.');
+  try {
+    return JSON.parse(new TextDecoder().decode(decodeBase64Url(encoded)));
+  } catch {
+    throw new AppError(400, 'El código de verificación no es válido.');
+  }
+}
+
+const verificationEmail = z.email().trim().toLowerCase().max(120);
+const emailChallengePayload = z
+  .object({
+    kind: z.literal('email_challenge'),
+    email: verificationEmail,
+    nonce: z.string().min(10).max(100),
+    codeHash: z.string().min(20).max(100),
+    expiresAt: z.number().int(),
+  })
+  .strict();
+const verifiedEmailPayload = z
+  .object({
+    kind: z.literal('email_verified'),
+    email: verificationEmail,
+    expiresAt: z.number().int(),
+  })
+  .strict();
+
+export async function storeEmailVerification(req: Request, raw: unknown) {
+  const input = z
+    .discriminatedUnion('action', [
+      z
+        .object({ action: z.literal('request'), email: verificationEmail })
+        .strict(),
+      z
+        .object({
+          action: z.literal('verify'),
+          email: verificationEmail,
+          challenge: z.string().min(40).max(2000),
+          code: z.string().regex(/^\d{6}$/),
+        })
+        .strict(),
+    ])
+    .parse(raw);
+
+  if (input.action === 'request') {
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
+    const code = String(random[0] % 1_000_000).padStart(6, '0');
+    const nonce = randomToken(16);
+    const challenge = await createSignedEmailToken(req, {
+      kind: 'email_challenge',
+      email: input.email,
+      nonce,
+      codeHash: await sha256(`${input.email}:${nonce}:${code}`),
+      expiresAt: Date.now() + 10 * 60_000,
+    });
+    const delivery = await sendEmailVerificationCode(input.email, code, nonce);
+    if (!delivery.sent && !isLocalRequest(req))
+      throw new AppError(
+        503,
+        'No pudimos enviar el código. Intentá nuevamente.',
+      );
+    return {
+      challenge,
+      expiresInSeconds: 600,
+      ...(isLocalRequest(req) && !delivery.sent ? { devCode: code } : {}),
+    };
+  }
+
+  const payload = emailChallengePayload.parse(
+    await readSignedEmailToken(req, input.challenge),
+  );
+  if (payload.expiresAt < Date.now())
+    throw new AppError(400, 'El código venció. Solicitá uno nuevo.');
+  if (payload.email !== input.email)
+    throw new AppError(400, 'El código corresponde a otro email.');
+  const codeHash = await sha256(
+    `${input.email}:${payload.nonce}:${input.code}`,
+  );
+  if (codeHash !== payload.codeHash)
+    throw new AppError(400, 'El código ingresado no es correcto.');
+  return {
+    verificationToken: await createSignedEmailToken(req, {
+      kind: 'email_verified',
+      email: input.email,
+      expiresAt: Date.now() + 30 * 60_000,
+    }),
+  };
+}
+
+async function requireVerifiedCheckoutEmail(
+  req: Request,
+  email: string,
+  token: string,
+) {
+  if (!token) throw new AppError(400, 'Verificá tu email para continuar.');
+  const payload = verifiedEmailPayload.parse(
+    await readSignedEmailToken(req, token),
+  );
+  if (payload.expiresAt < Date.now() || payload.email !== email)
+    throw new AppError(400, 'Volvé a verificar tu email para continuar.');
 }
 async function passwordHash(password: string, salt: string) {
   const key = await crypto.subtle.importKey(
@@ -858,21 +1030,22 @@ const checkoutInput = z
       )
       .min(1)
       .max(30),
-    email: z.email().trim().toLowerCase().max(200),
-    customerName: z.string().trim().min(3).max(160),
-    phone: z.string().trim().min(6).max(40),
-    document: z.string().trim().max(20).default(''),
+    email: verificationEmail,
+    emailVerificationToken: z.string().max(2000).default(''),
+    customerName: z.string().trim().min(3).max(80),
+    phone: z.string().trim().min(6).max(25),
+    document: z.string().trim().max(12).default(''),
     paymentMethod: z.enum(['transfer', 'card']),
     shippingMethod: z.enum(['correo-argentino-home', 'pickup']),
-    postalCode: z.string().trim().min(4).max(10),
-    address: z.string().trim().min(4).max(240),
-    addressExtra: z.string().trim().max(120).default(''),
-    city: z.string().trim().min(2).max(100),
-    province: z.string().trim().min(2).max(100),
-    notes: z.string().trim().max(500).default(''),
+    postalCode: z.string().trim().min(4).max(8),
+    address: z.string().trim().min(4).max(100),
+    addressExtra: z.string().trim().max(50).default(''),
+    city: z.string().trim().min(2).max(60),
+    province: z.string().trim().min(2).max(60),
+    notes: z.string().trim().max(240).default(''),
     idempotencyKey: z.uuid(),
     accessToken: z.uuid(),
-    couponCode: z.string().trim().toUpperCase().max(60).default(''),
+    couponCode: z.string().trim().toUpperCase().max(30).default(''),
     attribution: z
       .object({
         source: z.string().max(100).default(''),
@@ -984,6 +1157,12 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
   const { lines, subtotal, discount, shipping, total } =
     await calculateOnlineCheckout(input);
   const customer = await currentStoreCustomer(req);
+  if (!customer)
+    await requireVerifiedCheckoutEmail(
+      req,
+      input.email,
+      input.emailVerificationToken,
+    );
   const effectiveEmail = customer?.email ?? input.email;
   const effectiveName = customer
     ? `${customer.name} ${customer.surname}`

@@ -50,6 +50,12 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCouponCode, setAppliedCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState('');
+  const [emailChallenge, setEmailChallenge] = useState('');
+  const [emailVerificationToken, setEmailVerificationToken] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const [verificationBusy, setVerificationBusy] = useState(false);
+  const checkoutForm = useRef<HTMLFormElement>(null);
   const idempotency = useRef(crypto.randomUUID());
   const accessToken = useRef(crypto.randomUUID());
   useEffect(() => {
@@ -145,6 +151,7 @@ export default function Checkout() {
             quantity: item.quantity,
           })),
           email: form.get('email'),
+          emailVerificationToken,
           customerName: form.get('customerName'),
           phone: form.get('phone'),
           document: form.get('document') || '',
@@ -178,6 +185,73 @@ export default function Checkout() {
       setError(cause.message);
     } finally {
       setBusy(false);
+    }
+  }
+  async function requestEmailCode() {
+    const email = (
+      checkoutForm.current?.elements.namedItem(
+        'email',
+      ) as HTMLInputElement | null
+    )?.value.trim();
+    if (!email || !checkoutForm.current?.elements.namedItem('email')) return;
+    const emailInput = checkoutForm.current.elements.namedItem(
+      'email',
+    ) as HTMLInputElement;
+    if (!emailInput.reportValidity()) return;
+    setVerificationBusy(true);
+    setError('');
+    setVerificationMessage('');
+    try {
+      const result = await storeApi<{
+        challenge: string;
+        devCode?: string;
+      }>('store-email-verification', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'request', email }),
+      });
+      setEmailChallenge(result.challenge);
+      setEmailVerificationToken('');
+      setVerificationCode(result.devCode || '');
+      setVerificationMessage(
+        result.devCode
+          ? `Código local: ${result.devCode}`
+          : 'Te enviamos un código de 6 dígitos.',
+      );
+    } catch (cause: any) {
+      setError(cause.message);
+    } finally {
+      setVerificationBusy(false);
+    }
+  }
+  async function verifyEmailCode() {
+    const email = (
+      checkoutForm.current?.elements.namedItem(
+        'email',
+      ) as HTMLInputElement | null
+    )?.value.trim();
+    if (!email || !emailChallenge || !/^\d{6}$/.test(verificationCode)) return;
+    setVerificationBusy(true);
+    setError('');
+    try {
+      const result = await storeApi<{ verificationToken: string }>(
+        'store-email-verification',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'verify',
+            email,
+            challenge: emailChallenge,
+            code: verificationCode,
+          }),
+        },
+      );
+      setEmailVerificationToken(result.verificationToken);
+      setVerificationMessage('Email verificado.');
+    } catch (cause: any) {
+      setEmailVerificationToken('');
+      setError(cause.message);
+    } finally {
+      setVerificationBusy(false);
     }
   }
   async function applyCoupon() {
@@ -253,8 +327,7 @@ export default function Checkout() {
             <>
               <p>
                 Transferí el importe exacto e incluí esta referencia en el
-                concepto. Así el sistema identifica automáticamente tu pedido,
-                tus prendas y tu cuenta.
+                concepto de la operación.
               </p>
               <div className="store-transfer-box">
                 <small>TOTAL A TRANSFERIR</small>
@@ -286,6 +359,7 @@ export default function Checkout() {
                     name="transactionId"
                     required
                     minLength={4}
+                    maxLength={80}
                     placeholder="Número de operación bancaria"
                   />
                 </label>
@@ -349,7 +423,11 @@ export default function Checkout() {
           <h1>Terminemos tu compra.</h1>
         </div>
         <div className="store-checkout-grid">
-          <form onSubmit={submit} className="store-checkout-form">
+          <form
+            ref={checkoutForm}
+            onSubmit={submit}
+            className="store-checkout-form"
+          >
             <section>
               <div className="store-form-step">
                 <span>01</span>
@@ -378,18 +456,72 @@ export default function Checkout() {
                         ? `${session.customer.name} ${session.customer.surname}`
                         : ''
                     }
+                    maxLength={80}
                     required
                   />
                 </label>
-                <label>
+                <label className="store-email-control">
                   Email
-                  <input
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    defaultValue={session?.customer?.email || ''}
-                    required
-                  />
+                  <span>
+                    <input
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      defaultValue={session?.customer?.email || ''}
+                      maxLength={120}
+                      onChange={() => {
+                        setEmailChallenge('');
+                        setEmailVerificationToken('');
+                        setVerificationCode('');
+                        setVerificationMessage('');
+                      }}
+                      required
+                    />
+                    {!session?.customer && (
+                      <button
+                        type="button"
+                        onClick={requestEmailCode}
+                        disabled={verificationBusy}
+                      >
+                        {emailVerificationToken
+                          ? 'Verificado'
+                          : 'Enviar código'}
+                      </button>
+                    )}
+                  </span>
+                  {!session?.customer &&
+                    emailChallenge &&
+                    !emailVerificationToken && (
+                      <span className="store-email-code">
+                        <input
+                          aria-label="Código de verificación"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          value={verificationCode}
+                          onChange={(event) =>
+                            setVerificationCode(
+                              event.target.value.replace(/\D/g, '').slice(0, 6),
+                            )
+                          }
+                          maxLength={6}
+                          placeholder="Código de 6 dígitos"
+                        />
+                        <button
+                          type="button"
+                          onClick={verifyEmailCode}
+                          disabled={
+                            verificationBusy || verificationCode.length !== 6
+                          }
+                        >
+                          Verificar
+                        </button>
+                      </span>
+                    )}
+                  {!session?.customer && verificationMessage && (
+                    <small className={emailVerificationToken ? 'verified' : ''}>
+                      {verificationMessage}
+                    </small>
+                  )}
                 </label>
                 <label>
                   Teléfono
@@ -398,6 +530,7 @@ export default function Checkout() {
                     type="tel"
                     autoComplete="tel"
                     defaultValue={session?.customer?.phone || ''}
+                    maxLength={25}
                     required
                   />
                 </label>
@@ -407,7 +540,7 @@ export default function Checkout() {
                     name="document"
                     inputMode="numeric"
                     autoComplete="off"
-                    maxLength={20}
+                    maxLength={12}
                   />
                 </label>
               </div>
@@ -505,16 +638,26 @@ export default function Checkout() {
                       name="address"
                       autoComplete="street-address"
                       placeholder="Calle y número"
+                      maxLength={100}
                       required
                     />
                   </label>
                   <label>
                     Piso / departamento <small>Opcional</small>
-                    <input name="addressExtra" autoComplete="address-line2" />
+                    <input
+                      name="addressExtra"
+                      autoComplete="address-line2"
+                      maxLength={50}
+                    />
                   </label>
                   <label>
                     Ciudad
-                    <input name="city" autoComplete="address-level2" required />
+                    <input
+                      name="city"
+                      autoComplete="address-level2"
+                      maxLength={60}
+                      required
+                    />
                   </label>
                   <label>
                     Provincia
@@ -628,7 +771,12 @@ export default function Checkout() {
             </section>
             <label className="store-notes">
               Notas para el pedido
-              <textarea name="notes" rows={3} placeholder="Opcional" />
+              <textarea
+                name="notes"
+                rows={2}
+                maxLength={240}
+                placeholder="Opcional · máximo 240 caracteres"
+              />
             </label>
             <label className="store-checkout-consent">
               <input type="checkbox" required />
@@ -703,7 +851,12 @@ export default function Checkout() {
             )}
             <button
               className="store-confirm-order"
-              disabled={busy || pricingBusy || !pricing}
+              disabled={
+                busy ||
+                pricingBusy ||
+                !pricing ||
+                (!session?.customer && !emailVerificationToken)
+              }
             >
               {busy
                 ? 'Reservando stock…'
@@ -723,23 +876,28 @@ export default function Checkout() {
                 <span>
                   <strong>{item.productName}</strong>
                   <small>
-                    {item.color} · {item.size} · {item.quantity} u.
+                    {item.color} · {item.size}
                   </small>
                 </span>
                 <span className="store-summary-edit">
-                  <button
-                    onClick={() => update(item.id, item.quantity - 1)}
-                    aria-label="Quitar una unidad"
-                  >
-                    −
-                  </button>
                   <b>{storeMoney(item.price * item.quantity)}</b>
-                  <button
-                    onClick={() => update(item.id, item.quantity + 1)}
-                    aria-label="Agregar una unidad"
-                  >
-                    +
-                  </button>
+                  <span className="store-summary-quantity">
+                    <button
+                      type="button"
+                      onClick={() => update(item.id, item.quantity - 1)}
+                      aria-label="Quitar una unidad"
+                    >
+                      −
+                    </button>
+                    <strong>{item.quantity}</strong>
+                    <button
+                      type="button"
+                      onClick={() => update(item.id, item.quantity + 1)}
+                      aria-label="Agregar una unidad"
+                    >
+                      +
+                    </button>
+                  </span>
                 </span>
               </div>
             ))}
@@ -755,6 +913,7 @@ export default function Checkout() {
                     setCouponMessage('');
                   }}
                   placeholder="CÓDIGO"
+                  maxLength={30}
                 />
                 <button
                   type="button"

@@ -5687,3 +5687,55 @@ textarea {
   .store-product-copy h3 { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .store-campaign-panel *, .store-promo-track { animation: none !important; transition: none !important; } }
+
+/* Checkout: lighter structure, compact fields and clear actions. */
+.store-checkout-grid { gap: clamp(32px, 4vw, 68px); }
+.store-checkout-form { gap: 0; border: 0; background: transparent; }
+.store-checkout-form > section,
+.store-checkout-form > .store-notes,
+.store-checkout-form > .store-checkout-consent,
+.store-checkout-form > .store-buy-error,
+.store-checkout-form > .store-confirm-order,
+.store-checkout-form > .store-secure { border: 0; border-top: 1px solid #d9dde0; background: transparent; }
+.store-checkout-form > section:first-child { border-top: 0; }
+.store-checkout-form > section { padding: 28px 0 34px; }
+.store-form-step > span { background: #e7ebef; color: #263a52; }
+.store-fields { gap: 18px 14px; }
+.store-fields input,
+.store-fields select,
+.store-notes textarea { min-height: 42px; padding: 8px 10px; border: 0; border-bottom: 1px solid #aeb5ba; background: #f5f6f6; border-radius: 0; box-shadow: none; }
+.store-fields input:focus,
+.store-fields select:focus,
+.store-notes textarea:focus { border-color: #263a52; box-shadow: inset 0 -2px #263a52; }
+.store-notes { padding: 27px 0; }
+.store-notes textarea { min-height: 72px; resize: vertical; }
+.store-choice-row button,
+.store-payment-choice button { border: 0; outline: 1px solid #dfe2e4; background: #f5f6f6; box-shadow: none; }
+.store-choice-row button.active,
+.store-payment-choice button.active { border: 0; outline: 2px solid #263a52; background: #edf1f5; box-shadow: none; }
+.store-email-control > span { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.store-email-control button { min-width: 112px; padding: 0 13px; border: 0; background: #263a52; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.store-email-control button:disabled { cursor: not-allowed; opacity: .58; }
+.store-email-control > small { color: #59616a; font-weight: 650; }
+.store-email-control > small.verified { color: #28613d; }
+.store-email-code { margin-top: 2px; }
+.store-email-code input { letter-spacing: .12em; }
+.store-checkout-consent { padding: 17px 0; }
+.store-confirm-order { min-height: 58px; margin-top: 18px; padding: 0 23px; display: flex; align-items: center; justify-content: space-between; border: 0 !important; background: #151512 !important; color: #fff !important; font-size: 15px; font-weight: 850; opacity: 1; }
+.store-confirm-order:disabled { background: #747a7f !important; color: #fff !important; opacity: 1; }
+.store-confirm-order svg { width: 20px; }
+.store-secure { border-top: 0 !important; }
+.store-order-summary { padding: 28px; border: 0; background: #f4f5f5; }
+.store-summary-edit { display: grid; justify-items: end; align-content: start; gap: 10px; }
+.store-summary-edit > b { white-space: nowrap; }
+.store-summary-quantity { display: grid !important; grid-template-columns: 30px 34px 30px; gap: 0 !important; align-items: center; text-align: center; background: #fff; }
+.store-summary-quantity button { width: 30px; height: 30px; border: 0; background: transparent; color: #151512; cursor: pointer; }
+.store-summary-quantity button:hover { background: #dfe5ea; }
+.store-summary-quantity strong { font-size: 13px; }
+
+@media (max-width: 600px) {
+  .store-checkout-form > section { padding: 24px 0 30px; }
+  .store-email-control > span { grid-template-columns: 1fr; }
+  .store-email-control button { min-height: 42px; }
+  .store-order-summary { padding: 22px 18px; }
+}

@@ -6,6 +6,7 @@ declare namespace Cloudflare {
     RESEND_API_KEY?: string;
     RESEND_FROM?: string;
     RESEND_ORDER_TO?: string;
+    STORE_EMAIL_VERIFICATION_SECRET?: string;
     CORREO_API_URL?: string;
     CORREO_API_USER?: string;
     CORREO_API_PASSWORD?: string;

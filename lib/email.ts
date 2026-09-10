@@ -112,20 +112,39 @@ export async function sendMarketingEmail(input: {
   return deliver({
     to: input.to,
     subject: input.subject,
-    html: emailFrame(
-      input.title,
-      input.preheader,
-      input.content,
-      input.action,
-    ),
+    html: emailFrame(input.title, input.preheader, input.content, input.action),
     kind: input.kind,
     idempotencyKey: `marketing-${input.kind}-${input.entityId}`,
   });
 }
 
+export async function sendEmailVerificationCode(
+  email: string,
+  code: string,
+  nonce: string,
+) {
+  return deliver({
+    to: email,
+    subject: `${code} es tu código FRAGUAN`,
+    html: emailFrame(
+      'CONFIRMÁ TU EMAIL.',
+      `${code} es tu código de verificación`,
+      `<p>Ingresá este código para continuar con tu compra:</p><p style="margin:26px 0;font-size:34px;font-weight:900;letter-spacing:.22em">${escapeHtml(code)}</p><p>Vence en 10 minutos. Si no solicitaste este código, podés ignorar el mensaje.</p>`,
+    ),
+    kind: 'email_verification',
+    idempotencyKey: `email-verification-${nonce}`,
+  });
+}
+
 export async function sendOrderEmails(
   orderId: string,
-  event: 'created' | 'paid' | 'preparing' | 'ready_pickup' | 'shipped' | 'delivered',
+  event:
+    | 'created'
+    | 'paid'
+    | 'preparing'
+    | 'ready_pickup'
+    | 'shipped'
+    | 'delivered',
 ) {
   const order = await one<Record<string, any>>(
     'SELECT * FROM online_orders WHERE id=?',
@@ -186,11 +205,12 @@ export async function sendReturnRequestEmails(requestId: string) {
     requestId,
   );
   if (!request) return;
-  const kind = request.kind === 'withdrawal'
-    ? 'arrepentimiento'
-    : request.kind === 'exchange'
-      ? 'cambio'
-      : 'devolución';
+  const kind =
+    request.kind === 'withdrawal'
+      ? 'arrepentimiento'
+      : request.kind === 'exchange'
+        ? 'cambio'
+        : 'devolución';
   await deliver({
     to: request.email,
     subject: `RECIBIMOS TU SOLICITUD ${request.code}`,

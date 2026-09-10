@@ -11,8 +11,12 @@ import {
   Plus,
 } from 'lucide-react';
 import { useState } from 'react';
-import Image from 'next/image';
-import { useStoreCart, useStoreFavorites, storeMoney, trackStore } from '@/lib/store-client';
+import {
+  useStoreCart,
+  useStoreFavorites,
+  storeMoney,
+  trackStore,
+} from '@/lib/store-client';
 import {
   Sheet,
   SheetContent,
@@ -45,7 +49,6 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           <Menu />
         </button>
         <a className="store-logo" href="/">
-          <Image src="/fraguan-logo.jpg" alt="" width={38} height={38} />
           <span>FRAGUAN</span>
         </a>
         <nav aria-label="Tienda">
@@ -61,7 +64,9 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
           </a>
           <a href="/?favorites=1" aria-label={`${favorites.length} favoritos`}>
             <Heart />
-            {!!favorites.length && <span className="store-favorite-count">{favorites.length}</span>}
+            {!!favorites.length && (
+              <span className="store-favorite-count">{favorites.length}</span>
+            )}
           </a>
           <a href="/cuenta" aria-label="Mi cuenta">
             <UserRound />
@@ -120,7 +125,13 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
                         ? 'Tenés envío gratis'
                         : `Te faltan ${storeMoney(18000000 - subtotal)} para envío gratis`}
                     </span>
-                    <i><b style={{ width: `${Math.min(100, subtotal / 180000)}%` }} /></i>
+                    <i>
+                      <b
+                        style={{
+                          width: `${Math.min(100, subtotal / 180000)}%`,
+                        }}
+                      />
+                    </i>
                   </div>
                 )}
                 <span>Subtotal</span>
@@ -132,7 +143,10 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
                 <a
                   className={cart.length ? '' : 'disabled'}
                   href={cart.length ? '/checkout' : '#'}
-                  onClick={() => cart.length && trackStore('begin_checkout', { value: subtotal })}
+                  onClick={() =>
+                    cart.length &&
+                    trackStore('begin_checkout', { value: subtotal })
+                  }
                 >
                   Finalizar compra <ArrowRight />
                 </a>
