@@ -112,7 +112,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 ## Lo que falta para operar
 
 1. Revisión visual con la sesión y los datos definitivos de POS/Administración, más pruebas de impresora, lector USB y dispositivos del negocio.
-2. Conectar autenticación Google con identidades/roles reales.
+2. Conectar Google Auth para Administración y POS con whitelist de personal activo, y un cliente OAuth separado para las cuentas públicas de la tienda.
 3. Extraer la API a un servicio Railway para producción y desplegar las interfaces en Vercel solamente cuando exista autorización explícita. La API usará la red privada de Railway hacia PostgreSQL.
 4. Mantener las migraciones PostgreSQL incrementales y con checksum. La conexión, importación, recuperación y arquitectura están documentadas en `RAILWAY-DATABASE.md`.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
@@ -172,7 +172,9 @@ completo de venta, consultar información comercial y gestionar únicamente las 
 operativas autorizadas. La administración continúa separada y protegida. Los roles de
 encargado, caja, depósito y alcance por sucursal quedan reservados para una etapa futura.
 
-Cada empleado tendrá un usuario vendedor individual. En la terminal autorizada seleccionará
-su nombre e ingresará un PIN personal corto; no se utilizará una cuenta compartida ni será
-necesario Google Login para cada vendedor. Todas las ventas y acciones quedarán asociadas a
-ese usuario. Google Auth y el PIN administrativo quedan reservados para Administración.
+Cada empleado tendrá un usuario vendedor individual y accederá al POS con Google Auth. La
+whitelist se obtiene de los usuarios internos activos de la base, por lo que una cuenta de
+Google válida que no esté habilitada en FRAGUAN no puede entrar. Todas las ventas y acciones
+quedan asociadas a ese usuario. Administración usa el mismo principio de whitelist y suma
+el PIN administrativo como barrera adicional. El login Google de clientes utiliza una
+configuración separada y nunca concede permisos internos.

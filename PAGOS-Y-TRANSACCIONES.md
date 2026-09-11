@@ -1,6 +1,6 @@
 # FRAGUAN — integridad de pagos y transacciones
 
-Actualizado: 8 de septiembre de 2026.
+Actualizado: 11 de septiembre de 2026.
 
 Este documento define las reglas que deben mantenerse antes de habilitar cobros reales.
 
@@ -21,12 +21,13 @@ Este documento define las reglas que deben mantenerse antes de habilitar cobros 
 - Una confirmación bancaria firmada también debe coincidir en referencia, estado acreditado, importe y medio de pago.
 - Hasta conectar una API bancaria o conciliador autorizado, la transferencia no es totalmente automática: una captura enviada por el cliente nunca constituye por sí sola confirmación de fondos.
 
-## Tarjetas y Mercado Pago
+## Tarjetas y proveedor de pago
 
 - Administración no puede marcar una tarjeta como pagada manualmente.
-- Solo se acredita mediante webhook firmado de Mercado Pago.
-- El backend valida la firma, vuelve a consultar el pago a Mercado Pago, exige moneda ARS, estado aprobado, referencia del pedido e importe exacto en centavos.
-- Un evento de Mercado Pago no puede acreditar un pedido configurado como transferencia.
+- Solo se acredita mediante webhook firmado del proveedor elegido.
+- El adaptador actual está preparado para Mercado Pago. Antes de conectar credenciales se definirá si el proveedor final será Mercado Pago o Naranja X y se mantendrá una sola autoridad de cobro por pedido.
+- El backend valida la firma, vuelve a consultar el pago al proveedor, exige moneda ARS, estado aprobado, referencia del pedido e importe exacto en centavos.
+- Un evento del proveedor de tarjetas no puede acreditar un pedido configurado como transferencia.
 
 ## Stock, venta y contabilidad
 
