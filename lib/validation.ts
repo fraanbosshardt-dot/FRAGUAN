@@ -95,14 +95,7 @@ export const payableInput = z
     description: text,
     amount: positiveMoney,
     dueAt: z.iso.date(),
-    kind: z.enum([
-      'Proveedor',
-      'Transferencia',
-      'Cheque',
-      'eCheq',
-      'Servicio',
-      'Cuota',
-    ]),
+    kind: z.enum(['Proveedor', 'Transferencia', 'Servicio', 'Cuota']),
     supplierId: text.nullable(),
   })
   .strict();

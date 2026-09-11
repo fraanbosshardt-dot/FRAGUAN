@@ -453,16 +453,6 @@ export async function adminAction(a: Actor, raw: unknown) {
     );
   } else if (input.action === 'pay-payable') {
     requirePermission(a, 'payables');
-    if (
-      await one(
-        "SELECT id FROM checks WHERE payableId=? AND status IN ('issued','deposited')",
-        input.id,
-      )
-    )
-      throw new AppError(
-        409,
-        'Esta cuenta tiene un cheque pendiente. Registrá su débito o cancelación en Bancos y cheques.',
-      );
     const p = await one<{ id: string; amount: number; status: string }>(
       'SELECT id,amount,status FROM payables WHERE id=?',
       input.id,
@@ -470,6 +460,10 @@ export async function adminAction(a: Actor, raw: unknown) {
     if (!p || p.status !== 'pending')
       throw new AppError(409, 'La cuenta ya fue pagada.');
     commands = [
+      statement(
+        "UPDATE checks SET status='cancelled',version=version+1 WHERE payableId=? AND status IN ('issued','deposited')",
+        p.id,
+      ),
       statement("UPDATE payables SET status='paid' WHERE id=?", p.id),
       await cashEntry(
         a,

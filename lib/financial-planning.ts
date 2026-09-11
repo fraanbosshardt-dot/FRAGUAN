@@ -39,14 +39,7 @@ const obligationInput = z
     firstDueOn: z.iso.date(),
     intervalMonths: z.number().int().min(1).max(120).default(1),
     kind: z
-      .enum([
-        'Proveedor',
-        'Transferencia',
-        'Cheque',
-        'eCheq',
-        'Servicio',
-        'Cuota',
-      ])
+      .enum(['Proveedor', 'Transferencia', 'Servicio', 'Cuota'])
       .default('Cuota'),
   })
   .strict();

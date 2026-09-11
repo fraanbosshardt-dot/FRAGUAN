@@ -13,6 +13,7 @@ import { GlobalSearch } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ExportActions } from '@/components/export-actions';
 import { LoadingState } from '@/components/loading-state';
+import { AdminSidebar } from '@/components/admin-navigation';
 type Field = {
   key: string;
   label: string;
@@ -20,17 +21,11 @@ type Field = {
   choices?: [string, string][];
 };
 const labels: Record<string, string> = {
-  banking: 'Bancos y cheques',
+  banking: 'Bancos',
   communications: 'Comunicaciones',
   'seller-commissions': 'Comisiones del equipo',
   'club-rewards': 'Canjes del Club',
   access: 'Permisos por usuario',
-  issued: 'Emitido',
-  received: 'Recibido',
-  deposited: 'Depositado',
-  cleared: 'Acreditado / debitado',
-  rejected: 'Rechazado',
-  cancelled: 'Cancelado',
   reserved: 'Reservado',
   delivered: 'Entregado',
   pos: 'Punto de venta',
@@ -56,11 +51,6 @@ const labels: Record<string, string> = {
   'customer-intelligence': 'Inteligencia de clientes',
   'customer-credits': 'Saldos a favor',
 };
-const operationAreas = [
-  { label: 'Clientes', items: ['club-rewards', 'communications'] },
-  { label: 'Dinero', items: ['banking'] },
-  { label: 'Equipo', items: ['seller-commissions', 'access'] },
-];
 export default function Operations({ section }: { section: string }) {
   const { session } = useSession();
   const [data, setData] = useState<Row | null>(null),
@@ -209,48 +199,21 @@ export default function Operations({ section }: { section: string }) {
       </section>
     );
   }
-  const checkActions: Record<string, string[]> = {
-    issued: ['cleared', 'rejected', 'cancelled'],
-    received: ['deposited', 'cancelled'],
-    deposited: ['cleared', 'rejected'],
-    rejected: ['cancelled'],
-  };
   return (
-    <main className="admin-content operations-page">
-      <header className="admin-top">
-        <a href="/admin/dashboard">FRAGUAN · Administración</a>
-        <div>
-          <GlobalSearch />
-          <ThemeToggle />
-        </div>
-      </header>
-      <nav className="operations-area-nav" aria-label="Áreas relacionadas">
-        {operationAreas.map((area) => {
-          const items = area.items.filter((item) =>
-            session?.permissions?.includes(item),
-          );
-          if (!items.length) return null;
-          return (
-            <div key={area.label}>
-              <span>{area.label}</span>
-              {items.map((item) => (
-                <a
-                  className={section === item ? 'active' : ''}
-                  key={item}
-                  href={`/admin/${item}`}
-                >
-                  {labels[item]}
-                </a>
-              ))}
-            </div>
-          );
-        })}
-        <div>
-          <span>Navegación</span>
-          <a href="/admin/dashboard">Todas las áreas</a>
-          <a href="/pos">Punto de venta</a>
-        </div>
-      </nav>
+    <div className="admin-shell">
+      <AdminSidebar session={session} section={section} />
+      <main className="admin-main">
+        <header className="admin-top">
+          <span>
+            FRAGUAN <span>/</span> {labels[section]}
+          </span>
+          <div>
+            <GlobalSearch />
+            <ThemeToggle />
+            <a href="/pos">Ir al POS</a>
+          </div>
+        </header>
+        <div className="admin-content operations-page">
       <h1>{labels[section]}</h1>
       {error && !dialog && (
         <p role="alert" className="notice">
@@ -324,53 +287,6 @@ export default function Operations({ section }: { section: string }) {
             >
               Registrar movimiento
             </Button>
-            <Button
-              disabled={!accounts.length}
-              onClick={() =>
-                open('Registrar cheque', 'check', [
-                  { key: 'number', label: 'Número / identificador' },
-                  { key: 'bank', label: 'Banco emisor' },
-                  {
-                    key: 'type',
-                    label: 'Tipo',
-                    choices: [
-                      ['paper', 'Cheque papel'],
-                      ['echeq', 'eCheq'],
-                    ],
-                  },
-                  {
-                    key: 'direction',
-                    label: 'Origen',
-                    choices: [
-                      ['issued', 'Emitido por FRAGUAN'],
-                      ['received', 'Recibido de un tercero'],
-                    ],
-                  },
-                  { key: 'party', label: 'Beneficiario / emisor' },
-                  { key: 'amount', label: 'Importe (pesos)', type: 'money' },
-                  { key: 'issuedAt', label: 'Fecha de emisión', type: 'date' },
-                  { key: 'dueAt', label: 'Vencimiento', type: 'date' },
-                  {
-                    key: 'accountId',
-                    label: 'Cuenta de débito / depósito',
-                    choices: accounts,
-                  },
-                  {
-                    key: 'payableId',
-                    label: 'Cuenta a pagar asociada (cheques emitidos)',
-                    choices: [
-                      ['none', 'Sin asociar'],
-                      ...data.payables.map((p: Row) => [
-                        p.id,
-                        `${p.description} · ${money(p.amount)}`,
-                      ]),
-                    ],
-                  },
-                ])
-              }
-            >
-              Cheque / eCheq
-            </Button>
           </div>
           {table('Cuentas', data.accounts, [
             ['name', 'Cuenta'],
@@ -378,42 +294,6 @@ export default function Operations({ section }: { section: string }) {
             ['alias', 'Alias'],
             ['balance', 'Saldo registrado', 'money'],
           ])}
-          {table(
-            'Cheques y vencimientos',
-            data.checks,
-            [
-              ['number', 'Número'],
-              ['party', 'Contraparte'],
-              ['dueAt', 'Vencimiento', 'date'],
-              ['amount', 'Importe', 'money'],
-              ['status', 'Estado'],
-            ],
-            (r) =>
-              (checkActions[r.status] ?? []).map((status) => (
-                <Button
-                  key={status}
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() =>
-                    open(
-                      `Cheque ${r.number} · ${labels[status]}`,
-                      'transition',
-                      [
-                        {
-                          key: 'status',
-                          label: 'Nuevo estado',
-                          choices: [[status, labels[status]]],
-                        },
-                        { key: 'reason', label: 'Motivo / referencia' },
-                      ],
-                      { id: r.id, status },
-                    )
-                  }
-                >
-                  {labels[status]}
-                </Button>
-              )),
-          )}
           {table(
             'Movimientos bancarios (últimos 250)',
             data.entries,
@@ -457,22 +337,6 @@ export default function Operations({ section }: { section: string }) {
                   Confirmar contra extracto
                 </Button>
               ),
-          )}
-          {table(
-            'Historial de cheques (últimos 250 cambios)',
-            data.events.map((event: Row) => ({
-              ...event,
-              fromStatus: labels[event.fromStatus] ?? event.fromStatus,
-              toStatus: labels[event.toStatus] ?? event.toStatus,
-            })),
-            [
-              ['number', 'Cheque'],
-              ['createdAt', 'Fecha', 'date'],
-              ['fromStatus', 'Estado anterior'],
-              ['toStatus', 'Nuevo estado'],
-              ['reason', 'Motivo'],
-              ['actor', 'Registrado por'],
-            ],
           )}
         </>
       )}
@@ -811,6 +675,8 @@ export default function Operations({ section }: { section: string }) {
           </form>
         </DialogContent>
       </Dialog>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

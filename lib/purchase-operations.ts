@@ -28,10 +28,7 @@ const createInput = z
     tax: money.default(0),
     shipping: money.default(0),
     paymentMethod: z
-      .string()
-      .trim()
-      .min(1)
-      .max(100)
+      .enum(['cuenta_corriente', 'transferencia', 'efectivo'])
       .default('cuenta_corriente'),
     supplierReference: z.string().trim().max(100).default(''),
     expectedAt: z.iso.date().nullable().default(null),

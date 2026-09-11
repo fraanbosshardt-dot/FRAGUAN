@@ -617,23 +617,11 @@ export async function readFinancialCalendarFromD1(
 ): Promise<FinancialCalendar> {
   const { throughOn } = calendarOptions(options);
   const payables = await queryRows<ExistingPayable>(
-    `WITH commitments AS (SELECT p.id,
-            p.description,
-            p.amount AS amountMinor,
-            COALESCE(c.dueAt,p.dueAt) AS dueAt,
-            p.kind,
-            p.status,
-            p.reference,
-            p.supplierId,
-            s.name AS supplierName
-       FROM payables p
-       LEFT JOIN suppliers s ON s.id = p.supplierId
-       LEFT JOIN checks c ON c.payableId=p.id AND c.status='issued'
-      WHERE p.status = 'pending'
-      UNION ALL
-      SELECT 'check:'||c.id,'Cheque '||c.number,c.amount,c.dueAt,'Cheque','pending',c.id,NULL,NULL
-      FROM checks c WHERE c.direction='issued' AND c.status='issued' AND c.payableId IS NULL)
-      SELECT * FROM commitments WHERE substr(dueAt,1,10)<=? ORDER BY dueAt,id`,
+    `SELECT p.id,p.description,p.amount AS amountMinor,p.dueAt,p.kind,p.status,
+            p.reference,p.supplierId,s.name AS supplierName
+       FROM payables p LEFT JOIN suppliers s ON s.id=p.supplierId
+      WHERE p.status = 'pending' AND substr(p.dueAt,1,10) <= ?
+      ORDER BY p.dueAt,p.id`,
     throughOn,
   );
   return buildFinancialCalendar({ ...source, payables }, options);

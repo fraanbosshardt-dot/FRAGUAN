@@ -1,6 +1,6 @@
 # FRAGUAN — auditoría integral de tienda, POS y Administración
 
-Actualizado: 8 de septiembre de 2026.
+Actualizado: 10 de septiembre de 2026.
 
 ## Alcance revisado
 
@@ -37,6 +37,20 @@ integridad de pagos y regresiones automatizadas. Se mantuvo la decisión de no u
   retorno hacia Mercado Pago dentro de los orígenes previstos.
 - Se añadieron nombres accesibles a controles de cantidad, anuncios de error y relaciones
   seguras para políticas abiertas en otra pestaña.
+- Administración usa ahora una única navegación segmentada en todas sus áreas. Bancos,
+  comunicaciones, canjes, comisiones y permisos dejaron de abrirse con una estructura
+  distinta, por lo que el usuario conserva siempre el contexto y el acceso al POS.
+- Se retiró la gestión de instrumentos de pago diferido de la interfaz, los formularios,
+  las respuestas de la API y las proyecciones. Bancos queda centrado en cuentas,
+  movimientos y conciliación; las tablas históricas permanecen inertes para no romper
+  migraciones ni borrar datos antiguos.
+- Se aumentó el tamaño de textos operativos, enlaces y controles en POS, Administración,
+  catálogo y checkout, manteniendo compactas las prendas del POS y de la tienda.
+- El carrito lateral se comprobó con producto real: conserva contraste, foco, cantidades,
+  subtotal, descuento por transferencia y acción de compra visible. El checkout conserva
+  los controles de cantidad ordenados y exige verificación por código de email.
+- Se eliminó del acceso inicial la cantidad fija de productos de demostración, para evitar
+  mostrar cifras internas o desactualizadas.
 
 ## Estado de cada superficie
 

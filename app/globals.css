@@ -5739,3 +5739,63 @@ textarea {
   .store-email-control button { min-height: 42px; }
   .store-order-summary { padding: 22px 18px; }
 }
+
+/* Legibilidad operativa: POS y Administración se usan durante muchas horas y
+   deben poder leerse de un vistazo sin agrandar las tarjetas del catálogo. */
+@media screen {
+  .topbar,
+  .top-label,
+  .user-chip,
+  .admin-top,
+  .sidebar-bottom {
+    font-size: 14px;
+  }
+  .section-heading .eyebrow,
+  .product-text-header,
+  .product-copy .eyebrow,
+  .nav-group > p,
+  .operations-area-nav span {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .chips button,
+  .catalog-caption,
+  .catalog-footer,
+  .customer-line,
+  .cart-empty h3,
+  .summary-line,
+  .sidebar nav a,
+  .nav-more summary,
+  .operations-area-nav a {
+    font-size: 14px;
+  }
+  .catalog-caption span:last-child,
+  .customer-line small,
+  .cart-empty p,
+  .quiet,
+  .sidebar-bottom small {
+    font-size: 12px;
+  }
+  .sidebar nav a {
+    min-height: 42px;
+  }
+  .nav-more summary {
+    min-height: 40px;
+  }
+  .store-header > nav a,
+  .store-product-copy small,
+  .store-quick-add > span,
+  .store-cookie-banner p,
+  .store-cookie-banner a,
+  .store-cookie-banner button,
+  .store-checkout-login,
+  .store-checkout-consent,
+  .store-email-control button,
+  .store-summary-quantity strong {
+    font-size: 14px;
+  }
+  .store-promo,
+  .store-section-head > div > span {
+    font-size: 13px;
+  }
+}

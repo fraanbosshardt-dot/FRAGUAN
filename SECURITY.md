@@ -30,7 +30,7 @@ El vendedor no puede consultar:
 - Costos de productos o proveedores, margen, markup, ganancia ni rentabilidad.
 - Facturación total del negocio, ventas globales o métricas de otros vendedores.
 - Caja total, saldos bancarios, flujo de fondos ni información financiera.
-- Gastos, cuentas a pagar, cheques, eCheq o retiros de socios.
+- Gastos, cuentas a pagar o retiros de socios.
 - Compras, condiciones internas ni información administrativa de proveedores.
 - Reportes generales, dashboards ejecutivos ni auditoría.
 - Configuración del sistema, usuarios o permisos.

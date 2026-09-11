@@ -64,7 +64,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 | Caja                    | Apertura/cierre, movimientos, efectivo esperado/contado y diferencias.                                                                                                                                                                                                                                                               |
 | Gastos y retiros        | Gastos, planes recurrentes y retiros de propietarios separados de gastos operativos.                                                                                                                                                                                                                                                 |
 | Cuentas a pagar         | Obligaciones, cuotas, vencimientos, calendario financiero y pagos registrados.                                                                                                                                                                                                                                                       |
-| Bancos y cheques        | Cuentas y saldos contables, movimientos, conciliación manual, cheque/eCheq como registro local, depósito, acreditación/débito, rechazo, cancelación e historial. Cheque vinculado a deuda sin duplicar pago.                                                                                                                         |
+| Bancos                  | Cuentas y saldos contables, movimientos y conciliación manual contra el extracto.                                                                                                                                                                                                                                                     |
 | Flujo de fondos         | Caja, bancos registrados, cobros y obligaciones con proyecciones de 7/30/60/90 días.                                                                                                                                                                                                                                                 |
 | Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales.                                                                                                                                                             |
 | Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
@@ -90,13 +90,13 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 - Una venta con varias promociones aparece en cada promoción. Esas filas no se suman entre sí; el reporte aclara esta atribución.
 - El canje de puntos reserva beneficios; no genera automáticamente una venta o movimiento de mercadería.
 - Si se devuelve una venta cuya recompensa de cashback ya fue gastada, se revierte hasta el saldo remanente y no se crea deuda. Actualmente los pagos con cashback pueden generar una nueva recompensa. Revisar esta política comercial antes de producción.
-- Los registros bancarios, cheques, cobros y pagos son contables/manuales. No ordenan transferencias ni emiten eCheq externos.
+- Los registros bancarios, cobros y pagos son contables/manuales. No ordenan transferencias externas.
 - Marcar una orden como enviada cambia el registro local; no envía mensajes al proveedor.
 - El ticket es interno y no sustituye la factura fiscal.
 
 ## Verificación
 
-- 25 escenarios en tests-operations.mjs sobre SQLite desechable con todas las migraciones: cashback, devoluciones, inventario, movimientos de stock, ubicaciones, cheques, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
+- Los escenarios de `tests-operations.mjs` cubren cashback, devoluciones, inventario, movimientos de stock, ubicaciones, bancos, canjes, pagos anticipados, promociones, cuotas, cumplimiento y seguridad de solicitudes.
 - Los escenarios de regresión y tienda online verifican reservas, sobreventa, referencia de transferencia, conciliación automática, venta conectada, cuenta, Club, newsletter, seguimiento privado, arrepentimiento, stock y permisos.
 - 3 escenarios específicos verifican la cola online del POS, la ausencia de campos financieros, las transiciones válidas, la auditoría del vendedor y el bloqueo de saltos de estado.
 - tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.

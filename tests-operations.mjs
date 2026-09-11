@@ -82,58 +82,6 @@ test('birthday suggestions are generated from customer dates and never sent', as
   );
 });
 
-test('linked cheque replaces the payable in projections and settles it exactly once', async (t) => {
-  const f = fixture(t),
-    { bankingWrite } = f.load('lib/banking.ts'),
-    { consolidatedCashFlow } = f.load('lib/consolidated-cashflow.ts');
-  const account = await bankingWrite(actor, {
-    action: 'account',
-    name: 'Cuenta',
-    bank: 'Banco',
-    alias: 'test',
-    opening: 50000,
-  });
-  f.database.exec(
-    "INSERT INTO payables(id,description,amount,dueAt,kind) VALUES ('payable','Proveedor',10000,'2026-01-02','Proveedor')",
-  );
-  const check = await bankingWrite(actor, {
-    action: 'check',
-    number: 'linked',
-    bank: 'Banco',
-    type: 'echeq',
-    direction: 'issued',
-    party: 'Proveedor',
-    amount: 10000,
-    issuedAt: '2026-01-01',
-    dueAt: '2026-01-02',
-    accountId: account.id,
-    payableId: 'payable',
-  });
-  const before = await consolidatedCashFlow();
-  assert.equal(before.pendingPayables.totalMinor, 10000);
-  assert.equal(before.horizons['30'].projectedKnownFundsMinor, 40000);
-  assert.throws(
-    () =>
-      f.database.exec("UPDATE payables SET status='paid' WHERE id='payable'"),
-    /settle_check_first/,
-  );
-  await bankingWrite(actor, {
-    action: 'transition',
-    id: check.id,
-    status: 'cleared',
-    reason: 'Débito confirmado',
-  });
-  assert.equal(
-    f.database.prepare("SELECT status FROM payables WHERE id='payable'").get()
-      .status,
-    'paid',
-  );
-  const after = await consolidatedCashFlow();
-  assert.equal(after.pendingPayables.totalMinor, 0);
-  assert.equal(after.currentRecordedBank.amountMinor, 40000);
-  assert.equal(after.horizons['30'].projectedKnownFundsMinor, 40000);
-});
-
 test('inventory drafts validate variants, allow edits and freeze on approval', async (t) => {
   const f = fixture(t),
     { adminWrite, adminAction } = f.load('lib/admin.ts'),
@@ -202,59 +150,16 @@ test('inventory drafts validate variants, allow edits and freeze on approval', a
   );
 });
 
-test('cheques post bank money once and reject invalid transitions', async (t) => {
+test('banking rejects retired check operations', async (t) => {
   const f = fixture(t),
-    { bankingWrite, banking } = f.load('lib/banking.ts');
-  const account = await bankingWrite(actor, {
-    action: 'account',
-    name: 'Cuenta test',
-    bank: 'Banco',
-    alias: 'test',
-    opening: 50000,
-  });
-  const check = await bankingWrite(actor, {
-    action: 'check',
-    accountId: account.id,
-    number: '123',
-    bank: 'Banco',
-    type: 'echeq',
-    direction: 'received',
-    party: 'Cliente',
-    amount: 10000,
-    issuedAt: '2026-01-01',
-    dueAt: '2026-01-02',
-  });
-  assert.equal((await banking(actor)).accounts[0].balance, 50000);
+    { bankingWrite } = f.load('lib/banking.ts');
   await assert.rejects(() =>
     bankingWrite(actor, {
-      action: 'transition',
-      id: check.id,
-      status: 'cleared',
-      reason: 'Prueba',
+      action: 'check',
+      accountId: 'account',
+      number: '123',
     }),
   );
-  await bankingWrite(actor, {
-    action: 'transition',
-    id: check.id,
-    status: 'deposited',
-    reason: 'Prueba',
-  });
-  await bankingWrite(actor, {
-    action: 'transition',
-    id: check.id,
-    status: 'cleared',
-    reason: 'Prueba',
-  });
-  assert.equal((await banking(actor)).accounts[0].balance, 60000);
-  await assert.rejects(() =>
-    bankingWrite(actor, {
-      action: 'transition',
-      id: check.id,
-      status: 'cleared',
-      reason: 'Prueba',
-    }),
-  );
-  assert.equal((await banking(actor)).accounts[0].balance, 60000);
 });
 test('bank entries are idempotent and reconciliation validates amount and date', async (t) => {
   const f = fixture(t),

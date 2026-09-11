@@ -1,14 +1,11 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  LayoutDashboard,
   ShoppingBag,
   Package,
   Boxes,
   Users,
-  Truck,
   Wallet,
-  Receipt,
   CalendarClock,
   ArrowUpRight,
   Plus,
@@ -17,17 +14,11 @@ import {
   RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
-  Tag,
   ClipboardList,
   Sparkles,
-  LogOut,
   Check,
   Printer,
-  TrendingUp,
-  Globe2,
   PackageCheck,
-  BarChart3,
-  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +46,10 @@ import { InventoryLines } from '@/components/inventory-lines';
 import { Barcode } from '@/components/barcode';
 import { printCommerce } from '@/lib/printing';
 import { LoadingState } from '@/components/loading-state';
+import {
+  AdminSidebar,
+  navigation,
+} from '@/components/admin-navigation';
 const exportLabels: Record<string, string> = {
   products: 'Productos',
   categories: 'Categorías',
@@ -76,87 +71,6 @@ const exportLabels: Record<string, string> = {
   color: 'Color',
   size: 'Talle',
 };
-type NavigationItem = readonly [string, string, LucideIcon];
-type NavigationGroup = {
-  label: string;
-  items: readonly NavigationItem[];
-  primaryCount: number;
-};
-const navigationGroups: readonly NavigationGroup[] = [
-  {
-    label: 'Inicio',
-    primaryCount: 1,
-    items: [['dashboard', 'Vista general', LayoutDashboard]],
-  },
-  {
-    label: 'Tienda online',
-    primaryCount: 3,
-    items: [
-      ['online-orders', 'Pedidos online', PackageCheck],
-      ['online-catalog', 'Catálogo online', Globe2],
-      ['marketing', 'Crecimiento online', BarChart3],
-    ],
-  },
-  {
-    label: 'Ventas y clientes',
-    primaryCount: 3,
-    items: [
-      ['sales', 'Ventas y devoluciones', ShoppingBag],
-      ['customers', 'Clientes y Club', Users],
-      ['promotions', 'Promociones', Tag],
-      ['customer-intelligence', 'Segmentos y fidelización', Sparkles],
-      ['club-rewards', 'Canjes del Club', Tag],
-      ['communications', 'Comunicaciones', Users],
-      ['newsletter', 'Email y newsletter', Sparkles],
-    ],
-  },
-  {
-    label: 'Productos y compras',
-    primaryCount: 4,
-    items: [
-      ['products', 'Productos y stock', Package],
-      ['storage', 'Ubicaciones y depósito', Boxes],
-      ['purchases', 'Compras', ClipboardList],
-      ['suppliers', 'Proveedores', Truck],
-      ['stock-movements', 'Movimientos de stock', ArrowUpRight],
-      ['replenishment', 'Reposición sugerida', RefreshCw],
-      ['inventory', 'Inventario físico', Boxes],
-    ],
-  },
-  {
-    label: 'Dinero y compromisos',
-    primaryCount: 4,
-    items: [
-      ['cash', 'Caja', Wallet],
-      ['banking', 'Bancos y cheques', Wallet],
-      ['expenses', 'Gastos', Receipt],
-      ['payables', 'Cuentas a pagar', CalendarClock],
-      ['financial-calendar', 'Calendario financiero', CalendarClock],
-      ['cash-flow', 'Flujo de fondos', TrendingUp],
-      ['withdrawals', 'Retiros de socios', ArrowUpRight],
-    ],
-  },
-  {
-    label: 'Análisis',
-    primaryCount: 3,
-    items: [
-      ['reports', 'Reportes', LayoutDashboard],
-      ['insights', 'FRAGUAN Insights', Sparkles],
-      ['seller-commissions', 'Comisiones del equipo', TrendingUp],
-    ],
-  },
-  {
-    label: 'Sistema',
-    primaryCount: 2,
-    items: [
-      ['users', 'Equipo', Users],
-      ['settings', 'Configuración', SlidersHorizontal],
-      ['access', 'Permisos por usuario', ShieldCheck],
-      ['audit', 'Auditoría', ShieldCheck],
-    ],
-  },
-];
-const navigation = navigationGroups.flatMap((group) => group.items);
 const columns: Record<string, [string, string, string?][]> = {
   'online-orders': [
     ['orderNumber', 'Pedido'],
@@ -1276,70 +1190,7 @@ export default function Admin({ section }: { section: string }) {
   }
   return (
     <div className="admin-shell">
-      <aside className="sidebar">
-        <a className="wordmark" href="/admin/dashboard">
-          FRAGUAN<span>ADMINISTRACIÓN</span>
-        </a>
-        <a className="new-sale-link" href="/pos">
-          <Plus size={16} /> Nueva venta <ArrowUpRight size={15} />
-        </a>
-        <nav aria-label="Áreas de administración">
-          {navigationGroups.map((group) => {
-            const items = group.items.filter(([key]) =>
-              session?.permissions?.includes(key),
-            );
-            if (!items.length) return null;
-            const primary = items.slice(0, group.primaryCount);
-            const secondary = items.slice(group.primaryCount);
-            return (
-              <div className="nav-group" key={group.label}>
-                <p>{group.label}</p>
-                {primary.map(([key, label, Icon]) => (
-                  <a
-                    key={key}
-                    href={'/admin/' + key}
-                    className={section === key ? 'active' : ''}
-                  >
-                    <Icon size={17} />
-                    {label}
-                  </a>
-                ))}
-                {!!secondary.length && (
-                  <details
-                    className="nav-more"
-                    open={secondary.some(([key]) => key === section)}
-                  >
-                    <summary>Más herramientas</summary>
-                    {secondary.map(([key, label, Icon]) => (
-                      <a
-                        key={key}
-                        href={'/admin/' + key}
-                        className={section === key ? 'active' : ''}
-                      >
-                        <Icon size={17} />
-                        {label}
-                      </a>
-                    ))}
-                  </details>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-        <div className="sidebar-bottom">
-          <span className="avatar">{session?.user?.name?.[0] ?? 'F'}</span>
-          <span>
-            {session?.user?.name?.split('@')[0]}
-            <small>{session?.user?.role}</small>
-          </span>
-          <a
-            href="/signout-with-chatgpt?return_to=%2Fpos"
-            title="Cerrar sesión"
-          >
-            <LogOut size={15} />
-          </a>
-        </div>
-      </aside>
+      <AdminSidebar session={session} section={section} />
       <main className="admin-main">
         <header className="admin-top">
           <span>
@@ -4902,8 +4753,6 @@ export default function Admin({ section }: { section: string }) {
                     choices: [
                       'Proveedor',
                       'Transferencia',
-                      'Cheque',
-                      'eCheq',
                       'Servicio',
                       'Cuota',
                     ].map((value) => [value, value]),
@@ -5056,8 +4905,6 @@ export default function Admin({ section }: { section: string }) {
                         choices: [
                           'Proveedor',
                           'Transferencia',
-                          'Cheque',
-                          'eCheq',
                           'Servicio',
                           'Cuota',
                         ].map((x) => [x, x]),
@@ -5205,8 +5052,6 @@ export default function Admin({ section }: { section: string }) {
                         choices: [
                           ['cuenta_corriente', 'Cuenta corriente'],
                           ['transferencia', 'Transferencia'],
-                          ['cheque', 'Cheque'],
-                          ['echeq', 'eCheq'],
                           ['efectivo', 'Efectivo'],
                         ],
                         value: 'cuenta_corriente',

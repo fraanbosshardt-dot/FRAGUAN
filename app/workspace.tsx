@@ -466,7 +466,7 @@ export default function Workspace() {
         <p>
           Activá tu espacio privado como administrador.
           <br />
-          Podés explorar con una colección de 50 productos de demostración.
+          Podés explorar con una colección de demostración.
         </p>
         {error && (
           <p role="alert" className="notice">
