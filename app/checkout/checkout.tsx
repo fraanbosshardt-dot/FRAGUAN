@@ -540,7 +540,13 @@ export default function Checkout() {
                     name="document"
                     inputMode="numeric"
                     autoComplete="off"
-                    maxLength={12}
+                    pattern="[0-9]{7,11}"
+                    maxLength={11}
+                    onInput={(event) => {
+                      event.currentTarget.value = event.currentTarget.value
+                        .replace(/\D/g, '')
+                        .slice(0, 11);
+                    }}
                   />
                 </label>
               </div>
@@ -625,10 +631,15 @@ export default function Checkout() {
                     Código postal
                     <input
                       value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
+                      onChange={(e) =>
+                        setPostalCode(
+                          e.target.value.replace(/\D/g, '').slice(0, 4),
+                        )
+                      }
                       inputMode="numeric"
                       autoComplete="postal-code"
-                      maxLength={8}
+                      pattern="[0-9]{4}"
+                      maxLength={4}
                       required
                     />
                   </label>

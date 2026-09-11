@@ -84,10 +84,16 @@ import {
 import { importProducts, productImportTemplate } from '@/lib/product-import';
 import {
   adminPinSetCookie,
-  adminPinToken,
+  createAdminPinToken,
   verifyAdminPin,
   verifyAdminPinRequest,
 } from '@/lib/admin-pin';
+import {
+  clearGlobalRateLimit,
+  clearRateLimit,
+  enforceGlobalRateLimit,
+  enforceRateLimit,
+} from '@/lib/rate-limit';
 import { storageOverview, storageWrite } from '@/lib/storage';
 import {
   createOnlineOrder,
@@ -141,10 +147,7 @@ const posReadResources = new Set([
   'catalog',
   'methods',
   'offers',
-  'customers',
   'customer-credit-balance',
-  'customer-cashback',
-  'sales',
   'pos-online-orders',
 ]);
 const posWriteResources = new Set([
@@ -156,16 +159,67 @@ const posWriteResources = new Set([
   'refunds',
   'refund-authorizations',
 ]);
+function enforcePublicLimit(req: Request, resource: string, body: unknown) {
+  const input =
+    body && typeof body === 'object'
+      ? (body as Record<string, unknown>)
+      : ({} as Record<string, unknown>);
+  const action =
+    typeof input.action === 'string'
+      ? input.action.slice(0, 30)
+      : '';
+  const rules: Record<string, readonly [number, number]> = {
+    'store-account': [12, 15 * 60_000],
+    'store-checkout': [12, 10 * 60_000],
+    'store-email-verification': [action === 'request' ? 5 : 12, 10 * 60_000],
+    'store-transfer': [12, 60 * 60_000],
+    'store-return-request': [6, 60 * 60_000],
+    'store-newsletter': [8, 60 * 60_000],
+    'store-review': [8, 60 * 60_000],
+    'store-back-in-stock': [15, 60 * 60_000],
+    'store-event': [180, 60_000],
+    'store-shipping': [120, 60_000],
+    'store-coupon': [120, 60_000],
+    'store-checkout-quote': [120, 60_000],
+  };
+  const [limit, windowMs] = rules[resource] ?? [60, 60_000];
+  enforceRateLimit(req, resource, limit, windowMs, action);
+  const accountTarget =
+    typeof input.email === 'string'
+      ? input.email.trim().toLowerCase().slice(0, 254)
+      : '';
+  const globallyLimited = new Set([
+    'store-account',
+    'store-checkout',
+    'store-email-verification',
+    'store-newsletter',
+    'store-back-in-stock',
+    'store-review',
+  ]);
+  if (accountTarget && globallyLimited.has(resource))
+    enforceGlobalRateLimit(
+      `${resource}-account`,
+      `${action}:${accountTarget}`,
+      resource === 'store-account' ? 30 : 20,
+      resource === 'store-account' ? 15 * 60_000 : 60 * 60_000,
+    );
+}
 async function requireAdminPinForApi(
   req: Request,
   resource: string,
   posResources: Set<string>,
-  a: { role: string },
+  a: { id: string; role: string },
+  url?: URL,
 ) {
+  const posScopedRead =
+    req.method === 'GET' &&
+    url?.searchParams.get('scope') === 'pos' &&
+    (resource === 'customers' || resource === 'sales');
   if (
     ['ADMIN', 'GERENTE'].includes(a.role) &&
     !posResources.has(resource) &&
-    !(await verifyAdminPinRequest(req))
+    !posScopedRead &&
+    !(await verifyAdminPinRequest(req, a.id))
   )
     throw new AppError(403, 'Ingresá el PIN de Administración para continuar.');
 }
@@ -176,18 +230,24 @@ export async function GET(
   try {
     const { resource } = await params;
     const url = new URL(req.url);
+    if (resource === 'store-order' || resource === 'store-recover-cart')
+      enforceRateLimit(req, resource, 120, 60_000);
     if (resource === 'store-catalog')
       return reply(
         await storeCatalog(
-          url.searchParams.get('q') ?? '',
-          url.searchParams.get('section') ?? '',
+          (url.searchParams.get('q') ?? '').slice(0, 100),
+          (url.searchParams.get('section') ?? '').slice(0, 80),
         ),
       );
     if (resource === 'store-product')
-      return reply(await storeProduct(url.searchParams.get('slug') ?? ''));
+      return reply(
+        await storeProduct((url.searchParams.get('slug') ?? '').slice(0, 160)),
+      );
     if (resource === 'store-reviews')
       return reply(
-        await publicProductReviews(url.searchParams.get('productId') ?? ''),
+        await publicProductReviews(
+          (url.searchParams.get('productId') ?? '').slice(0, 100),
+        ),
       );
     if (resource === 'store-recover-cart')
       return reply(await recoverCart(url.searchParams.get('token') ?? ''));
@@ -267,7 +327,7 @@ export async function GET(
       });
     }
     const a = await actor();
-    await requireAdminPinForApi(req, resource, posReadResources, a);
+    await requireAdminPinForApi(req, resource, posReadResources, a, url);
     if (resource === 'global-search')
       return reply(await globalSearch(a, url.searchParams.get('q') ?? ''));
     if (resource === 'access') return reply(await listAccess(a));
@@ -338,7 +398,11 @@ export async function GET(
     if (resource === 'customers') {
       requirePermission(a, 'customers');
       const q = url.searchParams.get('q')?.slice(0, 100) ?? '';
-      if (a.role === 'VENDEDOR' || a.role === 'CAJA') {
+      if (
+        url.searchParams.get('scope') === 'pos' ||
+        a.role === 'VENDEDOR' ||
+        a.role === 'CAJA'
+      ) {
         if (q.length < 2) return reply([]);
         return reply(
           await rows(
@@ -405,8 +469,41 @@ export async function GET(
     if (resource === 'sales') {
       if (!can(a, 'sales') && !can(a, 'own-sales'))
         throw new AppError(403, 'Acceso denegado.');
-      if (url.searchParams.has('id'))
-        return reply(await saleDetail(a, url.searchParams.get('id')!));
+      const posScope = url.searchParams.get('scope') === 'pos';
+      if (url.searchParams.has('id')) {
+        const saleId = url.searchParams.get('id')!.slice(0, 128);
+        if (posScope) {
+          const ownSale = await one<{ id: string }>(
+            'SELECT id FROM sales WHERE id=? AND sellerId=?',
+            saleId,
+            a.id,
+          );
+          if (!ownSale) throw new AppError(403, 'Acceso denegado.');
+        }
+        return reply(await saleDetail(a, saleId));
+      }
+      if (posScope) {
+        const days = Number(
+          (
+            await one<{ value: string }>(
+              'SELECT value FROM settings WHERE key=?',
+              'recentDays',
+            )
+          )?.value || 0,
+        );
+        if (!days)
+          throw new AppError(
+            403,
+            'Consulta de ventas recientes deshabilitada.',
+          );
+        return reply(
+          await rows(
+            'SELECT id,ticket,total,createdAt,status FROM sales WHERE sellerId=? AND createdAt>=? ORDER BY createdAt DESC LIMIT 50',
+            a.id,
+            new Date(Date.now() - days * 86400000).toISOString(),
+          ),
+        );
+      }
       if (can(a, 'sales'))
         return reply(
           await rows(
@@ -630,9 +727,12 @@ export async function POST(
   { params }: { params: Promise<{ resource: string }> },
 ) {
   try {
-    protectWrite(req);
     const { resource } = await params;
-    const body = await readJsonBody(req);
+    const publicResource = resource.startsWith('store-');
+    const maxBytes = publicResource ? 32768 : 100000;
+    protectWrite(req, maxBytes);
+    const body = await readJsonBody(req, maxBytes);
+    if (publicResource) enforcePublicLimit(req, resource, body);
     if (resource === 'store-account') {
       const result = await storeAccountWrite(req, body);
       const response = reply(result.data, 201);
@@ -658,9 +758,9 @@ export async function POST(
     if (resource === 'store-shipping') {
       const input = z
         .object({
-          postalCode: z.string(),
-          subtotal: z.number().int().nonnegative(),
-          method: z.string(),
+          postalCode: z.string().trim().regex(/^\d{4}$/),
+          subtotal: z.number().int().nonnegative().max(100000000000),
+          method: z.enum(['correo-argentino-home', 'pickup']),
         })
         .strict()
         .parse(body);
@@ -679,17 +779,21 @@ export async function POST(
     if (resource === 'admin-pin') {
       const a = await actor();
       requirePermission(a, 'dashboard');
+      enforceRateLimit(req, 'admin-pin', 8, 15 * 60_000, a.id);
+      enforceGlobalRateLimit('admin-pin-account', a.id, 20, 15 * 60_000);
       const x = z
         .object({ pin: z.string().regex(/^\d{6}$/) })
         .strict()
         .parse(body);
       if (!(await verifyAdminPin(x.pin)))
         throw new AppError(403, 'PIN incorrecto.');
+      clearRateLimit(req, 'admin-pin', a.id);
+      clearGlobalRateLimit('admin-pin-account', a.id);
       const response = reply({ ok: true });
       response.headers.append(
         'Set-Cookie',
         adminPinSetCookie(
-          await adminPinToken(),
+          await createAdminPinToken(a.id),
           new URL(req.url).protocol === 'https:',
         ),
       );

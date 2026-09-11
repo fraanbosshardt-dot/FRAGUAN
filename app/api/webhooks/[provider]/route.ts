@@ -1,7 +1,14 @@
 import { env } from 'cloudflare:workers';
 import { z } from 'zod';
-import { AppError, fail, reply } from '@/lib/auth';
+import {
+  AppError,
+  fail,
+  readJsonBody,
+  reply,
+  requireJsonRequest,
+} from '@/lib/auth';
 import { confirmOnlinePaymentWebhook } from '@/lib/online-store';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +16,14 @@ function hex(bytes: ArrayBuffer) {
   return [...new Uint8Array(bytes)]
     .map((value) => value.toString(16).padStart(2, '0'))
     .join('');
+}
+
+function secureEqual(received: string, expected: string) {
+  let difference = received.length ^ expected.length;
+  for (let index = 0; index < expected.length; index += 1)
+    difference |=
+      (received.charCodeAt(index) || 0) ^ expected.charCodeAt(index);
+  return difference === 0;
 }
 
 async function verifyMercadoPago(req: Request, dataId: string) {
@@ -22,6 +37,13 @@ async function verifyMercadoPago(req: Request, dataId: string) {
   );
   if (!parts.ts || !parts.v1)
     throw new AppError(401, 'Firma de Mercado Pago inválida.');
+  const timestamp = Number(parts.ts);
+  const timestampMs = timestamp > 10_000_000_000 ? timestamp : timestamp * 1000;
+  if (
+    !Number.isFinite(timestampMs) ||
+    Math.abs(Date.now() - timestampMs) > 10 * 60_000
+  )
+    throw new AppError(401, 'Firma de Mercado Pago vencida.');
   const manifest = `id:${dataId.toLowerCase()};request-id:${requestId};ts:${parts.ts};`;
   const key = await crypto.subtle.importKey(
     'raw',
@@ -33,12 +55,8 @@ async function verifyMercadoPago(req: Request, dataId: string) {
   const expected = hex(
     await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(manifest)),
   );
-  if (expected.length !== parts.v1.length)
+  if (!secureEqual(parts.v1, expected))
     throw new AppError(401, 'Firma de Mercado Pago inválida.');
-  let difference = 0;
-  for (let index = 0; index < expected.length; index++)
-    difference |= expected.charCodeAt(index) ^ parts.v1.charCodeAt(index);
-  if (difference) throw new AppError(401, 'Firma de Mercado Pago inválida.');
 }
 
 async function mercadoPagoEvent(req: Request, raw: any) {
@@ -53,6 +71,7 @@ async function mercadoPagoEvent(req: Request, raw: any) {
     `https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`,
     {
       headers: { Authorization: `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN}` },
+      signal: AbortSignal.timeout(8000),
     },
   );
   if (!response.ok)
@@ -75,12 +94,19 @@ export async function POST(
   { params }: { params: Promise<{ provider: string }> },
 ) {
   try {
-    const provider = (await params).provider.slice(0, 50).toLowerCase();
-    const raw = await req.json();
+    requireJsonRequest(req, 65536);
+    enforceRateLimit(req, 'payment-webhook', 300, 60_000);
+    const provider = (await params).provider.slice(0, 30).toLowerCase();
+    if (!/^[a-z0-9_-]{2,30}$/.test(provider))
+      throw new AppError(404, 'Proveedor de pago inválido.');
+    const raw = await readJsonBody(req, 65536);
     if (provider === 'mercadopago')
       return reply(await mercadoPagoEvent(req, raw));
     const secret = env.ONLINE_PAYMENT_WEBHOOK_SECRET;
-    if (!secret || req.headers.get('x-fraguan-webhook-secret') !== secret)
+    if (
+      !secret ||
+      !secureEqual(req.headers.get('x-fraguan-webhook-secret') ?? '', secret)
+    )
       throw new AppError(401, 'Firma de webhook inválida.');
     const event = z
       .looseObject({

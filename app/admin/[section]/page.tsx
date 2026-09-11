@@ -1,5 +1,5 @@
 import { actor, can } from '@/lib/auth';
-import { adminPinCookie, adminPinToken } from '@/lib/admin-pin';
+import { adminPinCookie, verifyAdminPinToken } from '@/lib/admin-pin';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Admin from '../../admin-workspace';
@@ -30,7 +30,8 @@ export default async function AdminPage({
       </main>
     );
   const cookieStore = await cookies();
-  if (cookieStore.get(adminPinCookie)?.value !== (await adminPinToken()))
+  const adminToken = cookieStore.get(adminPinCookie)?.value ?? '';
+  if (!(await verifyAdminPinToken(adminToken, a.id)))
     redirect(
       `/admin-access?returnTo=${encodeURIComponent(`/admin/${section}`)}`,
     );

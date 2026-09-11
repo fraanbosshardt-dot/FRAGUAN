@@ -1,6 +1,6 @@
 # FRAGUAN — Política obligatoria del rol VENDEDOR
 
-Esta política tiene prioridad sobre cualquier permiso más amplio o ambiguo de los requisitos del sistema y del POS. Describe requisitos de implementación; no implica que exista un backend implementado o verificado.
+Esta política tiene prioridad sobre cualquier permiso más amplio o ambiguo de los requisitos del sistema y del POS. Sus controles principales están implementados y verificados; la lista final de infraestructura productiva figura al final del documento.
 
 ## Acceso y experiencia
 
@@ -88,3 +88,27 @@ No puede existir `cost`, `margin`, `markup`, `profit`, datos de proveedor ni inf
 9. Una venta válida sigue funcionando y genera sus movimientos automáticos sin conceder permisos de ajuste de stock o caja.
 
 Estas pruebas deben ejecutarse contra el servidor con sesiones reales de prueba y solicitudes manipuladas. Verificar únicamente botones ocultos no satisface estos criterios.
+
+## Endurecimiento aplicado el 11 de septiembre de 2026
+
+- La sesión de Administración se firma con HMAC-SHA256, queda ligada al usuario interno, vence criptográficamente a las ocho horas y viaja en una cookie `HttpOnly`, `SameSite=Strict` y `Secure` bajo HTTPS. Alterar la cookie, copiarla a otro usuario o superar su vencimiento invalida el acceso.
+- En producción son obligatorios un `ADMIN_PIN` de seis dígitos y un `ADMIN_SESSION_SECRET` aleatorio de al menos 32 caracteres. El PIN local `197313` es solo la configuración de desarrollo acordada.
+- Un ADMIN o GERENTE también necesita el PIN para consultar APIs administrativas. Clientes y ventas usan un alcance `scope=pos` separado: este solo devuelve datos básicos de clientes y ventas recientes del usuario autenticado. Agregar el parámetro a mano no amplía permisos.
+- La identidad temporal basada en encabezados queda cerrada fuera de desarrollo salvo que `INTERNAL_AUTH_TRUST_PROXY=true`. Esa opción solo corresponde detrás de un proxy confiable que elimine encabezados aportados por Internet; se reemplazará por Google Auth con whitelist para Administración y POS.
+- Las escrituras exigen origen exacto y JSON, limitan bytes reales aunque falte `Content-Length`, acotan profundidad y cantidad de nodos, y rechazan claves de contaminación de prototipos. Formularios públicos limitan longitud, formato y caracteres de control.
+- Inicio de sesión, verificación de email, checkout, newsletter, reposición, reseñas, devoluciones, PIN y webhooks tienen límites por dirección; los objetivos sensibles suman límites por cuenta. El proceso también limita la memoria destinada a esos contadores.
+- El login por contraseña queda deshabilitado fuera de desarrollo salvo activación expresa con `STORE_PASSWORD_AUTH_ENABLED=true`. La comparación de contraseña usa tiempo constante y ejecuta una derivación ficticia cuando la cuenta no existe.
+- El propietario configurado es el único que puede crear otro ADMIN. No puede desactivarse al propietario, y otro administrador solo puede ser desactivado por ese propietario.
+- Los webhooks de Mercado Pago validan HMAC, identificador, ventana temporal, moneda, referencia, estado e importe; después consultan el pago directamente al proveedor antes de acreditar. Las llamadas externas tienen timeout.
+- Las páginas privadas y todas las APIs usan `no-store`. Se aplican CSP, HSTS bajo HTTPS, bloqueo de marcos, aislamiento de origen, `nosniff` y política restrictiva de permisos; `TRACE` y `CONNECT` se rechazan.
+
+## Obligatorio antes de producción
+
+1. Configurar Google Auth, whitelist separada para personal, MFA en las cuentas autorizadas y cierre de la autenticación temporal.
+2. Generar secretos productivos independientes, rotarlos si alguno fue compartido, guardarlos únicamente en el gestor de secretos y verificar que `.env` no se suba a Git.
+3. Colocar rate limiting distribuido y WAF en el borde. El limitador actual vive por instancia y funciona como defensa adicional, pero no coordina múltiples procesos.
+4. Restringir PostgreSQL a la red privada de Railway, usar SSL para accesos externos temporales, mínimo privilegio, backups y prueba de restauración.
+5. Probar webhooks reales de Mercado Pago, Correo Argentino y Resend en entornos de prueba, con reintentos e importes controlados.
+6. Ejecutar pruebas de autorización con cuentas reales de cada rol y una revisión externa antes de habilitar ventas.
+
+Ningún sistema conectado a Internet puede considerarse imposible de vulnerar. Este diseño reduce superficies conocidas, niega por defecto y conserva verificaciones de negocio en el servidor.

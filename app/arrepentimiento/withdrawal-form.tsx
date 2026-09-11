@@ -68,9 +68,9 @@ export default function WithdrawalForm() {
                 <option value="exchange">Cambio de talle o color</option>
                 <option value="return">Devolución por inconveniente</option>
               </select></label>
-              <label>Número de pedido<input name="orderNumber" inputMode="numeric" autoComplete="off" placeholder="Ej. 1042" required /></label>
-              <label>Email de la compra<input name="email" type="email" autoComplete="email" required /></label>
-              <label>Teléfono <small>Opcional</small><input name="phone" type="tel" autoComplete="tel" /></label>
+              <label>Número de pedido<input name="orderNumber" inputMode="numeric" autoComplete="off" pattern="[0-9]{4,9}" maxLength={9} placeholder="Ej. 1042" required /></label>
+              <label>Email de la compra<input name="email" type="email" autoComplete="email" maxLength={200} required /></label>
+              <label>Teléfono <small>Opcional</small><input name="phone" type="tel" autoComplete="tel" maxLength={25} /></label>
               <label>Motivo<select name="reason" required defaultValue="">
                 <option value="" disabled>Seleccionar</option>
                 <option value="Me arrepentí de la compra">Me arrepentí de la compra</option>
@@ -78,7 +78,7 @@ export default function WithdrawalForm() {
                 <option value="El producto no era lo esperado">El producto no era lo esperado</option>
                 <option value="Otro motivo">Otro motivo</option>
               </select></label>
-              <label>Detalle <small>Opcional</small><textarea name="detail" rows={4} maxLength={1000} /></label>
+              <label>Detalle <small>Opcional · máximo 600 caracteres</small><textarea name="detail" rows={4} maxLength={600} /></label>
               {error && <p className="store-buy-error" role="alert">{error}</p>}
               <button className="store-auth-submit" disabled={busy}>{busy ? 'Registrando…' : 'Confirmar arrepentimiento'} <ArrowRight /></button>
               <p className="store-form-legal">Este formulario solicita la revocación. El reintegro y la devolución se coordinan con Atención al Cliente.</p>

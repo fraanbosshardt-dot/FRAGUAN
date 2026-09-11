@@ -4,6 +4,11 @@ import { Actor, AppError, requirePermission } from './auth';
 import { currentStoreCustomer } from './online-store';
 import { db, id, now, one, rows, statement } from '@/db/queries';
 import { sendMarketingEmail } from './email';
+import {
+  publicLine,
+  publicMultiline,
+  publicOptionalLine,
+} from './public-validation';
 
 const trackedEvents = [
   'page_view',
@@ -23,22 +28,28 @@ const trackedEvents = [
 const eventInput = z.object({
   sessionId: z.uuid(),
   event: z.enum(trackedEvents),
-  path: z.string().trim().max(300).default(''),
+  path: publicOptionalLine(300),
   productId: z.string().trim().max(100).optional(),
   variantId: z.string().trim().max(100).optional(),
   orderId: z.uuid().optional(),
   value: z.number().int().min(0).max(1_000_000_000).default(0),
-  source: z.string().trim().max(100).default(''),
-  medium: z.string().trim().max(100).default(''),
-  campaign: z.string().trim().max(160).default(''),
-  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).default({}),
+  source: publicOptionalLine(100),
+  medium: publicOptionalLine(100),
+  campaign: publicOptionalLine(160),
+  metadata: z
+    .record(
+      z.string().max(50),
+      z.union([z.string().max(300), z.number(), z.boolean(), z.null()]),
+    )
+    .refine((value) => Object.keys(value).length <= 20, 'Demasiados datos.')
+    .default({}),
   email: z.union([z.email().trim().toLowerCase().max(200), z.literal('')]).default(''),
   cart: z.array(z.object({
     variantId: z.string().min(1).max(100),
-    productName: z.string().min(1).max(160),
-    slug: z.string().min(1).max(160),
-    color: z.string().max(100),
-    size: z.string().max(60),
+    productName: publicLine(1, 160),
+    slug: publicLine(1, 160),
+    color: publicLine(0, 100),
+    size: publicLine(0, 60),
     price: z.number().int().min(0),
     quantity: z.number().int().min(1).max(20),
   }).strict()).max(30).optional(),
@@ -134,10 +145,13 @@ export async function submitProductReview(req: Request, raw: unknown) {
     productId: z.string().min(1).max(100),
     orderId: z.union([z.uuid(), z.literal('')]).default(''),
     email: z.email().trim().toLowerCase().max(200),
-    displayName: z.string().trim().min(2).max(80),
+    displayName: publicLine(2, 80),
     rating: z.number().int().min(1).max(5),
-    title: z.string().trim().max(100).default(''),
-    body: z.string().trim().min(10).max(1000),
+    title: publicOptionalLine(100),
+    body: publicMultiline(600).refine(
+      (value) => value.length >= 10,
+      'La reseña es demasiado corta.',
+    ),
   }).strict().parse(raw);
   const customer = await currentStoreCustomer(req);
   let verified = 0;

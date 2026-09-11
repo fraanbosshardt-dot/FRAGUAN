@@ -12,6 +12,7 @@ export class AppError extends Error {
   constructor(
     public status: number,
     message: string,
+    public headers?: Record<string, string>,
   ) {
     super(message);
   }
@@ -106,19 +107,28 @@ export function can(a: Actor, resource: string) {
 export function requirePermission(a: Actor, resource: string) {
   if (!can(a, resource)) throw new AppError(403, 'Acceso denegado.');
 }
-export function protectWrite(req: Request) {
-  const origin = req.headers.get('origin');
-  if (!origin || origin !== new URL(req.url).origin)
-    throw new AppError(403, 'Origen no autorizado.');
+export function requireJsonRequest(req: Request, maxBytes = 100000) {
   if (
     req.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !==
     'application/json'
   )
     throw new AppError(415, 'Se requiere JSON.');
-  const size = Number(req.headers.get('content-length') ?? 0);
-  if (size > 100000) throw new AppError(413, 'Solicitud demasiado grande.');
+  const rawSize = req.headers.get('content-length');
+  if (rawSize) {
+    const size = Number(rawSize);
+    if (!Number.isSafeInteger(size) || size < 0)
+      throw new AppError(400, 'Tamaño de solicitud inválido.');
+    if (size > maxBytes)
+      throw new AppError(413, 'Solicitud demasiado grande.');
+  }
 }
-export async function readJsonBody(req: Request) {
+export function protectWrite(req: Request, maxBytes = 100000) {
+  const origin = req.headers.get('origin');
+  if (!origin || origin !== new URL(req.url).origin)
+    throw new AppError(403, 'Origen no autorizado.');
+  requireJsonRequest(req, maxBytes);
+}
+export async function readJsonBody(req: Request, maxBytes = 100000) {
   const reader = req.body?.getReader();
   if (!reader) throw new AppError(400, 'Se requiere un cuerpo JSON.');
   const decoder = new TextDecoder();
@@ -129,7 +139,7 @@ export async function readJsonBody(req: Request) {
       const chunk = await reader.read();
       if (chunk.done) break;
       bytes += chunk.value.byteLength;
-      if (bytes > 100000) {
+      if (bytes > maxBytes) {
         await reader.cancel();
         throw new AppError(413, 'Solicitud demasiado grande.');
       }
@@ -140,8 +150,27 @@ export async function readJsonBody(req: Request) {
     reader.releaseLock();
   }
   try {
-    return JSON.parse(source);
-  } catch {
+    const parsed = JSON.parse(source);
+    let nodes = 0;
+    const inspect = (value: unknown, depth: number) => {
+      nodes += 1;
+      if (depth > 12 || nodes > 5000)
+        throw new AppError(400, 'La estructura JSON es demasiado compleja.');
+      if (!value || typeof value !== 'object') return;
+      if (Array.isArray(value)) {
+        for (const item of value) inspect(item, depth + 1);
+        return;
+      }
+      for (const [key, item] of Object.entries(value)) {
+        if (['__proto__', 'prototype', 'constructor'].includes(key))
+          throw new AppError(400, 'La estructura JSON no es válida.');
+        inspect(item, depth + 1);
+      }
+    };
+    inspect(parsed, 0);
+    return parsed;
+  } catch (error) {
+    if (error instanceof AppError) throw error;
     throw new AppError(400, 'El cuerpo JSON no es válido.');
   }
 }
@@ -156,7 +185,12 @@ export function reply(data: unknown, status = 200) {
   });
 }
 export function fail(e: unknown) {
-  if (e instanceof AppError) return reply({ error: e.message }, e.status);
+  if (e instanceof AppError) {
+    const response = reply({ error: e.message }, e.status);
+    for (const [name, value] of Object.entries(e.headers ?? {}))
+      response.headers.set(name, value);
+    return response;
+  }
   if (e instanceof Error && e.name === 'ZodError')
     return reply({ error: 'Revisá los campos ingresados.' }, 400);
   console.error(

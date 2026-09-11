@@ -283,6 +283,15 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
     ];
   } else if (resource === 'users') {
     const x = v.userInput.parse(raw);
+    const owner = await one<{ value: string }>(
+      'SELECT value FROM settings WHERE key=?',
+      'owner',
+    );
+    if (x.role === 'ADMIN' && a.email.toLowerCase() !== owner?.value)
+      throw new AppError(
+        403,
+        'Solo el propietario puede crear otra cuenta administradora.',
+      );
     commands = [
       statement(
         'INSERT INTO users(id,email,name,role) VALUES (?,?,?,?)',
@@ -525,6 +534,21 @@ export async function adminAction(a: Actor, raw: unknown) {
     requirePermission(a, 'users');
     if (input.id === a.id)
       throw new AppError(400, 'No podés desactivar tu propia cuenta.');
+    const [target, owner] = await Promise.all([
+      one<{ email: string; role: string }>(
+        'SELECT email,role FROM users WHERE id=?',
+        input.id,
+      ),
+      one<{ value: string }>('SELECT value FROM settings WHERE key=?', 'owner'),
+    ]);
+    if (!target) throw new AppError(404, 'Usuario no encontrado.');
+    if (target.email.toLowerCase() === owner?.value)
+      throw new AppError(403, 'La cuenta propietaria no puede desactivarse.');
+    if (target.role === 'ADMIN' && a.email.toLowerCase() !== owner?.value)
+      throw new AppError(
+        403,
+        'Solo el propietario puede desactivar otra cuenta administradora.',
+      );
     commands = [statement('UPDATE users SET active=0 WHERE id=?', input.id)];
   } else if (input.action === 'toggle-promotion') {
     requirePermission(a, 'promotions');

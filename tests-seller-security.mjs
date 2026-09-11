@@ -25,6 +25,7 @@ async function request(path, body, extraHeaders = {}) {
     status: response.status,
     body: parsed,
     cacheControl: response.headers.get('cache-control'),
+    setCookie: response.headers.get('set-cookie'),
   };
 }
 
@@ -123,6 +124,9 @@ assert(
 );
 
 const originalRole = initialSession.body.user.role;
+const adminAccess = await request('admin-pin', { pin: '197313' });
+assert.equal(adminAccess.status, 200, JSON.stringify(adminAccess.body));
+headers.Cookie = `${headers.Cookie}; ${adminAccess.setCookie.split(';', 1)[0]}`;
 const allSalesAsAdmin = await request('sales');
 assert.equal(allSalesAsAdmin.status, 200, JSON.stringify(allSalesAsAdmin.body));
 const anotherSellerSale = allSalesAsAdmin.body.find(

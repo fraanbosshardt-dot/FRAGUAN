@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { env } from 'cloudflare:workers';
 
 export type ChatGPTUser = {
   userId: string;
@@ -19,12 +20,27 @@ const SIGN_OUT_PATH = '/signout-with-chatgpt';
 const CALLBACK_PATH = '/callback';
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
+  const runtimeEnv = env as unknown as Record<string, string | undefined>;
+  if (
+    !import.meta.env.DEV &&
+    runtimeEnv.INTERNAL_AUTH_TRUST_PROXY !== 'true'
+  )
+    return null;
   const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);
-  const email = requestHeaders.get(USER_EMAIL_HEADER);
-  if (!userId || !email) return null;
+  const email = requestHeaders.get(USER_EMAIL_HEADER)?.trim().toLowerCase();
+  if (
+    !userId ||
+    userId.length > 128 ||
+    !email ||
+    email.length > 254 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  )
+    return null;
 
-  const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
+  const encodedFullName = requestHeaders
+    .get(USER_FULL_NAME_HEADER)
+    ?.slice(0, 500);
   const fullName =
     encodedFullName &&
     requestHeaders.get(USER_FULL_NAME_ENCODING_HEADER) === PERCENT_ENCODED_UTF8
@@ -33,9 +49,9 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
 
   return {
     userId,
-    displayName: fullName ?? email,
+    displayName: fullName?.slice(0, 120) ?? email,
     email,
-    fullName,
+    fullName: fullName?.slice(0, 120) ?? null,
   };
 }
 

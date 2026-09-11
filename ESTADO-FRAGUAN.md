@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 10 de septiembre de 2026 · PostgreSQL Railway conectado en local y dominio configurado.
+Actualizado: 11 de septiembre de 2026 · PostgreSQL Railway conectado en local, dominio configurado y endurecimiento de seguridad aplicado.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -84,6 +84,8 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 - La transferencia usa referencia única e importe exacto. El adaptador de webhook concilia referencia, estado e importe antes de acreditar.
 - La confirmación manual se limita a transferencias y exige referencia e importe bancario exacto. Tarjeta se acredita únicamente por webhook firmado de Mercado Pago. Pedidos cancelados, vencidos o sin reserva activa no pueden acreditarse; una referencia de pago no puede reutilizarse.
 - El backend valida permisos; los costos nunca forman parte de las respuestas del vendedor. Las reglas completas de integridad monetaria están en `PAGOS-Y-TRANSACCIONES.md`.
+- La cookie administrativa está firmada, ligada al usuario y tiene vencimiento verificable. Las consultas operativas de clientes y ventas tienen contratos POS separados; no habilitan las respuestas administrativas aunque se alteren URLs.
+- Las entradas públicas tienen límites de formato, longitud, tamaño y complejidad. Hay defensas contra fuerza bruta y abuso por IP/cuenta, cabeceras restrictivas y webhooks firmados. La configuración productiva pendiente está detallada en `SECURITY.md`.
 - La cola de pedidos del POS usa un endpoint propio. Solo expone pedidos pagos y los datos necesarios para preparar o entregar; los cambios de estado se validan en servidor y quedan asociados al vendedor.
 - Un conteo físico no ajusta stock hasta aprobarse; después queda congelado en base.
 - Las comisiones son estimaciones usando la tasa actual para el período elegido; no liquidan sueldos.

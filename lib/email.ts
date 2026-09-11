@@ -67,6 +67,7 @@ async function deliver(input: {
         subject: input.subject,
         html: input.html,
       }),
+      signal: AbortSignal.timeout(10000),
     });
     const result: any = await response.json().catch(() => ({}));
     if (!response.ok)

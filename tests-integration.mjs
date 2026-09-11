@@ -24,6 +24,7 @@ async function request(path, body, extra = {}) {
     body: parsed,
     cache: r.headers.get('cache-control'),
     setCookie: r.headers.get('set-cookie'),
+    retryAfter: r.headers.get('retry-after'),
   };
 }
 function sql(query) {
@@ -55,6 +56,18 @@ assert.equal(wrongAdminPin.status, 403);
 const lockedAdminApi = await request('dashboard');
 assert.equal(lockedAdminApi.status, 403);
 assert.match(lockedAdminApi.body.error, /PIN de Administración/);
+assert.equal((await request('customers?q=Juan')).status, 403);
+assert.equal((await request('sales')).status, 403);
+const safePosCustomers = await request('customers?scope=pos&q=Juan');
+assert.equal(safePosCustomers.status, 200);
+if (safePosCustomers.body.length)
+  assert.deepEqual(
+    Object.keys(safePosCustomers.body[0]).sort(),
+    ['id', 'name', 'surname', 'phone'].sort(),
+  );
+const safePosSales = await request('sales?scope=pos');
+assert.equal(safePosSales.status, 200);
+assert(safePosSales.body.every((x) => !('sellerName' in x)));
 const correctAdminPin = await request('admin-pin', { pin: '197313' });
 assert.equal(correctAdminPin.status, 200);
 assert.match(correctAdminPin.setCookie, /fraguan_admin_access=/);
@@ -67,6 +80,20 @@ const lockedAdminPage = await fetch(origin + '/admin/dashboard', {
 assert([302, 307, 308].includes(lockedAdminPage.status));
 assert.match(lockedAdminPage.headers.get('location'), /admin-access/);
 const adminCookie = correctAdminPin.setCookie.split(';', 1)[0];
+const tamperedAdminCookie = `${adminCookie.slice(0, -1)}${adminCookie.endsWith('a') ? 'b' : 'a'}`;
+assert.equal(
+  (
+    await request('dashboard', undefined, {
+      Cookie: `${headers.Cookie}; ${tamperedAdminCookie}`,
+    })
+  ).status,
+  403,
+);
+const tamperedAdminPage = await fetch(origin + '/admin/dashboard', {
+  headers: { Cookie: `${headers.Cookie}; ${tamperedAdminCookie}` },
+  redirect: 'manual',
+});
+assert([302, 307, 308].includes(tamperedAdminPage.status));
 headers.Cookie = `${headers.Cookie}; ${adminCookie}`;
 const unlockedAdminPage = await fetch(origin + '/admin/dashboard', {
   headers: { Cookie: headers.Cookie },
@@ -244,6 +271,37 @@ await request('refunds', {
   saleId: races.find((x) => x.status === 201).body.id,
   reason: 'Restauración de prueba concurrente',
 });
+const oversizedPublicField = await request('store-shipping', {
+  postalCode: '1'.repeat(500),
+  subtotal: 1000,
+  method: 'correo-argentino-home',
+});
+assert.equal(oversizedPublicField.status, 400);
+const polluted = await fetch(origin + '/api/store-shipping', {
+  method: 'POST',
+  headers: { Origin: origin, 'Content-Type': 'application/json' },
+  body: '{"postalCode":"2661","subtotal":1000,"method":"pickup","__proto__":{"admin":true}}',
+});
+assert.equal(polluted.status, 400);
+const malformedWebhook = await fetch(origin + '/api/webhooks/bank', {
+  method: 'POST',
+  body: '{}',
+});
+assert.equal(malformedWebhook.status, 415);
+const root = await fetch(origin + '/');
+assert.equal(root.headers.get('x-frame-options'), 'DENY');
+assert.equal(root.headers.get('x-content-type-options'), 'nosniff');
+assert.match(root.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
+const pinAttempts = [];
+for (let index = 0; index < 9; index += 1)
+  pinAttempts.push(
+    await request('admin-pin', { pin: '000000' }, {
+      'CF-Connecting-IP': '198.51.100.77',
+    }),
+  );
+const blockedPin = pinAttempts.find((attempt) => attempt.status === 429);
+assert(blockedPin);
+assert(Number(blockedPin.retryAfter) > 0);
 console.log(
-  'PASS: server RBAC, field allowlists, own sales, client tampering, origin checks, idempotency, refunds and concurrent stock transaction.',
+  'PASS: RBAC, signed admin session, field allowlists, input limits, rate limits, security headers, origin checks, idempotency, refunds and concurrent stock transaction.',
 );

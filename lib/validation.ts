@@ -189,7 +189,7 @@ export const promotionInput = z
   });
 export const userInput = z
   .object({
-    email: z.email(),
+    email: z.email().trim().toLowerCase().max(254),
     name: text,
     role: z.enum(['ADMIN', 'GERENTE', 'VENDEDOR', 'CAJA', 'STOCK']),
   })

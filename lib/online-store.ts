@@ -25,6 +25,13 @@ import {
 } from './commercial-rules';
 import { argentinaDay } from './business-date';
 import type { StoreCatalog, StoreProduct } from './store-client';
+import {
+  publicDocument,
+  publicLine,
+  publicMultiline,
+  publicOptionalLine,
+  publicPhone,
+} from './public-validation';
 
 const SESSION_COOKIE = 'fraguan_customer';
 const encoder = new TextEncoder();
@@ -48,6 +55,14 @@ async function sha256(value: string) {
       await crypto.subtle.digest('SHA-256', encoder.encode(value)),
     ),
   );
+}
+
+function constantTimeEqual(received: string, expected: string) {
+  let difference = received.length ^ expected.length;
+  for (let index = 0; index < expected.length; index += 1)
+    difference |=
+      (received.charCodeAt(index) || 0) ^ expected.charCodeAt(index);
+  return difference === 0;
 }
 
 function base64Url(bytes: Uint8Array) {
@@ -250,7 +265,7 @@ export function customerCookie(
   secure: boolean,
   maxAge = 30 * 86400,
 ) {
-  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure ? '; Secure' : ''}`;
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Priority=High${secure ? '; Secure' : ''}`;
 }
 
 type StoreCustomer = {
@@ -385,6 +400,7 @@ async function correoToken() {
   const response = await fetch(`${base.replace(/\/$/, '')}/token`, {
     method: 'POST',
     headers: { Authorization: `Basic ${btoa(`${user}:${password}`)}` },
+    signal: AbortSignal.timeout(8000),
   });
   if (!response.ok)
     throw new Error('Correo Argentino no pudo autenticar la cuenta.');
@@ -503,6 +519,7 @@ async function importCorreoOrder(orderId: string, actorId: string) {
           width: 30,
         },
       }),
+      signal: AbortSignal.timeout(10000),
     },
   );
   const result: any = await response.json().catch(() => ({}));
@@ -559,6 +576,7 @@ export async function shippingQuote(
             length: 40,
           },
         }),
+        signal: AbortSignal.timeout(8000),
       },
     );
     if (!response.ok)
@@ -635,6 +653,7 @@ async function createMercadoPagoPreference(order: Record<string, any>) {
         'X-Idempotency-Key': `fraguan-${order.id}`,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
     },
   );
   if (!response.ok)
@@ -659,12 +678,12 @@ const accountInput = z
     action: z.enum(['register', 'login', 'google', 'logout', 'update']),
     email: z.email().trim().toLowerCase().max(200).optional(),
     password: z.string().min(8).max(128).optional(),
-    name: z.string().trim().min(2).max(80).optional(),
-    surname: z.string().trim().min(2).max(80).optional(),
-    phone: z.string().trim().min(6).max(40).optional(),
+    name: publicLine(2, 80).optional(),
+    surname: publicLine(2, 80).optional(),
+    phone: publicPhone.optional(),
     marketingConsent: z.boolean().optional(),
-    locality: z.string().trim().max(100).optional(),
-    usualSizes: z.string().trim().max(120).optional(),
+    locality: publicOptionalLine(100).optional(),
+    usualSizes: publicOptionalLine(120).optional(),
     credential: z.string().min(100).max(10000).optional(),
   })
   .strict();
@@ -674,6 +693,7 @@ async function verifyGoogleCredential(credential: string) {
     throw new AppError(503, 'Google Login todavía no está configurado.');
   const response = await fetch(
     `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
+    { signal: AbortSignal.timeout(8000) },
   );
   const claims: any = await response.json().catch(() => ({}));
   if (
@@ -739,6 +759,16 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
     ]);
     return { data: { ok: true }, cookie: null };
   }
+  if (
+    (input.action === 'register' || input.action === 'login') &&
+    !isLocalRequest(req) &&
+    (env as unknown as Record<string, string | undefined>)
+      .STORE_PASSWORD_AUTH_ENABLED !== 'true'
+  )
+    throw new AppError(
+      503,
+      'El acceso por email está deshabilitado. Ingresá con Google.',
+    );
   let loginEmail = input.email;
   let account: {
     id: string;
@@ -855,11 +885,11 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
       'SELECT id,customerId,passwordHash,passwordSalt FROM customer_accounts WHERE email=?',
       input.email,
     );
-    if (
-      !account ||
-      (await passwordHash(input.password, account.passwordSalt)) !==
-        account.passwordHash
-    )
+    const receivedHash = await passwordHash(
+      input.password,
+      account?.passwordSalt || 'fraguan-nonexistent-account-timing-salt',
+    );
+    if (!account || !constantTimeEqual(receivedHash, account.passwordHash))
       throw new AppError(401, 'Email o contraseña incorrectos.');
     await statement(
       'UPDATE customer_accounts SET lastLoginAt=? WHERE id=?',
@@ -869,14 +899,17 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
   }
   const token = randomToken(),
     expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
-  await statement(
-    'INSERT INTO customer_sessions(id,accountId,tokenHash,expiresAt,createdAt) VALUES (?,?,?,?,?)',
-    id(),
-    account.id,
-    await sha256(token),
-    expiresAt,
-    now(),
-  ).run();
+  await db().batch([
+    statement('DELETE FROM customer_sessions WHERE expiresAt<=?', now()),
+    statement(
+      'INSERT INTO customer_sessions(id,accountId,tokenHash,expiresAt,createdAt) VALUES (?,?,?,?,?)',
+      id(),
+      account.id,
+      await sha256(token),
+      expiresAt,
+      now(),
+    ),
+  ]);
   const customer = await one(
     'SELECT name,surname,phone,points FROM customers WHERE id=?',
     account.customerId,
@@ -946,10 +979,10 @@ const returnRequestInput = z
   .object({
     orderNumber: z.coerce.number().int().min(1000).max(999999999),
     email: z.email().trim().toLowerCase().max(200),
-    phone: z.string().trim().max(40).default(''),
+    phone: publicOptionalLine(25),
     kind: z.enum(['withdrawal', 'exchange', 'return']),
-    reason: z.string().trim().min(3).max(160),
-    detail: z.string().trim().max(1000).default(''),
+    reason: publicLine(3, 160),
+    detail: publicMultiline(600),
   })
   .strict();
 
@@ -1032,25 +1065,25 @@ const checkoutInput = z
       .max(30),
     email: verificationEmail,
     emailVerificationToken: z.string().max(2000).default(''),
-    customerName: z.string().trim().min(3).max(80),
-    phone: z.string().trim().min(6).max(25),
-    document: z.string().trim().max(12).default(''),
+    customerName: publicLine(3, 80),
+    phone: publicPhone,
+    document: publicDocument.default(''),
     paymentMethod: z.enum(['transfer', 'card']),
     shippingMethod: z.enum(['correo-argentino-home', 'pickup']),
-    postalCode: z.string().trim().min(4).max(8),
-    address: z.string().trim().min(4).max(100),
-    addressExtra: z.string().trim().max(50).default(''),
-    city: z.string().trim().min(2).max(60),
-    province: z.string().trim().min(2).max(60),
-    notes: z.string().trim().max(240).default(''),
+    postalCode: z.string().trim().regex(/^\d{4}$/),
+    address: publicLine(4, 100),
+    addressExtra: publicOptionalLine(50),
+    city: publicLine(2, 60),
+    province: publicLine(2, 60),
+    notes: publicMultiline(240),
     idempotencyKey: z.uuid(),
     accessToken: z.uuid(),
     couponCode: z.string().trim().toUpperCase().max(30).default(''),
     attribution: z
       .object({
-        source: z.string().max(100).default(''),
-        medium: z.string().max(100).default(''),
-        campaign: z.string().max(160).default(''),
+        source: publicOptionalLine(100),
+        medium: publicOptionalLine(100),
+        campaign: publicOptionalLine(160),
       })
       .strict()
       .default({ source: '', medium: '', campaign: '' }),

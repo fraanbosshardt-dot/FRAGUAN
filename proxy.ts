@@ -6,6 +6,9 @@ const headers: Record<string, string> = {
   'X-Frame-Options': 'DENY',
   'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
   'Cross-Origin-Resource-Policy': 'same-site',
+  'Origin-Agent-Cluster': '?1',
+  'X-DNS-Prefetch-Control': 'off',
+  'X-Permitted-Cross-Domain-Policies': 'none',
   'Permissions-Policy':
     'camera=(), microphone=(), geolocation=(), payment=(self)',
   'Content-Security-Policy':
@@ -13,6 +16,11 @@ const headers: Record<string, string> = {
 };
 
 export function proxy(request: NextRequest) {
+  if (['TRACE', 'CONNECT'].includes(request.method))
+    return new NextResponse(null, {
+      status: 405,
+      headers: { Allow: 'GET, HEAD, POST, OPTIONS' },
+    });
   const response = NextResponse.next();
   for (const [key, value] of Object.entries(headers))
     response.headers.set(key, value);
@@ -21,7 +29,14 @@ export function proxy(request: NextRequest) {
       'Strict-Transport-Security',
       'max-age=31536000; includeSubDomains',
     );
-  if (request.nextUrl.pathname.startsWith('/api/'))
+  if (
+    request.nextUrl.pathname.startsWith('/api/') ||
+    request.nextUrl.pathname.startsWith('/admin') ||
+    request.nextUrl.pathname.startsWith('/pos') ||
+    request.nextUrl.pathname.startsWith('/cuenta') ||
+    request.nextUrl.pathname.startsWith('/checkout') ||
+    request.nextUrl.pathname.startsWith('/pedido/')
+  )
     response.headers.set('Cache-Control', 'private, no-store');
   return response;
 }

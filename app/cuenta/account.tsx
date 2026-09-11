@@ -18,7 +18,13 @@ import {
   storeMoney,
   useStoreFavorites,
 } from '@/lib/store-client';
-export default function Account({ googleClientId }: { googleClientId: string }) {
+export default function Account({
+  googleClientId,
+  passwordAuthEnabled,
+}: {
+  googleClientId: string;
+  passwordAuthEnabled: boolean;
+}) {
   const [data, setData] = useState<any>(null);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState('');
@@ -132,11 +138,11 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
                 <p>Guardá tu contacto, localidad y talles habituales.</p>
               </div>
               <form onSubmit={updateProfile}>
-                <label>Nombre<input name="name" defaultValue={data.customer.name} required /></label>
-                <label>Apellido<input name="surname" defaultValue={data.customer.surname} required /></label>
-                <label>Teléfono<input name="phone" defaultValue={data.customer.phone} required /></label>
-                <label>Localidad<input name="locality" defaultValue={data.customer.locality} /></label>
-                <label className="wide">Talles habituales<input name="usualSizes" defaultValue={data.customer.usualSizes} placeholder="Ej. Remeras L, pantalones 42" /></label>
+                <label>Nombre<input name="name" autoComplete="name" maxLength={80} defaultValue={data.customer.name} required /></label>
+                <label>Apellido<input name="surname" autoComplete="name" maxLength={80} defaultValue={data.customer.surname} required /></label>
+                <label>Teléfono<input name="phone" type="tel" autoComplete="tel" maxLength={25} defaultValue={data.customer.phone} required /></label>
+                <label>Localidad<input name="locality" autoComplete="address-level2" maxLength={100} defaultValue={data.customer.locality} /></label>
+                <label className="wide">Talles habituales<input name="usualSizes" maxLength={120} defaultValue={data.customer.usualSizes} placeholder="Ej. Remeras L, pantalones 42" /></label>
                 <label className="store-consent wide"><input name="marketingConsent" type="checkbox" defaultChecked={data.customer.marketingConsent} /> Quiero recibir novedades y beneficios.</label>
                 <button className="store-auth-submit wide" disabled={busy}>Guardar mis datos <ArrowRight /></button>
                 {profileState && <small className="wide">{profileState}</small>}
@@ -225,7 +231,8 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
             </div>
             <form onSubmit={submit}>
               <GoogleSignIn clientId={googleClientId} onError={setError} />
-              <div className="store-auth-separator"><span>o continuá con email</span></div>
+              {passwordAuthEnabled && <div className="store-auth-separator"><span>o continuá con email</span></div>}
+              {passwordAuthEnabled && <>
               <div className="store-auth-tabs">
                 <button
                   type="button"
@@ -246,25 +253,25 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
                 <>
                   <label>
                     Nombre
-                    <input name="name" required />
+                    <input name="name" autoComplete="name" maxLength={80} required />
                   </label>
                   <label>
                     Apellido
-                    <input name="surname" required />
+                    <input name="surname" autoComplete="name" maxLength={80} required />
                   </label>
                   <label>
                     Teléfono
-                    <input name="phone" required />
+                    <input name="phone" type="tel" autoComplete="tel" maxLength={25} required />
                   </label>
                 </>
               )}
               <label>
                 Email
-                <input name="email" type="email" required />
+                <input name="email" type="email" autoComplete="email" maxLength={200} required />
               </label>
               <label>
                 Contraseña
-                <input name="password" type="password" minLength={8} required />
+                <input name="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={128} required />
                 <small>Mínimo 8 caracteres</small>
               </label>
               {mode === 'register' && (
@@ -283,6 +290,7 @@ export default function Account({ googleClientId }: { googleClientId: string }) 
                 <ArrowRight />
               </button>
               <p className="store-auth-note">Al continuar aceptás los <a href="/informacion/terminos">Términos</a> y la <a href="/informacion/privacidad">Política de privacidad</a>.</p>
+              </>}
             </form>
           </section>
         )}

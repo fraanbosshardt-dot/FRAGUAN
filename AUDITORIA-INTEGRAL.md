@@ -1,6 +1,6 @@
 # FRAGUAN — auditoría integral de tienda, POS y Administración
 
-Actualizado: 10 de septiembre de 2026.
+Actualizado: 11 de septiembre de 2026.
 
 ## Alcance revisado
 
@@ -33,6 +33,16 @@ integridad de pagos y regresiones automatizadas. Se mantuvo la decisión de no u
 - Las APIs exclusivas de Administración exigen sesión autorizada y también la cookie
   HttpOnly creada por el PIN. Las rutas del POS conservan su contrato específico y el rol
   VENDEDOR continúa recibiendo únicamente campos comerciales.
+- La cookie del PIN ahora está firmada, ligada al usuario y vence en el servidor. Se cerró
+  el acceso directo de ADMIN/GERENTE a clientes y ventas amplias sin PIN; el alcance POS
+  devuelve únicamente clientes básicos y ventas propias recientes.
+- Se añadieron límites por IP y cuenta para autenticación y formularios públicos, tamaño y
+  complejidad máxima de JSON, rechazo de claves peligrosas, formatos estrictos y timeouts
+  en integraciones externas. La autenticación temporal por encabezados queda bloqueada
+  fuera del entorno local salvo proxy confiable explícito.
+- Los webhooks de pago verifican firma en tiempo constante, actualidad del timestamp,
+  moneda, referencia e importe, y vuelven a consultar el pago al proveedor antes de
+  confirmar una orden.
 - Se amplió la política CSP y las cabeceras de aislamiento, manteniendo Google Sign-In y el
   retorno hacia Mercado Pago dentro de los orígenes previstos.
 - Se añadieron nombres accesibles a controles de cantidad, anuncios de error y relaciones

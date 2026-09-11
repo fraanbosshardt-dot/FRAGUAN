@@ -59,6 +59,7 @@ export function StoreFooter() {
             onChange={(event) => setEmail(event.target.value)}
             type="email"
             autoComplete="email"
+            maxLength={200}
             placeholder="tu@email.com"
             aria-label="Email para newsletter"
             required

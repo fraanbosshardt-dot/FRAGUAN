@@ -9,9 +9,8 @@ export default async function AdminAccessPage({
 }) {
   if (isProductionComingSoon()) return <ComingSoon area="FRAGUAN ADMIN" />;
   const requested = (await searchParams).returnTo ?? '/admin/dashboard';
-  const returnTo =
-    requested.startsWith('/admin/') && !requested.startsWith('//')
-      ? requested
-      : '/admin/dashboard';
+  const returnTo = /^\/admin\/[a-z0-9-]+$/.test(requested)
+    ? requested
+    : '/admin/dashboard';
   return <AdminPinForm returnTo={returnTo} />;
 }

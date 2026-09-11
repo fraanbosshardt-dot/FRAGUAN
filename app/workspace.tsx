@@ -111,7 +111,7 @@ export default function Workspace() {
     if (modal !== 'customer') return;
     const t = setTimeout(
       () =>
-        api('customers?q=' + encodeURIComponent(customerQuery))
+        api('customers?scope=pos&q=' + encodeURIComponent(customerQuery))
           .then(setCustomers)
           .catch((e) => setError(e.message)),
       220,
@@ -340,7 +340,7 @@ export default function Workspace() {
   async function showRecent() {
     setError('');
     try {
-      setRecent(await api('sales'));
+      setRecent(await api('sales?scope=pos'));
       setModal('recent');
     } catch (e: any) {
       setError(e.message);
@@ -416,7 +416,7 @@ export default function Workspace() {
         ...(items.length ? { items } : {}),
         ...(refundToken ? { authorizationToken: refundToken.trim() } : {}),
       });
-      setReceipt(await api('sales?id=' + receipt.id));
+      setReceipt(await api('sales?scope=pos&id=' + receipt.id));
       await refresh();
       setModal('receipt');
       setError('');
@@ -1322,7 +1322,7 @@ export default function Workspace() {
                     key={s.id}
                     onClick={async () => {
                       try {
-                        setReceipt(await api('sales?id=' + s.id));
+                        setReceipt(await api('sales?scope=pos&id=' + s.id));
                         setModal('receipt');
                       } catch (e: any) {
                         setError(e.message);
