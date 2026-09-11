@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 10 de septiembre de 2026 · PostgreSQL Railway conectado en local.
+Actualizado: 10 de septiembre de 2026 · PostgreSQL Railway conectado en local y dominio configurado.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -19,7 +19,7 @@ completa está en `BRANDING-FRAGUAN.md`.
 
 ## Estado general
 
-Implementación local conectada a PostgreSQL privado en Railway. La tienda, el POS y la administración comparten 66 tablas, datos migrados y reglas transaccionales. En producción, las tres superficies muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`) mientras no exista `FRAGUAN_DEPLOY_ENABLED=true`. En local el ecommerce completo está disponible en `/`, junto con POS y administración, para desarrollo. Sin fotografías. Google Login, Vercel e integraciones externas siguen reservados para la etapa final solicitada.
+Implementación local conectada a PostgreSQL privado en Railway. La tienda, el POS y la administración comparten 66 tablas, datos migrados y reglas transaccionales. En producción, las tres superficies muestran “Próximamente disponible” mediante `VERCEL_ENV=production` (o `FRAGUAN_COMING_SOON=true`) mientras no exista `FRAGUAN_DEPLOY_ENABLED=true`. En local el ecommerce completo está disponible en `/`, junto con POS y administración, para desarrollo. Sin fotografías. El dominio ya está conectado al proyecto de espera de Vercel; Google Login y las demás integraciones externas siguen reservados para la etapa final solicitada.
 
 ### Tienda online: estado local terminado
 
@@ -40,7 +40,7 @@ navegación, carrito, poscompra y reactivación; skeletons, feedback, transicion
 de compra móvil.
 
 El lanzamiento real continúa condicionado a credenciales y servicios externos: base de datos
-productiva, Google Auth, Mercado Pago, Correo Argentino, Resend, dominio y pruebas físicas.
+productiva, Google Auth, Mercado Pago, Correo Argentino, Resend y pruebas físicas.
 Hasta autorización explícita, Vercel mantiene solamente “Próximamente disponible”.
 
 ## Funciones implementadas
@@ -118,6 +118,16 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 7. Agregar fotografías reales por producto y variante; después habilitar Merchant Center y previsualizaciones sociales con esos activos.
 8. Cargar razón social, CUIT, domicilio, email y horario reales del comercio y completar la revisión legal previa a ventas.
 
+## Dominio y Vercel
+
+- Dominio confirmado: `fraguan.com`, administrado con nameservers de Hostinger.
+- Proyecto de Vercel asociado: `fraguan-store`.
+- `www.fraguan.com` es el dominio principal y apunta al CNAME específico indicado por Vercel.
+- `fraguan.com` apunta al registro A indicado por Vercel y redirige con estado 308 a `www.fraguan.com`.
+- Se retiró el registro A de estacionamiento de Hostinger que competía con Vercel. Los registros MX, SPF, DKIM y DMARC de `hola@fraguan.com` no se modificaron.
+- Los DNS autoritativos y los resolvedores públicos principales ya informan los destinos correctos. La emisión y propagación regional del certificado SSL puede tardar varias horas por el TTL anterior.
+- Producción continúa mostrando exclusivamente “Próximamente disponible”. Esta configuración de dominio no autoriza el despliegue de la aplicación real.
+
 ## Continuidad
 
 Repositorio: `https://github.com/fraanbosshardt-dot/FRAGUAN`.
@@ -131,7 +141,7 @@ Mantener datos reales fuera del entorno demo hasta completar la puesta en produc
 Continuar con QA visual local y pruebas de checkout/envío sobre PostgreSQL Railway. Cuando
 el usuario habilite la etapa de integraciones, extraer la API al servicio Railway privado,
 configurar Google Auth, Mercado Pago, Correo Argentino y Resend, cargar sus variables
-secretas y conectar `fraguan.com`.
+secretas y validar nuevamente el certificado de `fraguan.com` una vez finalizada la propagación.
 
 El diseño de referencia queda registrado: inspiración conceptual COS, SSENSE, Zara,
 MILFSHAKES y Represent/Fear of God, con identidad propia FRAGUAN. Se mantiene la decisión
