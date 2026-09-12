@@ -1584,7 +1584,8 @@ select {
   color: #909783;
   margin-top: 3px;
 }
-.sidebar-bottom > a {
+.sidebar-bottom > a,
+.sidebar-bottom > .internal-sign-out {
   margin-left: auto;
 }
 .admin-main {
@@ -1993,6 +1994,7 @@ select {
   .sidebar > .eyebrow,
   .sidebar-bottom > span,
   .sidebar-bottom > a,
+  .sidebar-bottom > .internal-sign-out,
   .new-sale-link svg:last-child {
     display: none;
   }

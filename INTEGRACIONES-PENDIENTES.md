@@ -1,6 +1,6 @@
 # FRAGUAN — integraciones pendientes de lanzamiento
 
-Actualizado: 11 de septiembre de 2026.
+Actualizado: 12 de septiembre de 2026.
 
 Este es el orden de trabajo aprobado para conectar servicios reales. El desarrollo continúa
 en local y GitHub; ninguna etapa autoriza un deploy.
@@ -19,9 +19,9 @@ en local y GitHub; ninguna etapa autoriza un deploy.
   venta, devolución, pedido preparado y acción administrativa conserva el usuario real.
 
 Estado: cliente OAuth configurado localmente, pantalla terminada, JWT verificado con las
-claves públicas de Google y sesión firmada implementada. Pendiente: cargar emails reales en
-la whitelist, definir sus roles, probar el login y crear `INTERNAL_SESSION_SECRET` para
-producción.
+claves públicas de Google y sesión firmada implementada. La whitelist local ya incluye las
+dos cuentas administradoras iniciales. Pendiente: probar el login real de ambas cuentas y
+crear `INTERNAL_SESSION_SECRET` para producción.
 
 ## 2. Google Auth para clientes — implementado localmente
 

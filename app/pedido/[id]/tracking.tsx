@@ -70,7 +70,7 @@ export default function OrderTracking({ orderId }: { orderId: string }) {
               </div>
               <aside>
                 <h2>Entrega</h2>
-                <p>{order.shippingMethod === 'pickup' ? 'Retiro en FRAGUAN' : `${order.address}, ${order.city}, ${order.province}`}</p>
+                <p>{order.shippingMethod === 'pickup' ? 'Retiro en FRAGUAN' : `${order.address}, ${order.city}, ${order.province}, ${order.country || 'Argentina'}`}</p>
                 <small>Te avisaremos por email cada vez que cambie el estado.</small>
               </aside>
             </section>

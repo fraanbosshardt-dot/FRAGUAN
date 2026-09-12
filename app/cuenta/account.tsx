@@ -18,6 +18,7 @@ import {
   storeMoney,
   useStoreFavorites,
 } from '@/lib/store-client';
+const ARGENTINA_PROVINCES = ['Buenos Aires','CABA','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'] as const;
 export default function Account({
   googleClientId,
   passwordAuthEnabled,
@@ -85,8 +86,12 @@ export default function Account({
           name: form.get('name'),
           surname: form.get('surname'),
           phone: form.get('phone'),
-          locality: form.get('locality'),
-          usualSizes: form.get('usualSizes'),
+          country: form.get('country'),
+          postalCode: form.get('postalCode'),
+          address: form.get('address'),
+          addressExtra: form.get('addressExtra') || '',
+          city: form.get('city'),
+          province: form.get('province'),
           marketingConsent: Boolean(form.get('marketingConsent')),
         }),
       });
@@ -98,6 +103,7 @@ export default function Account({
       setBusy(false);
     }
   }
+  const primaryAddress = data?.addresses?.[0];
   return (
     <div className="store-shell">
       <StoreHeader />
@@ -126,29 +132,33 @@ export default function Account({
               </article>
               <article>
                 <UserRound />
-                <span>Preferencias</span>
-                <strong>A tu manera</strong>
-                <small>Guardá tus talles y datos para comprar más rápido.</small>
+                <span>Dirección</span>
+                <strong>{primaryAddress ? 'Lista para usar' : 'Completala una vez'}</strong>
+                <small>La sugerimos al comprar y siempre podés usar otra.</small>
               </article>
             </section>
             <section className="store-account-profile">
               <div>
                 <span>TUS DATOS</span>
                 <h2>Todo listo para comprar más rápido.</h2>
-                <p>Guardá tu contacto, localidad y talles habituales.</p>
+                <p>Guardá tu contacto y dirección principal. En cada compra podés confirmarla, editarla o usar otra.</p>
               </div>
               <form onSubmit={updateProfile}>
                 <label>Nombre<input name="name" autoComplete="name" maxLength={80} defaultValue={data.customer.name} required /></label>
                 <label>Apellido<input name="surname" autoComplete="name" maxLength={80} defaultValue={data.customer.surname} required /></label>
                 <label>Teléfono<input name="phone" type="tel" autoComplete="tel" maxLength={25} defaultValue={data.customer.phone} required /></label>
-                <label>Localidad<input name="locality" autoComplete="address-level2" maxLength={100} defaultValue={data.customer.locality} /></label>
-                <label className="wide">Talles habituales<input name="usualSizes" maxLength={120} defaultValue={data.customer.usualSizes} placeholder="Ej. Remeras L, pantalones 42" /></label>
+                <label>País<select name="country" autoComplete="country-name" defaultValue={primaryAddress?.country || 'Argentina'} required><option>Argentina</option></select></label>
+                <label>Dirección<input name="address" autoComplete="street-address" maxLength={100} placeholder="Calle y número" defaultValue={primaryAddress?.address || ''} required /></label>
+                <label>Piso / departamento <small>Opcional</small><input name="addressExtra" autoComplete="address-line2" maxLength={50} defaultValue={primaryAddress?.addressExtra || ''} /></label>
+                <label>Ciudad / localidad<input name="city" autoComplete="address-level2" maxLength={60} defaultValue={primaryAddress?.city || ''} required /></label>
+                <label>Provincia<select name="province" autoComplete="address-level1" defaultValue={primaryAddress?.province || ''} required><option value="" disabled>Seleccionar</option>{ARGENTINA_PROVINCES.map((province) => <option key={province}>{province}</option>)}</select></label>
+                <label>Código postal<input name="postalCode" autoComplete="postal-code" inputMode="numeric" pattern="[0-9]{4}" minLength={4} maxLength={4} defaultValue={primaryAddress?.postalCode || ''} required /></label>
                 <label className="store-consent wide"><input name="marketingConsent" type="checkbox" defaultChecked={data.customer.marketingConsent} /> Quiero recibir novedades y beneficios.</label>
                 <button className="store-auth-submit wide" disabled={busy}>Guardar mis datos <ArrowRight /></button>
                 {profileState && <small className="wide">{profileState}</small>}
               </form>
             </section>
-            {!!data.addresses?.length && <section className="store-account-orders"><div><span>TUS DIRECCIONES</span><h2>Entrega más rápida</h2></div><div className="store-address-list">{data.addresses.map((address: any) => <article key={address.id}><strong>{address.label}{address.isDefault ? ' · Principal' : ''}</strong><p>{address.address}{address.addressExtra ? `, ${address.addressExtra}` : ''}<br />{address.postalCode} · {address.city}, {address.province}</p></article>)}</div></section>}
+            {data.addresses?.length > 1 && <section className="store-account-orders"><div><span>OTRAS DIRECCIONES</span><h2>Direcciones usadas</h2></div><div className="store-address-list">{data.addresses.slice(1).map((address: any) => <article key={address.id}><strong>{address.label}</strong><p>{address.address}{address.addressExtra ? `, ${address.addressExtra}` : ''}<br />{address.postalCode} · {address.city}, {address.province} · {address.country}</p></article>)}</div></section>}
             <section className="store-account-orders">
               <div>
                 <span>TUS COMPRAS</span>

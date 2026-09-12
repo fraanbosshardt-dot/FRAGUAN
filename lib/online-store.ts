@@ -277,15 +277,13 @@ type StoreCustomer = {
   surname: string;
   phone: string;
   points: number;
-  locality: string;
-  usualSizes: string;
   marketingConsent: number;
 };
 export async function currentStoreCustomer(req: Request) {
   const token = cookieValue(req, SESSION_COOKIE);
   if (!token) return null;
   return one<StoreCustomer>(
-    `SELECT a.id AS accountId,a.customerId,a.email,a.marketingConsent,c.name,c.surname,c.phone,c.points,c.locality,c.usualSizes
+    `SELECT a.id AS accountId,a.customerId,a.email,a.marketingConsent,c.name,c.surname,c.phone,c.points
        FROM customer_sessions s JOIN customer_accounts a ON a.id=s.accountId
        JOIN customers c ON c.id=a.customerId
       WHERE s.tokenHash=? AND s.expiresAt>? AND c.active=1`,
@@ -444,6 +442,33 @@ const provinceCodes: Record<string, string> = {
   jujuy: 'Y',
   'santa cruz': 'Z',
 };
+
+const argentinaProvince = z.enum([
+  'Buenos Aires',
+  'CABA',
+  'Catamarca',
+  'Chaco',
+  'Chubut',
+  'Córdoba',
+  'Corrientes',
+  'Entre Ríos',
+  'Formosa',
+  'Jujuy',
+  'La Pampa',
+  'La Rioja',
+  'Mendoza',
+  'Misiones',
+  'Neuquén',
+  'Río Negro',
+  'Salta',
+  'San Juan',
+  'San Luis',
+  'Santa Cruz',
+  'Santa Fe',
+  'Santiago del Estero',
+  'Tierra del Fuego',
+  'Tucumán',
+]);
 
 async function importCorreoOrder(orderId: string, actorId: string) {
   const token = await correoToken();
@@ -683,8 +708,16 @@ const accountInput = z
     surname: publicLine(2, 80).optional(),
     phone: publicPhone.optional(),
     marketingConsent: z.boolean().optional(),
-    locality: publicOptionalLine(100).optional(),
-    usualSizes: publicOptionalLine(120).optional(),
+    country: z.literal('Argentina').optional(),
+    postalCode: z
+      .string()
+      .trim()
+      .regex(/^\d{4}$/)
+      .optional(),
+    address: publicLine(4, 100).optional(),
+    addressExtra: publicOptionalLine(50).optional(),
+    city: publicLine(2, 60).optional(),
+    province: argentinaProvince.optional(),
     credential: z.string().min(100).max(10000).optional(),
   })
   .strict();
@@ -716,17 +749,60 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
     const customer = await currentStoreCustomer(req);
     if (!customer)
       throw new AppError(401, 'Iniciá sesión para actualizar tus datos.');
-    if (!input.name || !input.surname || !input.phone)
-      throw new AppError(400, 'Completá tus datos personales.');
+    if (
+      !input.name ||
+      !input.surname ||
+      !input.phone ||
+      !input.country ||
+      !input.postalCode ||
+      !input.address ||
+      !input.city ||
+      !input.province
+    )
+      throw new AppError(400, 'Completá tus datos personales y de envío.');
+    const updatedAt = now();
+    const primaryAddress = await one<{ id: string }>(
+      'SELECT id FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt ASC LIMIT 1',
+      customer.customerId,
+    );
+    const addressCommand = primaryAddress
+      ? statement(
+          `UPDATE customer_addresses SET label='Casa',recipient=?,phone=?,postalCode=?,address=?,addressExtra=?,city=?,province=?,country=?,isDefault=1,updatedAt=? WHERE id=?`,
+          `${input.name} ${input.surname}`,
+          input.phone,
+          input.postalCode,
+          input.address,
+          input.addressExtra ?? '',
+          input.city,
+          input.province,
+          input.country,
+          updatedAt,
+          primaryAddress.id,
+        )
+      : statement(
+          `INSERT INTO customer_addresses(id,customerId,label,recipient,phone,postalCode,address,addressExtra,city,province,country,isDefault,createdAt,updatedAt)
+           VALUES (?,?,'Casa',?,?,?,?,?,?,?,?,1,?,?)`,
+          id(),
+          customer.customerId,
+          `${input.name} ${input.surname}`,
+          input.phone,
+          input.postalCode,
+          input.address,
+          input.addressExtra ?? '',
+          input.city,
+          input.province,
+          input.country,
+          updatedAt,
+          updatedAt,
+        );
     await db().batch([
       statement(
-        'UPDATE customers SET name=?,surname=?,phone=?,locality=?,usualSizes=?,updatedAt=? WHERE id=?',
+        'UPDATE customers SET name=?,surname=?,phone=?,locality=?,updatedAt=? WHERE id=?',
         input.name,
         input.surname,
         input.phone,
-        input.locality ?? '',
-        input.usualSizes ?? '',
-        now(),
+        input.city,
+        updatedAt,
         customer.customerId,
       ),
       statement(
@@ -734,6 +810,12 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
         input.marketingConsent ? 1 : 0,
         customer.accountId,
       ),
+      statement(
+        'UPDATE customer_addresses SET isDefault=0,updatedAt=? WHERE customerId=?',
+        updatedAt,
+        customer.customerId,
+      ),
+      addressCommand,
     ]);
     return { data: { ok: true }, cookie: null };
   }
@@ -910,7 +992,7 @@ export async function storeAccount(req: Request) {
       customer.customerId,
     ),
     rows(
-      'SELECT id,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt DESC',
+      'SELECT id,label,recipient,phone,postalCode,address,addressExtra,city,province,country,isDefault FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt DESC',
       customer.customerId,
     ),
     one<Record<string, any>>(
@@ -1048,11 +1130,15 @@ const checkoutInput = z
     document: publicDocument.default(''),
     paymentMethod: z.enum(['transfer', 'card']),
     shippingMethod: z.enum(['correo-argentino-home', 'pickup']),
-    postalCode: z.string().trim().regex(/^\d{4}$/),
+    postalCode: z
+      .string()
+      .trim()
+      .regex(/^\d{4}$/),
     address: publicLine(4, 100),
     addressExtra: publicOptionalLine(50),
     city: publicLine(2, 60),
-    province: publicLine(2, 60),
+    province: argentinaProvince,
+    country: z.literal('Argentina').default('Argentina'),
     notes: publicMultiline(240),
     idempotencyKey: z.uuid(),
     accessToken: z.uuid(),
@@ -1196,8 +1282,8 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       createdAt,
     ),
     statement(
-      `INSERT INTO online_orders(id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,addressExtra,city,province,notes,couponCode,attributionJson,accessTokenHash,transferReference,expiresAt,createdAt,updatedAt)
-       VALUES (?,?,?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO online_orders(id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,addressExtra,city,province,country,notes,couponCode,attributionJson,accessTokenHash,transferReference,expiresAt,createdAt,updatedAt)
+       VALUES (?,?,?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId,
       orderNumber,
       customer?.customerId ?? null,
@@ -1216,6 +1302,7 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       input.addressExtra,
       input.city,
       input.province,
+      input.country,
       input.notes,
       input.couponCode,
       JSON.stringify({ ...input.attribution, sessionId: input.sessionId }),
@@ -1263,8 +1350,8 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
   if (customer && input.saveAddress && input.shippingMethod !== 'pickup') {
     commands.push(
       statement(
-        `INSERT INTO customer_addresses(id,customerId,label,recipient,phone,postalCode,address,addressExtra,city,province,isDefault,createdAt,updatedAt)
-       SELECT ?,?,'Casa',?,?,?,?,?,?,?,CASE WHEN NOT EXISTS(SELECT 1 FROM customer_addresses WHERE customerId=?) THEN 1 ELSE 0 END,?,?
+        `INSERT INTO customer_addresses(id,customerId,label,recipient,phone,postalCode,address,addressExtra,city,province,country,isDefault,createdAt,updatedAt)
+       SELECT ?,?,'Casa',?,?,?,?,?,?,?,?,CASE WHEN NOT EXISTS(SELECT 1 FROM customer_addresses WHERE customerId=?) THEN 1 ELSE 0 END,?,?
        WHERE NOT EXISTS(SELECT 1 FROM customer_addresses WHERE customerId=? AND postalCode=? AND address=? AND addressExtra=?)`,
         id(),
         customer.customerId,
@@ -1275,6 +1362,7 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
         input.addressExtra,
         input.city,
         input.province,
+        input.country,
         customer.customerId,
         createdAt,
         createdAt,

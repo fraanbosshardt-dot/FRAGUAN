@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Globe2,
   LayoutDashboard,
-  LogOut,
   Package,
   PackageCheck,
   Plus,
@@ -25,6 +24,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
+import { InternalSignOut } from '@/components/internal-sign-out';
 
 export type NavigationItem = readonly [string, string, LucideIcon];
 export type NavigationGroup = {
@@ -187,13 +187,7 @@ export function AdminSidebar({
           {userName.split('@')[0]}
           <small>{role}</small>
         </span>
-        <a
-          href="/signout-with-chatgpt?return_to=%2Fpos"
-          title="Cerrar sesión"
-          aria-label="Cerrar sesión"
-        >
-          <LogOut size={16} />
-        </a>
+        <InternalSignOut />
       </div>
     </aside>
   );

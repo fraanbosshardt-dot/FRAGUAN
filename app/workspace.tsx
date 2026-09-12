@@ -578,6 +578,7 @@ export default function Workspace() {
               }}
               placeholder="Buscar producto, código o escanear…"
               aria-label="Buscar productos"
+              maxLength={100}
               autoFocus
             />
             <kbd>F2</kbd>
@@ -899,6 +900,7 @@ export default function Workspace() {
                 aria-label="Buscar cliente"
                 value={customerQuery}
                 onChange={(e) => setCustomerQuery(e.target.value)}
+                maxLength={100}
               />
               <div className="customer-results">
                 {customers.map((c) => (
@@ -955,12 +957,16 @@ export default function Workspace() {
                   name="name"
                   placeholder="Nombre"
                   aria-label="Nombre"
+                  minLength={2}
+                  maxLength={80}
                   required
                 />
                 <Input
                   name="surname"
                   placeholder="Apellido"
                   aria-label="Apellido"
+                  minLength={2}
+                  maxLength={80}
                   required
                 />
                 <Input
@@ -969,6 +975,7 @@ export default function Workspace() {
                   aria-label="Teléfono"
                   required
                   minLength={5}
+                  maxLength={25}
                 />
                 <Button type="submit" disabled={busy}>
                   Crear y agregar
@@ -1116,7 +1123,12 @@ export default function Workspace() {
                           onChange={(e) => setSecondMethod(e.target.value)}
                         >
                           {methods
-                            .filter((m) => m.id !== method)
+                            .filter(
+                              (m) =>
+                                m.id !== method &&
+                                m.id !== 'cashback' &&
+                                (m.id !== 'store_credit' || Boolean(customer)),
+                            )
                             .map((m) => (
                               <option key={m.id} value={m.id}>
                                 {m.name}
@@ -1145,6 +1157,7 @@ export default function Workspace() {
                         value={reference}
                         onChange={(e) => setReference(e.target.value)}
                         placeholder="N.º de operación"
+                        maxLength={120}
                       />
                     </label>
                   )}

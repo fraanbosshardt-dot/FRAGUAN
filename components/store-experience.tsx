@@ -8,6 +8,7 @@ export function StoreExperience() {
   const pathname = usePathname();
   const internal =
     pathname === '/pos' ||
+    pathname === '/acceso' ||
     pathname === '/admin-access' ||
     pathname.startsWith('/admin/');
   const [message, setMessage] = useState('');

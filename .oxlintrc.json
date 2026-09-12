@@ -80,7 +80,10 @@
     },
     {
       "files": ["tests-*.mjs"],
-      "rules": { "nextjs/no-assign-module-variable": "off" }
+      "rules": {
+        "nextjs/no-assign-module-variable": "off",
+        "typescript/no-floating-promises": "off"
+      }
     }
   ]
 }

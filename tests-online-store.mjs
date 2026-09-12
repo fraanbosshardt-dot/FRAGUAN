@@ -216,14 +216,20 @@ test('customer account connects an online order with Club benefits and history',
     name: 'Socio',
     surname: 'Actualizado',
     phone: '1144445555',
-    locality: 'Isla Verde',
-    usualSizes: 'Remeras L, pantalones 42',
+    country: 'Argentina',
+    postalCode: '2661',
+    address: 'San Martín 123',
+    addressExtra: 'Piso 1',
+    city: 'Isla Verde',
+    province: 'Córdoba',
     marketingConsent: false,
   });
   const updated = await store.storeAccount(request);
   assert.equal(updated.customer.surname, 'Actualizado');
-  assert.equal(updated.customer.locality, 'Isla Verde');
   assert.equal(updated.customer.marketingConsent, false);
+  assert.equal(updated.addresses[0].address, 'San Martín 123');
+  assert.equal(updated.addresses[0].country, 'Argentina');
+  assert.equal(updated.addresses[0].isDefault, 1);
 });
 
 test('signed-provider callback reconciles a transfer once by reference and amount', async (t) => {

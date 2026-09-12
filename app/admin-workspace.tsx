@@ -3313,7 +3313,7 @@ export default function Admin({ section }: { section: string }) {
                 <span>
                   {selected.shippingMethod === 'pickup'
                     ? 'Retiro en el local'
-                    : `${selected.address}${selected.addressExtra ? ` · ${selected.addressExtra}` : ''}, ${selected.city}, ${selected.province} · CP ${selected.postalCode}`}
+                    : `${selected.address}${selected.addressExtra ? ` · ${selected.addressExtra}` : ''}, ${selected.city}, ${selected.province}, ${selected.country || 'Argentina'} · CP ${selected.postalCode}`}
                 </span>
                 {selected.document && <span>DNI: {selected.document}</span>}
                 {selected.couponCode && (

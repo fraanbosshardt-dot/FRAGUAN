@@ -2,8 +2,15 @@ import { env } from 'cloudflare:workers';
 import ComingSoon from '../coming-soon';
 import { isProductionComingSoon } from '@/lib/release-mode';
 import { InternalLogin } from './internal-login';
+import type { Metadata } from 'next';
+import { getChatGPTUser } from '../chatgpt-auth';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+  title: 'Acceso del personal | FRAGUAN',
+  robots: { index: false, follow: false },
+};
 
 function safeReturnTo(requested: string) {
   try {
@@ -26,11 +33,13 @@ export default async function InternalAccessPage({
   searchParams: Promise<{ returnTo?: string }>;
 }) {
   if (isProductionComingSoon()) return <ComingSoon area="FRAGUAN ACCESO" />;
+  const returnTo = safeReturnTo((await searchParams).returnTo ?? '/pos');
+  if (await getChatGPTUser()) redirect(returnTo);
   const runtime = env as unknown as Record<string, string | undefined>;
   return (
     <InternalLogin
       clientId={runtime.INTERNAL_GOOGLE_CLIENT_ID ?? ''}
-      returnTo={safeReturnTo((await searchParams).returnTo ?? '/pos')}
+      returnTo={returnTo}
     />
   );
 }

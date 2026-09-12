@@ -44,6 +44,7 @@ export default function Checkout() {
   const [pricing, setPricing] = useState<CheckoutQuote | null>(null);
   const [pricingBusy, setPricingBusy] = useState(false);
   const [session, setSession] = useState<any>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -56,6 +57,7 @@ export default function Checkout() {
   const [verificationMessage, setVerificationMessage] = useState('');
   const [verificationBusy, setVerificationBusy] = useState(false);
   const checkoutForm = useRef<HTMLFormElement>(null);
+  const addressAutoFilled = useRef(false);
   const idempotency = useRef(crypto.randomUUID());
   const accessToken = useRef(crypto.randomUUID());
   useEffect(() => {
@@ -63,6 +65,38 @@ export default function Checkout() {
       .then(setSession)
       .catch(() => undefined);
   }, []);
+  function fillShippingAddress(address?: Record<string, any>) {
+    setPostalCode(address?.postalCode || '');
+    for (const key of [
+      'country',
+      'address',
+      'addressExtra',
+      'city',
+      'province',
+    ]) {
+      const element = checkoutForm.current?.elements.namedItem(key) as
+        | HTMLInputElement
+        | HTMLSelectElement
+        | null;
+      if (element)
+        element.value = String(
+          address?.[key] || (key === 'country' ? 'Argentina' : ''),
+        );
+    }
+  }
+  useEffect(() => {
+    if (shippingMethod !== 'correo-argentino-home') {
+      addressAutoFilled.current = false;
+      return;
+    }
+    if (addressAutoFilled.current || !session?.addresses?.length) return;
+    const primary =
+      session.addresses.find((address: any) => address.isDefault) ||
+      session.addresses[0];
+    setSelectedAddressId(primary.id);
+    fillShippingAddress(primary);
+    addressAutoFilled.current = true;
+  }, [session, shippingMethod]);
   useEffect(() => {
     if (cart.length)
       trackStore('begin_checkout', {
@@ -168,6 +202,7 @@ export default function Checkout() {
           city: shippingMethod === 'pickup' ? 'Isla Verde' : form.get('city'),
           province:
             shippingMethod === 'pickup' ? 'Córdoba' : form.get('province'),
+          country: 'Argentina',
           notes: form.get('notes') || '',
           idempotencyKey: idempotency.current,
           accessToken: accessToken.current,
@@ -597,36 +632,38 @@ export default function Checkout() {
                     <label className="wide">
                       Dirección guardada
                       <select
-                        defaultValue=""
+                        value={selectedAddressId}
                         onChange={(event) => {
+                          setSelectedAddressId(event.target.value);
                           const address = session.addresses.find(
                             (item: any) => item.id === event.target.value,
                           );
-                          if (!address) return;
-                          setPostalCode(address.postalCode);
-                          for (const key of [
-                            'address',
-                            'addressExtra',
-                            'city',
-                            'province',
-                          ]) {
-                            const element = document.querySelector(
-                              `[name="${key}"]`,
-                            ) as HTMLInputElement | HTMLSelectElement | null;
-                            if (element)
-                              element.value = String(address[key] ?? '');
-                          }
+                          fillShippingAddress(address);
                         }}
                       >
-                        <option value="">Completar una nueva</option>
+                        <option value="">Usar otra dirección</option>
                         {session.addresses.map((item: any) => (
                           <option key={item.id} value={item.id}>
                             {item.label} · {item.address}, {item.city}
                           </option>
                         ))}
                       </select>
+                      <small>
+                        Podés modificar estos datos solo para esta compra.
+                      </small>
                     </label>
                   )}
+                  <label>
+                    País
+                    <select
+                      name="country"
+                      autoComplete="country-name"
+                      defaultValue="Argentina"
+                      required
+                    >
+                      <option>Argentina</option>
+                    </select>
+                  </label>
                   <label>
                     Código postal
                     <input

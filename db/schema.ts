@@ -354,6 +354,7 @@ export const onlineOrders = table('online_orders', {
   addressExtra: text().notNull().default(''),
   city: text().notNull(),
   province: text().notNull(),
+  country: text().notNull().default('Argentina'),
   notes: text().notNull().default(''),
   couponCode: text().notNull().default(''),
   attributionJson: text().notNull().default(''),
@@ -510,7 +511,9 @@ export const abandonedCarts = table('abandoned_carts', {
 });
 export const backInStockRequests = table('back_in_stock_requests', {
   id: text().primaryKey(),
-  variantId: text().notNull().references(() => variants.id),
+  variantId: text()
+    .notNull()
+    .references(() => variants.id),
   email: text().notNull(),
   status: text().notNull().default('waiting'),
   source: text().notNull().default('product'),
@@ -519,7 +522,9 @@ export const backInStockRequests = table('back_in_stock_requests', {
 });
 export const productReviews = table('product_reviews', {
   id: text().primaryKey(),
-  productId: text().notNull().references(() => products.id),
+  productId: text()
+    .notNull()
+    .references(() => products.id),
   customerId: text().references(() => customers.id),
   orderId: text().references(() => onlineOrders.id),
   email: text().notNull(),
@@ -534,7 +539,9 @@ export const productReviews = table('product_reviews', {
 });
 export const customerAddresses = table('customer_addresses', {
   id: text().primaryKey(),
-  customerId: text().notNull().references(() => customers.id),
+  customerId: text()
+    .notNull()
+    .references(() => customers.id),
   label: text().notNull().default('Casa'),
   recipient: text().notNull(),
   phone: text().notNull(),
@@ -543,6 +550,7 @@ export const customerAddresses = table('customer_addresses', {
   addressExtra: text().notNull().default(''),
   city: text().notNull(),
   province: text().notNull(),
+  country: text().notNull().default('Argentina'),
   isDefault: integer().notNull().default(0),
   createdAt: text().notNull(),
   updatedAt: text().notNull(),

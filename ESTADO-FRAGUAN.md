@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 11 de septiembre de 2026 · PostgreSQL Railway conectado en local, dominio configurado y endurecimiento de seguridad aplicado.
+Actualizado: 12 de septiembre de 2026 · dominio configurado, autenticación Google separada y endurecimiento de seguridad aplicado.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -26,7 +26,7 @@ Implementación local conectada a PostgreSQL privado en Railway. La tienda, el P
 La experiencia local cubre el recorrido completo: navegación editorial, catálogo, búsqueda,
 secciones, filtros, ordenamiento, favoritos, agregado rápido, ficha de producto, variantes,
 asistente orientativo de talle, carrito, umbral de envío gratis, checkout invitado, cuenta,
-edición de datos, Club, pedidos y seguimiento privado. Incluye páginas de envíos, cambios,
+edición de contacto y dirección principal, sugerencia automática de envío editable en el checkout, Club, pedidos y seguimiento privado. Incluye páginas de envíos, cambios,
 pagos, talles, contacto, términos, privacidad y cookies; Botón de arrepentimiento público
 con código trazable; Google Sign-In preparado; metadata, datos estructurados de producto,
 cabeceras de seguridad, `robots.txt` y sitemap.
@@ -39,7 +39,7 @@ reposición; reseñas moderadas; panel `Crecimiento online`; automatizaciones de
 navegación, carrito, poscompra y reactivación; skeletons, feedback, transiciones y barra fija
 de compra móvil.
 
-El lanzamiento real continúa condicionado a completar la whitelist y prueba real de Google
+El lanzamiento real continúa condicionado a completar la prueba real de Google
 Auth, Mercado Pago o Naranja X, Correo Argentino, Resend y pruebas físicas.
 Hasta autorización explícita, Vercel mantiene solamente “Próximamente disponible”.
 
@@ -112,7 +112,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 ## Lo que falta para operar
 
 1. Revisión visual con la sesión y los datos definitivos de POS/Administración, más pruebas de impresora, lector USB y dispositivos del negocio.
-2. Google Auth ya está implementado localmente con un cliente para tienda y otro para personal. Falta cargar los emails reales en la whitelist, probar ambas cuentas y generar el secreto productivo de sesión interna.
+2. Google Auth ya está implementado localmente con un cliente para tienda y otro para personal. La whitelist local contiene `fraanbosshardt@gmail.com` y `cristianjbos@gmail.com` como administradores. Falta probar ambas cuentas contra Google y cargar el secreto de sesión interna en producción cuando se autorice.
 3. Extraer la API a un servicio Railway para producción y desplegar las interfaces en Vercel solamente cuando exista autorización explícita. La API usará la red privada de Railway hacia PostgreSQL.
 4. Mantener las migraciones PostgreSQL incrementales y con checksum. La conexión, importación, recuperación y arquitectura están documentadas en `RAILWAY-DATABASE.md`.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.
@@ -139,6 +139,8 @@ Servidor local disponible durante esta auditoría.
 Mantener datos reales fuera del entorno demo hasta completar la puesta en producción.
 
 ## Punto de reanudación
+
+Prioridad actual: terminar y auditar por completo Administración y POS. Después volver a la tienda online. Quedan anotadas dos fallas visuales del ecommerce: el asistente de talle no se distingue y el aviso “Agregado a tu selección” queda invisible. Deben corregirse antes del cierre visual definitivo de la tienda.
 
 Continuar con QA visual local y pruebas de checkout/envío sobre PostgreSQL Railway. Cuando
 el usuario habilite la etapa de integraciones, extraer la API al servicio Railway privado,
