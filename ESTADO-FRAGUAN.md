@@ -39,8 +39,8 @@ reposición; reseñas moderadas; panel `Crecimiento online`; automatizaciones de
 navegación, carrito, poscompra y reactivación; skeletons, feedback, transiciones y barra fija
 de compra móvil.
 
-El lanzamiento real continúa condicionado a credenciales y servicios externos: base de datos
-productiva, Google Auth, Mercado Pago, Correo Argentino, Resend y pruebas físicas.
+El lanzamiento real continúa condicionado a completar la whitelist y prueba real de Google
+Auth, Mercado Pago o Naranja X, Correo Argentino, Resend y pruebas físicas.
 Hasta autorización explícita, Vercel mantiene solamente “Próximamente disponible”.
 
 ## Funciones implementadas
@@ -112,7 +112,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 ## Lo que falta para operar
 
 1. Revisión visual con la sesión y los datos definitivos de POS/Administración, más pruebas de impresora, lector USB y dispositivos del negocio.
-2. Conectar Google Auth para Administración y POS con whitelist de personal activo, y un cliente OAuth separado para las cuentas públicas de la tienda.
+2. Google Auth ya está implementado localmente con un cliente para tienda y otro para personal. Falta cargar los emails reales en la whitelist, probar ambas cuentas y generar el secreto productivo de sesión interna.
 3. Extraer la API a un servicio Railway para producción y desplegar las interfaces en Vercel solamente cuando exista autorización explícita. La API usará la red privada de Railway hacia PostgreSQL.
 4. Mantener las migraciones PostgreSQL incrementales y con checksum. La conexión, importación, recuperación y arquitectura están documentadas en `RAILWAY-DATABASE.md`.
 5. Definir política comercial final de cashback, retención de respaldos externos, recuperación y operación.

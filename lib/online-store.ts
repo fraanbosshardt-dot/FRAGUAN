@@ -32,6 +32,7 @@ import {
   publicOptionalLine,
   publicPhone,
 } from './public-validation';
+import { verifyGoogleIdToken } from './google-token';
 
 const SESSION_COOKIE = 'fraguan_customer';
 const encoder = new TextEncoder();
@@ -691,33 +692,10 @@ const accountInput = z
 async function verifyGoogleCredential(credential: string) {
   if (!env.GOOGLE_CLIENT_ID)
     throw new AppError(503, 'Google Login todavía no está configurado.');
-  const response = await fetch(
-    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
-    { signal: AbortSignal.timeout(8000) },
-  );
-  const claims: any = await response.json().catch(() => ({}));
-  if (
-    !response.ok ||
-    claims.aud !== env.GOOGLE_CLIENT_ID ||
-    !['accounts.google.com', 'https://accounts.google.com'].includes(
-      claims.iss,
-    ) ||
-    claims.email_verified !== 'true' ||
-    Number(claims.exp) * 1000 <= Date.now() ||
-    !claims.sub ||
-    !claims.email
-  )
+  const profile = await verifyGoogleIdToken(credential, env.GOOGLE_CLIENT_ID);
+  if (!profile)
     throw new AppError(401, 'No pudimos validar tu cuenta de Google.');
-  return {
-    sub: String(claims.sub),
-    email: String(claims.email).trim().toLowerCase(),
-    name: String(claims.given_name || claims.name || 'Cliente')
-      .trim()
-      .slice(0, 80),
-    surname: String(claims.family_name || 'FRAGUAN')
-      .trim()
-      .slice(0, 80),
-  };
+  return { ...profile, surname: profile.surname || 'FRAGUAN' };
 }
 
 export async function storeAccountWrite(req: Request, raw: unknown) {

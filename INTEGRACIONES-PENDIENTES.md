@@ -5,7 +5,7 @@ Actualizado: 11 de septiembre de 2026.
 Este es el orden de trabajo aprobado para conectar servicios reales. El desarrollo continúa
 en local y GitHub; ninguna etapa autoriza un deploy.
 
-## 1. Google Auth para el personal
+## 1. Google Auth para el personal — implementado localmente
 
 - Crear un cliente OAuth exclusivo para Administración y POS, con callbacks internos
   específicos y orígenes exactos.
@@ -18,13 +18,22 @@ en local y GitHub; ninguna etapa autoriza un deploy.
 - Crear sesiones propias `HttpOnly`, `Secure`, `SameSite`, rotables y con vencimiento. Cada
   venta, devolución, pedido preparado y acción administrativa conserva el usuario real.
 
-## 2. Google Auth para clientes
+Estado: cliente OAuth configurado localmente, pantalla terminada, JWT verificado con las
+claves públicas de Google y sesión firmada implementada. Pendiente: cargar emails reales en
+la whitelist, definir sus roles, probar el login y crear `INTERNAL_SESSION_SECRET` para
+producción.
+
+## 2. Google Auth para clientes — implementado localmente
 
 - Usar un cliente OAuth separado del personal.
 - Vincular por email verificado con `customer_accounts` y `customers`, y mantener separadas las
   cookies, callbacks y autorizaciones internas.
 - Permitir compra como invitado y ofrecer login para pedidos, direcciones, favoritos y Club.
 - El login de tienda nunca consulta roles internos ni permite usar `/pos`, `/admin` o sus APIs.
+
+Estado: cliente OAuth configurado localmente, botón visible, alta/vinculación de cuenta y
+sesión de cliente implementadas. Pendiente: realizar una prueba con un usuario incluido en
+la audiencia de Testing de Google.
 
 ## 3. Resend
 

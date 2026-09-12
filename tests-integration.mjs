@@ -51,6 +51,15 @@ assert.equal(
   'local_seedy',
   'Only run against the local demo fixture.',
 );
+const invalidGoogleLogin = await request('internal-auth', {
+  action: 'google',
+  credential: 'x'.repeat(100),
+});
+assert.equal(invalidGoogleLogin.status, 401);
+const internalLogout = await request('internal-auth', { action: 'logout' });
+assert.equal(internalLogout.status, 200);
+assert.match(internalLogout.setCookie, /fraguan_internal_session=/);
+assert.match(internalLogout.setCookie, /Max-Age=0/);
 const wrongAdminPin = await request('admin-pin', { pin: '000000' });
 assert.equal(wrongAdminPin.status, 403);
 const lockedAdminApi = await request('dashboard');

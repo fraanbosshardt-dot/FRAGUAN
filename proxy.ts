@@ -32,6 +32,7 @@ export function proxy(request: NextRequest) {
   if (
     request.nextUrl.pathname.startsWith('/api/') ||
     request.nextUrl.pathname.startsWith('/admin') ||
+    request.nextUrl.pathname.startsWith('/acceso') ||
     request.nextUrl.pathname.startsWith('/pos') ||
     request.nextUrl.pathname.startsWith('/cuenta') ||
     request.nextUrl.pathname.startsWith('/checkout') ||

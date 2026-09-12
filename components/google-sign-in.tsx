@@ -14,7 +14,17 @@ declare global {
   }
 }
 
-export function GoogleSignIn({ clientId, onError }: { clientId: string; onError: (message: string) => void }) {
+export function GoogleSignIn({
+  clientId,
+  onError,
+  resource = 'store-account',
+  successPath,
+}: {
+  clientId: string;
+  onError: (message: string) => void;
+  resource?: 'store-account' | 'internal-auth';
+  successPath?: string;
+}) {
   const target = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,11 +39,12 @@ export function GoogleSignIn({ clientId, onError }: { clientId: string; onError:
           setLoading(true);
           onError('');
           try {
-            await storeApi('store-account', {
+            await storeApi(resource, {
               method: 'POST',
               body: JSON.stringify({ action: 'google', credential }),
             });
-            location.reload();
+            if (successPath) location.assign(successPath);
+            else location.reload();
           } catch (cause: any) {
             onError(cause.message || 'No pudimos iniciar sesión con Google.');
             setLoading(false);
@@ -66,7 +77,7 @@ export function GoogleSignIn({ clientId, onError }: { clientId: string; onError:
     script.onload = render;
     script.onerror = () => onError('No pudimos cargar Google Login.');
     document.head.appendChild(script);
-  }, [clientId, onError]);
+  }, [clientId, onError, resource, successPath]);
 
   if (!clientId)
     return <button className="store-google-placeholder" type="button" disabled>Continuar con Google · listo para configurar</button>;

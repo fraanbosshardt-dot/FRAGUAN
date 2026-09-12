@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { env } from 'cloudflare:workers';
+import { verifyInternalSession } from '@/lib/internal-session';
 
 export type ChatGPTUser = {
   userId: string;
@@ -21,12 +22,16 @@ const CALLBACK_PATH = '/callback';
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const runtimeEnv = env as unknown as Record<string, string | undefined>;
+  const requestHeaders = await headers();
+  const internalSession = await verifyInternalSession(
+    requestHeaders.get('cookie') ?? '',
+  );
+  if (internalSession) return internalSession;
   if (
     !import.meta.env.DEV &&
     runtimeEnv.INTERNAL_AUTH_TRUST_PROXY !== 'true'
   )
     return null;
-  const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER)?.trim().toLowerCase();
   if (

@@ -5740,6 +5740,21 @@ textarea {
   .store-order-summary { padding: 22px 18px; }
 }
 
+.internal-sign-out {
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.35rem;
+}
+
+.internal-sign-out:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 /* Legibilidad operativa: POS y Administración se usan durante muchas horas y
    deben poder leerse de un vistazo sin agrandar las tarjetas del catálogo. */
 @media screen {

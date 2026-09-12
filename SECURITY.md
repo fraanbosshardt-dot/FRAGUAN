@@ -94,7 +94,8 @@ Estas pruebas deben ejecutarse contra el servidor con sesiones reales de prueba 
 - La sesión de Administración se firma con HMAC-SHA256, queda ligada al usuario interno, vence criptográficamente a las ocho horas y viaja en una cookie `HttpOnly`, `SameSite=Strict` y `Secure` bajo HTTPS. Alterar la cookie, copiarla a otro usuario o superar su vencimiento invalida el acceso.
 - En producción son obligatorios un `ADMIN_PIN` de seis dígitos y un `ADMIN_SESSION_SECRET` aleatorio de al menos 32 caracteres. El PIN local `197313` es solo la configuración de desarrollo acordada.
 - Un ADMIN o GERENTE también necesita el PIN para consultar APIs administrativas. Clientes y ventas usan un alcance `scope=pos` separado: este solo devuelve datos básicos de clientes y ventas recientes del usuario autenticado. Agregar el parámetro a mano no amplía permisos.
-- La identidad temporal basada en encabezados queda cerrada fuera de desarrollo salvo que `INTERNAL_AUTH_TRUST_PROXY=true`. Esa opción solo corresponde detrás de un proxy confiable que elimine encabezados aportados por Internet; se reemplazará por Google Auth con whitelist para Administración y POS.
+- La identidad temporal basada en encabezados queda cerrada fuera de desarrollo salvo que `INTERNAL_AUTH_TRUST_PROXY=true`. Esa opción solo corresponde al entorno anterior detrás de un proxy confiable; Google Auth con whitelist es ahora el mecanismo interno preparado para Administración y POS.
+- Google Auth está conectado localmente con clientes OAuth separados para compradores y personal. El backend verifica la firma RS256 contra las claves públicas de Google, emisor, audiencia específica, vencimiento y email verificado. El acceso interno exige además que el email corresponda a un usuario activo de FRAGUAN y crea una sesión propia firmada de 12 horas; desactivar al usuario corta sus permisos en la siguiente solicitud.
 - Las escrituras exigen origen exacto y JSON, limitan bytes reales aunque falte `Content-Length`, acotan profundidad y cantidad de nodos, y rechazan claves de contaminación de prototipos. Formularios públicos limitan longitud, formato y caracteres de control.
 - Inicio de sesión, verificación de email, checkout, newsletter, reposición, reseñas, devoluciones, PIN y webhooks tienen límites por dirección; los objetivos sensibles suman límites por cuenta. El proceso también limita la memoria destinada a esos contadores.
 - El login por contraseña queda deshabilitado fuera de desarrollo salvo activación expresa con `STORE_PASSWORD_AUTH_ENABLED=true`. La comparación de contraseña usa tiempo constante y ejecuta una derivación ficticia cuando la cuenta no existe.
@@ -104,7 +105,7 @@ Estas pruebas deben ejecutarse contra el servidor con sesiones reales de prueba 
 
 ## Obligatorio antes de producción
 
-1. Configurar Google Auth, whitelist separada para personal, MFA en las cuentas autorizadas y cierre de la autenticación temporal.
+1. Cargar la whitelist real del personal, configurar un `INTERNAL_SESSION_SECRET` productivo, activar MFA en las cuentas autorizadas y cerrar definitivamente la autenticación temporal.
 2. Generar secretos productivos independientes, rotarlos si alguno fue compartido, guardarlos únicamente en el gestor de secretos y verificar que `.env` no se suba a Git.
 3. Colocar rate limiting distribuido y WAF en el borde. El limitador actual vive por instancia y funciona como defensa adicional, pero no coordina múltiples procesos.
 4. Restringir PostgreSQL a la red privada de Railway, usar SSL para accesos externos temporales, mínimo privilegio, backups y prueba de restauración.

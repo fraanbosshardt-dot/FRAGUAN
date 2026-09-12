@@ -13,7 +13,6 @@ import {
   Check,
   Printer,
   LayoutDashboard,
-  LogOut,
   Sun,
   Moon,
   RotateCcw,
@@ -40,6 +39,7 @@ import {
   useClock,
   Row,
 } from '@/lib/client';
+import { InternalSignOut } from '@/components/internal-sign-out';
 export default function Workspace() {
   const { session, error: sessionError, reload } = useSession(),
     clock = useClock();
@@ -446,10 +446,10 @@ export default function Workspace() {
         <p>{sessionError}</p>
         <a
           className="login-link"
-          href="/signin-with-chatgpt?return_to=%2Fpos"
+          href="/acceso?returnTo=%2Fpos"
           target="_top"
         >
-          Ingresar con ChatGPT <ArrowUpRight size={18} />
+          Ingresar con Google <ArrowUpRight size={18} />
         </a>
       </main>
     );
@@ -528,12 +528,7 @@ export default function Workspace() {
             {session?.user?.name?.split('@')[0] ?? 'Cargando…'}
             <small className="user-time">{clock}</small>
           </span>
-          <a
-            href="/signout-with-chatgpt?return_to=%2Fpos"
-            title="Cerrar sesión"
-          >
-            <LogOut size={15} />
-          </a>
+          <InternalSignOut />
         </div>
       </header>
       <div className="pos-body">

@@ -131,6 +131,14 @@ import {
   submitProductReview,
   trackStoreEvent,
 } from '@/lib/store-growth';
+import { env } from 'cloudflare:workers';
+import { verifyGoogleIdToken } from '@/lib/google-token';
+import {
+  createInternalSession,
+  internalSessionClearCookie,
+  internalSessionSetCookie,
+  internalSessionsConfigured,
+} from '@/lib/internal-session';
 export const dynamic = 'force-dynamic';
 function promotionRule(value: unknown) {
   if (typeof value !== 'string' || !value) return {} as Record<string, any>;
@@ -772,6 +780,68 @@ export async function POST(
       return reply(await quoteOnlineCoupon(body));
     if (resource === 'store-checkout-quote')
       return reply(await quoteOnlineCheckout(body));
+    if (resource === 'internal-auth') {
+      const secure = new URL(req.url).protocol === 'https:';
+      const input = z
+        .object({
+          action: z.enum(['google', 'logout']),
+          credential: z.string().min(100).max(10000).optional(),
+        })
+        .strict()
+        .parse(body);
+      if (input.action === 'logout') {
+        const response = reply({ ok: true });
+        response.headers.append('Set-Cookie', internalSessionClearCookie(secure));
+        return response;
+      }
+      enforceRateLimit(req, 'internal-google-login', 10, 15 * 60_000);
+      const runtime = env as unknown as Record<string, string | undefined>;
+      const clientId = runtime.INTERNAL_GOOGLE_CLIENT_ID?.trim() ?? '';
+      if (!clientId || !internalSessionsConfigured())
+        throw new AppError(
+          503,
+          'El acceso interno con Google todavía no está configurado.',
+        );
+      const profile = input.credential
+        ? await verifyGoogleIdToken(input.credential, clientId)
+        : null;
+      if (!profile)
+        throw new AppError(401, 'No pudimos validar tu cuenta de Google.');
+      enforceGlobalRateLimit(
+        'internal-google-account',
+        profile.email,
+        20,
+        15 * 60_000,
+      );
+      const internalUser = await one<{
+        id: string;
+        email: string;
+        name: string;
+        active: number;
+      }>('SELECT id,email,name,active FROM users WHERE email=?', profile.email);
+      const owner = await one<{ value: string }>(
+        'SELECT value FROM settings WHERE key=?',
+        'owner',
+      );
+      const bootstrapAllowed =
+        !owner &&
+        runtime.BOOTSTRAP_OWNER_EMAIL?.trim().toLowerCase() === profile.email;
+      if ((!internalUser?.active && !bootstrapAllowed) || internalUser?.active === 0)
+        throw new AppError(
+          403,
+          'Esta cuenta no está habilitada para el sistema interno de FRAGUAN.',
+        );
+      const token = await createInternalSession({
+        userId: profile.sub,
+        email: profile.email,
+        displayName: internalUser?.name || profile.name,
+        fullName: internalUser?.name || `${profile.name} ${profile.surname}`.trim(),
+      });
+      clearGlobalRateLimit('internal-google-account', profile.email);
+      const response = reply({ ok: true });
+      response.headers.append('Set-Cookie', internalSessionSetCookie(token, secure));
+      return response;
+    }
     if (resource === 'setup') {
       const x = z.object({ demo: z.boolean() }).strict().parse(body);
       return reply(await setup(x.demo), 201);
