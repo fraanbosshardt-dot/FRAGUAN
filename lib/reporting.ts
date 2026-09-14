@@ -11,6 +11,8 @@ const filtersSchema = z
     brand: z.string().trim().min(1).max(100).optional(),
     supplierId: z.string().trim().min(1).max(128).optional(),
     methodId: z.string().trim().min(1).max(128).optional(),
+    comparisonFrom: z.iso.date().optional(),
+    comparisonTo: z.iso.date().optional(),
   })
   .strict();
 export type BusinessReportFilters = z.infer<typeof filtersSchema>;
@@ -360,11 +362,22 @@ export async function getBusinessReport(actor: Actor, raw: unknown) {
   if (length > 731)
     throw new AppError(400, 'El reporte admite hasta dos años por consulta.');
   const throughExclusive = addDays(filters.to, 1);
-  const previousTo = addDays(filters.from, -1);
-  const previousFrom = addDays(previousTo, -(length - 1));
+  if (Boolean(filters.comparisonFrom) !== Boolean(filters.comparisonTo))
+    throw new AppError(400, 'El período comparativo está incompleto.');
+  if (
+    filters.comparisonFrom &&
+    filters.comparisonTo &&
+    filters.comparisonTo < filters.comparisonFrom
+  )
+    throw new AppError(400, 'El período comparativo es inválido.');
+  const previousTo = filters.comparisonTo ?? addDays(filters.from, -1);
+  const previousFrom =
+    filters.comparisonFrom ?? addDays(previousTo, -(length - 1));
+  if (daysBetween(previousFrom, previousTo) > 731)
+    throw new AppError(400, 'El período comparativo admite hasta dos años.');
   const [current, previous] = await Promise.all([
     periodMetrics(filters, filters.from, throughExclusive),
-    periodMetrics(filters, previousFrom, filters.from),
+    periodMetrics(filters, previousFrom, addDays(previousTo, 1)),
   ]);
   const facts = lineFacts(filters, filters.from, throughExclusive);
   const noSales = productsWithoutSalesQuery(filters);
@@ -494,8 +507,8 @@ export async function getBusinessReport(actor: Actor, raw: unknown) {
                 END AS commissionMinor
            FROM payment_allocations
        )
-       SELECT methodId AS id,name,SUM(revenueMinor) AS revenueMinor,
-              SUM(commissionMinor) AS commissionMinor
+       SELECT methodId AS id,name,COUNT(DISTINCT saleId) AS tickets,
+              SUM(revenueMinor) AS revenueMinor,SUM(commissionMinor) AS commissionMinor
          FROM final_payment_allocations
         GROUP BY methodId,name
         ORDER BY revenueMinor DESC`,

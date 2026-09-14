@@ -63,6 +63,7 @@ import {
   transitionPurchaseOrder,
 } from '@/lib/purchase-operations';
 import { getBusinessReport } from '@/lib/reporting';
+import { generateChatGPTAnalysis } from '@/lib/chatgpt-analysis';
 import {
   createInstallmentObligation,
   createRecurringExpense,
@@ -173,9 +174,7 @@ function enforcePublicLimit(req: Request, resource: string, body: unknown) {
       ? (body as Record<string, unknown>)
       : ({} as Record<string, unknown>);
   const action =
-    typeof input.action === 'string'
-      ? input.action.slice(0, 30)
-      : '';
+    typeof input.action === 'string' ? input.action.slice(0, 30) : '';
   const rules: Record<string, readonly [number, number]> = {
     'store-account': [12, 15 * 60_000],
     'store-checkout': [12, 10 * 60_000],
@@ -766,7 +765,10 @@ export async function POST(
     if (resource === 'store-shipping') {
       const input = z
         .object({
-          postalCode: z.string().trim().regex(/^\d{4}$/),
+          postalCode: z
+            .string()
+            .trim()
+            .regex(/^\d{4}$/),
           subtotal: z.number().int().nonnegative().max(100000000000),
           method: z.enum(['correo-argentino-home', 'pickup']),
         })
@@ -791,7 +793,10 @@ export async function POST(
         .parse(body);
       if (input.action === 'logout') {
         const response = reply({ ok: true });
-        response.headers.append('Set-Cookie', internalSessionClearCookie(secure));
+        response.headers.append(
+          'Set-Cookie',
+          internalSessionClearCookie(secure),
+        );
         return response;
       }
       enforceRateLimit(req, 'internal-google-login', 10, 15 * 60_000);
@@ -826,7 +831,10 @@ export async function POST(
       const bootstrapAllowed =
         !owner &&
         runtime.BOOTSTRAP_OWNER_EMAIL?.trim().toLowerCase() === profile.email;
-      if ((!internalUser?.active && !bootstrapAllowed) || internalUser?.active === 0)
+      if (
+        (!internalUser?.active && !bootstrapAllowed) ||
+        internalUser?.active === 0
+      )
         throw new AppError(
           403,
           'Esta cuenta no está habilitada para el sistema interno de FRAGUAN.',
@@ -835,11 +843,15 @@ export async function POST(
         userId: profile.sub,
         email: profile.email,
         displayName: internalUser?.name || profile.name,
-        fullName: internalUser?.name || `${profile.name} ${profile.surname}`.trim(),
+        fullName:
+          internalUser?.name || `${profile.name} ${profile.surname}`.trim(),
       });
       clearGlobalRateLimit('internal-google-account', profile.email);
       const response = reply({ ok: true });
-      response.headers.append('Set-Cookie', internalSessionSetCookie(token, secure));
+      response.headers.append(
+        'Set-Cookie',
+        internalSessionSetCookie(token, secure),
+      );
       return response;
     }
     if (resource === 'setup') {
@@ -871,6 +883,8 @@ export async function POST(
     }
     const a = await actor();
     await requireAdminPinForApi(req, resource, posWriteResources, a);
+    if (resource === 'chatgpt-analysis')
+      return reply(await generateChatGPTAnalysis(a, body));
     if (resource === 'storage') return reply(await storageWrite(a, body), 201);
     if (resource === 'online-orders')
       return reply(await onlineOrderWrite(a, body));

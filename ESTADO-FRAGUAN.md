@@ -1,6 +1,6 @@
 # FRAGUAN — estado actual
 
-Actualizado: 12 de septiembre de 2026 · dominio configurado, autenticación Google separada y endurecimiento de seguridad aplicado.
+Actualizado: 14 de septiembre de 2026 · dominio configurado, autenticación Google separada y exportación privada de análisis implementada.
 
 Esta es la referencia vigente. Reemplaza las listas históricas de pendientes de versiones anteriores. El historial de cambios se conserva en Git.
 
@@ -66,7 +66,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 | Cuentas a pagar         | Obligaciones, cuotas, vencimientos, calendario financiero y pagos registrados.                                                                                                                                                                                                                                                       |
 | Bancos                  | Cuentas y saldos contables, movimientos y conciliación manual contra el extracto.                                                                                                                                                                                                                                                     |
 | Flujo de fondos         | Caja, bancos registrados, cobros y obligaciones con proyecciones de 7/30/60/90 días.                                                                                                                                                                                                                                                 |
-| Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales.                                                                                                                                                             |
+| Reportes e Insights     | Ventas, líneas, categorías, marcas, proveedores, vendedores, pagos, promociones, devoluciones y stock. Comparaciones por período y datos calculados de registros reales. Incluye “Exportar análisis para ChatGPT” exclusivo para administradores: arma un TXT con métricas agregadas y anónimas, sin API de IA ni envío externo. |
 | Comisiones              | Tasas configurables, estimaciones sobre venta neta de devoluciones y selector de período.                                                                                                                                                                                                                                            |
 | Email y newsletter      | Suscripción, bajas, campañas, notificaciones transaccionales y automatizaciones de bienvenida, navegación, carrito, reposición, poscompra y reactivación con Resend. Sin WhatsApp.                                                                                                                                                    |
 | Marketing y conversión  | Embudo consentido, UTMs, atribución, cupones online, carritos recuperables, direcciones guardadas, reposición, reseñas verificables y moderadas, interés por producto y facturación por origen. Se vincula con clientes, pedidos, promociones, variantes y stock centrales.                                                              |
@@ -103,6 +103,7 @@ Hasta autorización explícita, Vercel mantiene solamente “Próximamente dispo
 - 3 escenarios específicos verifican la cola online del POS, la ausencia de campos financieros, las transiciones válidas, la auditoría del vendedor y el bloqueo de saltos de estado.
 - tests-seller-security.mjs contra servidor local, incluyendo altas/pausas de medios prohibidas para vendedor.
 - tests-reporting.mjs: totales netos, filtros, productos sin ventas y permisos.
+- tests-chatgpt-analysis.mjs: períodos con y sin ventas, comparación anterior en cero, devoluciones, anulaciones, privacidad, bloqueo a vendedor y contenido único para copiar/descargar.
 - tests-database-recovery.mjs: instalación limpia, repetición, detección de alteraciones, copia, restauración y conservación de datos.
 - La batería completa `tests-*.mjs` pasa, incluidas integración, administración, reglas comerciales, caja, cashback, reportes, recuperación, stock y seguridad del vendedor.
 - Lint, TypeScript y compilación de producción pasan; detalles técnicos en IMPLEMENTATION.md.

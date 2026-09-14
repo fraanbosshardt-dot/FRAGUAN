@@ -46,10 +46,8 @@ import { InventoryLines } from '@/components/inventory-lines';
 import { Barcode } from '@/components/barcode';
 import { printCommerce } from '@/lib/printing';
 import { LoadingState } from '@/components/loading-state';
-import {
-  AdminSidebar,
-  navigation,
-} from '@/components/admin-navigation';
+import { ChatGPTAnalysisExport } from '@/components/chatgpt-analysis-export';
+import { AdminSidebar, navigation } from '@/components/admin-navigation';
 const exportLabels: Record<string, string> = {
   products: 'Productos',
   categories: 'Categorías',
@@ -1621,6 +1619,7 @@ export default function Admin({ section }: { section: string }) {
           )}
           {section === 'reports' && data && (
             <>
+              {session?.user?.role === 'ADMIN' && <ChatGPTAnalysisExport />}
               <section className="panel report-filters">
                 <div>
                   <p className="eyebrow">PERÍODO DEL REPORTE</p>

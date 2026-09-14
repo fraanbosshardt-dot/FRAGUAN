@@ -16,6 +16,46 @@
   background: #111210;
   color: #f5f2e9;
 }
+
+/* Exportador privado de análisis: superficie compacta dentro de Reportes. */
+.chatgpt-analysis { display: grid; gap: 22px; border-top: 4px solid var(--primary); }
+.chatgpt-analysis-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.chatgpt-analysis-heading > div { display: grid; gap: 7px; max-width: 760px; }
+.chatgpt-analysis-heading h2 { font-size: clamp(22px, 2.2vw, 30px); }
+.chatgpt-analysis-heading p:last-child { color: var(--muted-foreground); line-height: 1.55; }
+.chatgpt-analysis-heading > svg { width: 34px; height: 34px; color: var(--primary); }
+.analysis-presets, .analysis-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+.analysis-presets > span { color: var(--muted-foreground); font-size: 13px; }
+.analysis-fields { display: grid; grid-template-columns: 180px 180px minmax(260px, 1fr); gap: 14px; }
+.analysis-fields label { display: grid; gap: 7px; color: var(--muted-foreground); font-size: 13px; font-weight: 700; }
+.analysis-fields select { min-height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--background); color: var(--foreground); }
+.analysis-sections { padding: 0; border: 0; }
+.analysis-sections legend { margin-bottom: 10px; font-weight: 800; }
+.analysis-sections > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.analysis-sections label { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--card) 88%, var(--secondary)); cursor: pointer; }
+.analysis-actions svg { width: 16px; height: 16px; }
+.analysis-message { display: flex; align-items: center; gap: 8px; margin: 0; padding: 11px 13px; border-radius: 8px; font-weight: 700; }
+.analysis-message svg { width: 17px; }
+.analysis-message.success { background: #eaf3e6; color: #315326; }
+.analysis-message.error { background: #f8e8e5; color: #842d20; }
+.analysis-preview { display: grid; gap: 10px; }
+.analysis-preview > div { display: flex; justify-content: space-between; gap: 16px; }
+.analysis-preview > div span { color: var(--muted-foreground); font-size: 13px; }
+.analysis-preview textarea { width: 100%; min-height: 430px; max-height: 65vh; padding: 18px; resize: vertical; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--card) 94%, var(--secondary)); color: var(--foreground); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 14px; line-height: 1.6; }
+@media (max-width: 850px) {
+  .analysis-fields { grid-template-columns: 1fr 1fr; }
+  .analysis-fields label:last-child { grid-column: 1 / -1; }
+  .analysis-sections > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .chatgpt-analysis { gap: 18px; }
+  .chatgpt-analysis-heading > svg { display: none; }
+  .analysis-fields, .analysis-sections > div { grid-template-columns: 1fr; }
+  .analysis-fields label:last-child { grid-column: auto; }
+  .analysis-actions > button { flex: 1 1 100%; }
+  .analysis-preview > div { display: grid; gap: 4px; }
+  .analysis-preview textarea { min-height: 360px; }
+}
 .coming-soon-mark {
   display: grid;
   place-items: center;
