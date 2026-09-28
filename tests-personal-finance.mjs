@@ -35,6 +35,18 @@ try {
   assert.equal(config.availableMinor, 2500000000);
   assert.equal(config.businessContributionMarginBps, 4000);
   assert(Array.isArray(config.payments));
+  assert(config.expenses.length >= 55);
+  assert.equal(
+    config.expenses
+      .filter(
+        (expense) =>
+          expense.active &&
+          expense.scope === 'personal' &&
+          expense.frequency === 'monthly',
+      )
+      .reduce((sum, expense) => sum + expense.amountMinor, 0),
+    343909728,
+  );
   assert(config.debts.length >= 16);
   assert(
     config.debts.some(

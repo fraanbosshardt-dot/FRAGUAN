@@ -1,7 +1,114 @@
 import { z } from 'zod';
 import { Actor, AppError } from './auth';
 import { auditStatement, db, one, statement } from '@/db/queries';
-import type { PersonalFinanceConfig } from './personal-finance-model';
+import type {
+  FinanceExpense,
+  PersonalFinanceConfig,
+} from './personal-finance-model';
+
+const defaultExpenses: FinanceExpense[] = (
+  [
+    ['cba-alquiler', 'Cba. alquiler departamento', 'Córdoba', 87828700],
+    ['cba-expensas', 'Cba. expensas', 'Córdoba', 25022800],
+    ['cba-banco', 'Cba. gastos bancarios', 'Córdoba', 2257030],
+    ['cba-agua', 'Cba. agua potable', 'Córdoba', 2715967],
+    ['cba-gas', 'Cba. gas natural', 'Córdoba', 618597],
+    ['cba-internet', 'Cba. internet fibra óptica', 'Córdoba', 4840114],
+    ['cba-luz', 'Cba. servicio eléctrico', 'Córdoba', 7928880],
+    ['cba-municipal', 'Cba. impuesto municipal', 'Córdoba', 2969700],
+    ['cba-provincial', 'Cba. impuesto provincial', 'Córdoba', 2318324],
+    ['cba-semanal', 'Cba. dinero semanal', 'Córdoba', 15000000],
+    ['cba-celular-hijo', 'Cba. celular hijo', 'Córdoba', 8475380],
+    ['cba-peluqueria', 'Cba. peluquería', 'Córdoba', 3600000],
+    ['cba-gimnasio', 'Cba. gimnasio hijo', 'Córdoba', 4500000],
+    ['cba-esparcimiento', 'Cba. esparcimiento hijo', 'Córdoba', 0],
+    ['agua-envasada', 'Agua envasada', 'Hogar', 2000000],
+    ['agua-potable', 'Agua potable', 'Hogar', 1941200],
+    ['alimento-mascotas', 'Alimento mascotas', 'Mascotas', 2730000],
+    ['celular-hija', 'Celular hija packs de internet', 'Familia', 1435000],
+    [
+      'celular-padre-packs',
+      'Celular padre packs de internet',
+      'Familia',
+      1230000,
+    ],
+    ['celular-padre', 'Celular padre', 'Familia', 3581491],
+    ['colaboracion-rifa', 'Colaboración Rifa', 'Familia', 1000000],
+    ['combustible-auto', 'Combustible auto', 'Transporte', 10000000],
+    ['combustible-corven', 'Combustible moto Corven', 'Transporte', 2000000],
+    ['combustible-wave', 'Combustible moto Wave', 'Transporte', 2000000],
+    ['escuela-cuota', 'Escuela cuota', 'Educación', 6700000],
+    ['esparcimiento-hija', 'Esparcimiento hija', 'Familia', 8000000],
+    ['esparcimiento-padre', 'Esparcimiento padre', 'Familia', 0],
+    ['gas-natural', 'Gas natural', 'Hogar', 6976812],
+    ['gimnasio-hija', 'Gimnasio hija', 'Familia', 5000000],
+    ['gimnasio-padre', 'Gimnasio padre', 'Familia', 0],
+    ['icloud', 'iCloud familiar', 'Suscripciones', 1415746],
+    ['impuesto-cheque', 'Impuesto al cheque', 'Impuestos', 1515000],
+    ['impuesto-municipal', 'Impuesto municipal urbano', 'Impuestos', 700000],
+    ['impuesto-auto', 'Impuesto prov. y munic. autom.', 'Impuestos', 2155775],
+    ['impuesto-rural', 'Impuesto rural', 'Impuestos', 11500000],
+    ['internet', 'Internet fibra óptica', 'Hogar', 2250000],
+    ['iva-comision', 'IVA sobre comisión', 'Impuestos', 0],
+    ['kiosco-escuela', 'Kiosco escuela', 'Educación', 8000000],
+    ['mantenimiento-bancor', 'Mantenimiento Mundo Bancor', 'Bancos', 0],
+    ['mercado-hogar', 'Mercado para hogar localidad', 'Hogar', 50000000],
+    ['monotributo', 'Monotributo', 'Impuestos', 20038976],
+    ['netflix', 'Netflix', 'Suscripciones', 1900000],
+    ['peluqueria', 'Peluquería', 'Personal', 0],
+    ['seguro-auto', 'Seguro auto', 'Seguros', 6404000],
+    ['seguro-motos', 'Seguro de las dos motos', 'Seguros', 1934600],
+    ['seguro-bancor', 'Seguro Bancor', 'Seguros', 1027366],
+    ['servicio-electrico', 'Servicio eléctrico', 'Hogar', 3744770],
+    ['sumidero', 'Sumidero', 'Hogar', 1750000],
+    ['chatgpt', 'Suscripción ChatGPT', 'Suscripciones', 3000000],
+    ['claude', 'Suscripción Claude', 'Suscripciones', 3000000],
+    ['google-space', 'Suscripción espacio Google', 'Suscripciones', 748500],
+    ['impuesto-provincial', 'Impuesto provincial urbano', 'Impuestos', 155000],
+  ] as const
+).map(([id, label, category, amountMinor]) => ({
+  id,
+  label,
+  category,
+  scope: 'personal',
+  amountMinor,
+  frequency: 'monthly',
+  active: amountMinor > 0,
+  quality: 'confirmed',
+}));
+
+defaultExpenses.push(
+  {
+    id: 'business-fixed-1',
+    label: 'Costo fijo 1',
+    category: 'Negocio',
+    scope: 'business',
+    amountMinor: 44_000_000,
+    frequency: 'monthly',
+    active: true,
+    quality: 'confirmed',
+  },
+  {
+    id: 'business-fixed-2',
+    label: 'Costo fijo 2',
+    category: 'Negocio',
+    scope: 'business',
+    amountMinor: 7_000_000,
+    frequency: 'monthly',
+    active: true,
+    quality: 'confirmed',
+  },
+  {
+    id: 'business-electric-connection',
+    label: 'Derecho de conexión eléctrica',
+    category: 'Negocio',
+    scope: 'business',
+    amountMinor: 10_000_000,
+    frequency: 'one_time',
+    active: true,
+    quality: 'estimated',
+  },
+);
 
 const defaults: PersonalFinanceConfig = {
   availableMinor: 2_500_000_000,
@@ -12,6 +119,7 @@ const defaults: PersonalFinanceConfig = {
   businessFixedCostsMinor: 51_000_000,
   businessExtraordinaryMinor: 10_000_000,
   businessContributionMarginBps: 4000,
+  expenses: defaultExpenses,
   debts: [
     [
       'bancor-1',
@@ -341,6 +449,18 @@ const defaults: PersonalFinanceConfig = {
 };
 
 const money = z.number().int().min(0).max(100_000_000_000);
+const expenseSchema = z
+  .object({
+    id: z.string().min(1).max(100),
+    label: z.string().min(1).max(160),
+    category: z.string().min(1).max(80),
+    scope: z.enum(['personal', 'business']),
+    amountMinor: money,
+    frequency: z.enum(['monthly', 'one_time']),
+    active: z.boolean(),
+    quality: z.enum(['confirmed', 'estimated', 'pending']),
+  })
+  .strict();
 const debtSchema = z
   .object({
     id: z.string().min(1).max(80),
@@ -388,6 +508,7 @@ const configSchema = z
       .min(0)
       .max(10000)
       .default(4000),
+    expenses: z.array(expenseSchema).max(500).default(defaultExpenses),
     debts: z.array(debtSchema).max(100),
     payments: z.array(paymentSchema).max(5000).default([]),
   })
@@ -435,6 +556,7 @@ export async function savePersonalFinance(actor: Actor, raw: unknown) {
       {
         configured: true,
         debts: input.debts.length,
+        expenses: input.expenses.length,
         payments: input.payments.length,
         contributionMarginBps: input.businessContributionMarginBps,
       },

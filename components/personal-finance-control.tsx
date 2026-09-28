@@ -15,6 +15,7 @@ import {
   applyPaymentScenarios,
   businessGrossSalesNeeded,
   cancellationEfficiency,
+  expenseTotals,
   projectFinance,
   suggestedPlan,
   type PaymentMode,
@@ -66,12 +67,7 @@ export function PersonalFinanceControl({
     [cashInputs, setCashInputs] = useState({
       reserveMinor: String(initial.reserveMinor / 100),
       personalIncomeMinor: String(initial.personalIncomeMinor / 100),
-      livingCostsMinor: String(initial.livingCostsMinor / 100),
       businessIncomeMinor: String(initial.businessIncomeMinor / 100),
-      businessFixedCostsMinor: String(initial.businessFixedCostsMinor / 100),
-      businessExtraordinaryMinor: String(
-        initial.businessExtraordinaryMinor / 100,
-      ),
     }),
     [contributionMargin, setContributionMargin] = useState(
       String(initial.businessContributionMarginBps / 100),
@@ -157,9 +153,28 @@ export function PersonalFinanceControl({
       ? null
       : draftConfig.businessIncomeMinor + grossSalesNeeded;
   const editedDebt = draftConfig.debts.find((debt) => debt.id === editingDebt);
+  const expenses = expenseTotals(draftConfig);
+  const expenseGroups = useMemo(() => {
+    const groups = new Map<string, PersonalFinanceConfig['expenses']>();
+    for (const expense of draftConfig.expenses) {
+      const key = `${expense.scope}|${expense.category}`;
+      groups.set(key, [...(groups.get(key) ?? []), expense]);
+    }
+    return [...groups.entries()];
+  }, [draftConfig.expenses]);
   const activePlan = plans[mode];
-  const basePersonal =
-    draftConfig.personalIncomeMinor - draftConfig.livingCostsMinor;
+  const basePersonal = draftConfig.personalIncomeMinor - expenses.personalMinor;
+  function updateExpense(
+    expenseId: string,
+    patch: Partial<PersonalFinanceConfig['expenses'][number]>,
+  ) {
+    setConfig((current) => ({
+      ...current,
+      expenses: current.expenses.map((expense) =>
+        expense.id === expenseId ? { ...expense, ...patch } : expense,
+      ),
+    }));
+  }
   function openPayment(debt: PersonalDebt) {
     const initialMode: PaymentMode =
       debt.kind === 'card'
@@ -326,7 +341,15 @@ export function PersonalFinanceControl({
     }
   }
   async function copy() {
-    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(availableMinor)}\nINGRESOS PERSONALES: ${pesos(draftConfig.personalIncomeMinor)}\nGASTOS PERSONALES: ${pesos(draftConfig.livingCostsMinor)}\nFLUJO PERSONAL ANTES DE DEUDAS: ${pesos(basePersonal)}\nVENTAS BRUTAS DEL NEGOCIO: ${pesos(draftConfig.businessIncomeMinor)}\nMARGEN DE CONTRIBUCIÓN: ${(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%\nGASTOS FIJOS DEL NEGOCIO: ${pesos(draftConfig.businessFixedCostsMinor)}\nGASTOS EXTRAORDINARIOS DEL NEGOCIO: ${pesos(draftConfig.businessExtraordinaryMinor)}\nAPORTE PERSONAL NECESARIO AL NEGOCIO: ${pesos(result.businessSupportAfterMinor)}\nVENTA BRUTA ADICIONAL PARA CUBRIR EL DÉFICIT: ${grossSalesNeeded == null ? 'Margen no configurado' : pesos(grossSalesNeeded)}\nRESULTADO PERSONAL FINAL: ${pesos(result.personalAfterBusinessAfterMinor)}\n\nDEUDAS:\n${draftConfig.debts.map((d) => `- ${d.entity} · ${d.label}: saldo ${pesos(d.balanceMinor)}, cancelación ${d.payoffMinor == null ? 'Dato pendiente' : pesos(d.payoffMinor)}, pago mensual ${d.monthlyMinor == null && d.minimumMinor == null ? 'Dato pendiente' : pesos(d.monthlyMinor ?? d.minimumMinor ?? 0)}, estado ${d.status}, prioridad ${priorities[d.priority]}, calidad ${quality[d.quality]}. ${d.decision}`).join('\n')}\n\nCompará qué conviene cancelar y qué mantener. Explicá qué hacer, por qué, flujo resultante, aporte requerido por el negocio, riesgos y próximos pasos.`;
+    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(availableMinor)}\nINGRESOS PERSONALES: ${pesos(draftConfig.personalIncomeMinor)}\nGASTOS PERSONALES DETALLADOS: ${pesos(expenses.personalMinor)}\nFLUJO PERSONAL ANTES DE DEUDAS: ${pesos(basePersonal)}\nVENTAS BRUTAS DEL NEGOCIO: ${pesos(draftConfig.businessIncomeMinor)}\nMARGEN DE CONTRIBUCIÓN: ${(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%\nGASTOS FIJOS DEL NEGOCIO: ${pesos(expenses.businessMonthlyMinor)}\nGASTOS EXTRAORDINARIOS DEL NEGOCIO: ${pesos(expenses.businessOneTimeMinor)}\nAPORTE PERSONAL NECESARIO AL NEGOCIO: ${pesos(result.businessSupportAfterMinor)}\nVENTA BRUTA ADICIONAL PARA CUBRIR EL DÉFICIT: ${grossSalesNeeded == null ? 'Margen no configurado' : pesos(grossSalesNeeded)}\nRESULTADO PERSONAL FINAL: ${pesos(result.personalAfterBusinessAfterMinor)}\n\nDETALLE DE EGRESOS ACTIVOS:\n${draftConfig.expenses
+      .filter((expense) => expense.active)
+      .map(
+        (expense) =>
+          `- ${expense.scope === 'business' ? 'Negocio' : 'Personal'} · ${expense.category} · ${expense.label}: ${pesos(expense.amountMinor)} (${expense.frequency === 'monthly' ? 'mensual' : 'único'})`,
+      )
+      .join(
+        '\n',
+      )}\n\nDEUDAS:\n${draftConfig.debts.map((d) => `- ${d.entity} · ${d.label}: saldo ${pesos(d.balanceMinor)}, cancelación ${d.payoffMinor == null ? 'Dato pendiente' : pesos(d.payoffMinor)}, pago mensual ${d.monthlyMinor == null && d.minimumMinor == null ? 'Dato pendiente' : pesos(d.monthlyMinor ?? d.minimumMinor ?? 0)}, estado ${d.status}, prioridad ${priorities[d.priority]}, calidad ${quality[d.quality]}. ${d.decision}`).join('\n')}\n\nCompará qué conviene cancelar y qué mantener. Explicá qué hacer, por qué, flujo resultante, aporte requerido por el negocio, riesgos y próximos pasos.`;
     try {
       await navigator.clipboard.writeText(text);
       setNotice({ text: 'Prompt copiado.', tone: 'success' });
@@ -395,16 +418,6 @@ export function PersonalFinanceControl({
             }
           />
           <MoneyInput
-            label="Gastos personales"
-            value={cashInputs.livingCostsMinor}
-            onChange={(value) =>
-              setCashInputs((current) => ({
-                ...current,
-                livingCostsMinor: value,
-              }))
-            }
-          />
-          <MoneyInput
             label="Ventas brutas mensuales del negocio"
             value={cashInputs.businessIncomeMinor}
             onChange={(value) =>
@@ -432,26 +445,95 @@ export function PersonalFinanceControl({
               el margen real.
             </small>
           </label>
-          <MoneyInput
-            label="Gastos fijos del negocio"
-            value={cashInputs.businessFixedCostsMinor}
-            onChange={(value) =>
-              setCashInputs((current) => ({
-                ...current,
-                businessFixedCostsMinor: value,
-              }))
+        </div>
+      </section>
+      <section className="panel finance-expenses">
+        <div className="panel-heading">
+          <div>
+            <h2>Detalle completo de egresos</h2>
+            <span>
+              Cada concepto alimenta el flujo. Desactivá solamente lo que ya no
+              corresponda y guardá los cambios.
+            </span>
+          </div>
+        </div>
+        <div className="finance-expense-summary">
+          <Metric
+            label="Personales mensuales"
+            value={pesos(expenses.personalMinor)}
+          />
+          <Metric
+            label="Negocio mensuales"
+            value={pesos(expenses.businessMonthlyMinor)}
+          />
+          <Metric
+            label="Negocio pago único"
+            value={pesos(expenses.businessOneTimeMinor)}
+          />
+          <Metric
+            label="Diferencia contra $3.440.000 informado"
+            value={pesos(Math.abs(344_000_000 - expenses.personalMinor))}
+            tone={
+              expenses.personalMinor === 344_000_000 ? 'positive' : 'negative'
             }
           />
-          <MoneyInput
-            label="Gasto extraordinario del negocio"
-            value={cashInputs.businessExtraordinaryMinor}
-            onChange={(value) =>
-              setCashInputs((current) => ({
-                ...current,
-                businessExtraordinaryMinor: value,
-              }))
-            }
-          />
+        </div>
+        <div className="finance-expense-groups">
+          {expenseGroups.map(([key, items]) => {
+            const [scope, category] = key.split('|');
+            const total = items
+              .filter((item) => item.active)
+              .reduce((sum, item) => sum + item.amountMinor, 0);
+            return (
+              <details key={key}>
+                <summary>
+                  <span>
+                    {scope === 'business' ? 'Negocio' : 'Personal'} · {category}
+                  </span>
+                  <b>{pesos(total)}</b>
+                </summary>
+                <div>
+                  {items.map((expense) => (
+                    <div key={expense.id}>
+                      <input
+                        aria-label={`Incluir ${expense.label}`}
+                        type="checkbox"
+                        checked={expense.active}
+                        onChange={(event) =>
+                          updateExpense(expense.id, {
+                            active: event.target.checked,
+                          })
+                        }
+                      />
+                      <label htmlFor={`expense-${expense.id}`}>
+                        <strong>{expense.label}</strong>
+                        <span>
+                          {expense.frequency === 'monthly'
+                            ? 'Mensual'
+                            : 'Pago único'}{' '}
+                          · {quality[expense.quality]}
+                        </span>
+                      </label>
+                      <Input
+                        id={`expense-${expense.id}`}
+                        aria-label={`Importe de ${expense.label}`}
+                        type="text"
+                        inputMode="decimal"
+                        value={String(expense.amountMinor / 100)}
+                        onChange={(event) => {
+                          const value = parsePesos(event.target.value);
+                          if (value != null)
+                            updateExpense(expense.id, {
+                              amountMinor: Math.round(value * 100),
+                            });
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </details>
+            );
+          })}
         </div>
       </section>
       <div className="finance-strategies">
@@ -558,8 +640,8 @@ export function PersonalFinanceControl({
           <span>Gastos y cuotas a cubrir este mes</span>
           <strong>
             {pesos(
-              draftConfig.businessFixedCostsMinor +
-                draftConfig.businessExtraordinaryMinor +
+              expenses.businessMonthlyMinor +
+                expenses.businessOneTimeMinor +
                 (projection[0]?.businessDebtMinor ?? 0),
             )}
           </strong>
@@ -762,7 +844,10 @@ export function PersonalFinanceControl({
             <span>Luego de la simulación elegida</span>
           </div>
           <Calc name="Ingresos" value={draftConfig.personalIncomeMinor} />
-          <Calc name="Gastos de vida" value={-draftConfig.livingCostsMinor} />
+          <Calc
+            name="Gastos de vida detallados"
+            value={-expenses.personalMinor}
+          />
           <Calc
             name="Cuotas personales"
             value={-(projection[0]?.personalDebtMinor ?? 0)}
@@ -800,13 +885,10 @@ export function PersonalFinanceControl({
                 10_000,
             )}
           />
-          <Calc
-            name="Costos fijos"
-            value={-draftConfig.businessFixedCostsMinor}
-          />
+          <Calc name="Costos fijos" value={-expenses.businessMonthlyMinor} />
           <Calc
             name="Extraordinario pendiente"
-            value={-draftConfig.businessExtraordinaryMinor}
+            value={-expenses.businessOneTimeMinor}
           />
           <Calc
             name="Cuotas del negocio"

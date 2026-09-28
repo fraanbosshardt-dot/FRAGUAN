@@ -17,6 +17,17 @@ export type FinancePayment = {
   installmentCount: number | null;
 };
 
+export type FinanceExpense = {
+  id: string;
+  label: string;
+  category: string;
+  scope: FinanceScope;
+  amountMinor: number;
+  frequency: 'monthly' | 'one_time';
+  active: boolean;
+  quality: DataQuality;
+};
+
 export type PaymentScenario = {
   debtId: string;
   amountMinor: number;
@@ -54,6 +65,7 @@ export type PersonalFinanceConfig = {
   businessFixedCostsMinor: number;
   businessExtraordinaryMinor: number;
   businessContributionMarginBps: number;
+  expenses: FinanceExpense[];
   debts: PersonalDebt[];
   payments: FinancePayment[];
 };
@@ -101,7 +113,38 @@ const monthly = (debt: PersonalDebt) =>
 const isOpen = (debt: PersonalDebt) =>
   !['paid', 'closed'].includes(debt.status);
 
+export function expenseTotals(config: PersonalFinanceConfig) {
+  const active = config.expenses.filter((expense) => expense.active);
+  const personal = active.filter(
+    (expense) =>
+      expense.scope === 'personal' && expense.frequency === 'monthly',
+  );
+  const businessMonthly = active.filter(
+    (expense) =>
+      expense.scope === 'business' && expense.frequency === 'monthly',
+  );
+  const businessOneTime = active.filter(
+    (expense) =>
+      expense.scope === 'business' && expense.frequency === 'one_time',
+  );
+  return {
+    personalMinor:
+      personal.length > 0
+        ? personal.reduce((sum, expense) => sum + expense.amountMinor, 0)
+        : config.livingCostsMinor,
+    businessMonthlyMinor:
+      businessMonthly.length > 0
+        ? businessMonthly.reduce((sum, expense) => sum + expense.amountMinor, 0)
+        : config.businessFixedCostsMinor,
+    businessOneTimeMinor:
+      businessOneTime.length > 0
+        ? businessOneTime.reduce((sum, expense) => sum + expense.amountMinor, 0)
+        : config.businessExtraordinaryMinor,
+  };
+}
+
 function flowSnapshot(config: PersonalFinanceConfig, debts: PersonalDebt[]) {
+  const expenses = expenseTotals(config);
   const personalDebtMinor = debts
     .filter((debt) => debt.scope === 'personal')
     .reduce((sum, debt) => sum + monthly(debt), 0);
@@ -109,14 +152,14 @@ function flowSnapshot(config: PersonalFinanceConfig, debts: PersonalDebt[]) {
     .filter((debt) => debt.scope === 'business')
     .reduce((sum, debt) => sum + monthly(debt), 0);
   const personalFlowMinor =
-    config.personalIncomeMinor - config.livingCostsMinor - personalDebtMinor;
+    config.personalIncomeMinor - expenses.personalMinor - personalDebtMinor;
   const businessFlowMinor =
     Math.round(
       (config.businessIncomeMinor * config.businessContributionMarginBps) /
         10_000,
     ) -
-    config.businessFixedCostsMinor -
-    config.businessExtraordinaryMinor -
+    expenses.businessMonthlyMinor -
+    expenses.businessOneTimeMinor -
     businessDebtMinor;
   const businessSupportMinor = Math.max(0, -businessFlowMinor);
   return {
@@ -246,6 +289,7 @@ export function projectFinance(
   months = 12,
   start = new Date(),
 ): FinanceProjectionMonth[] {
+  const expenses = expenseTotals(config);
   const debts = config.debts.filter(
     (debt) => isOpen(debt) && !selectedIds.includes(debt.id),
   );
@@ -262,14 +306,14 @@ export function projectFinance(
       .filter((debt) => debt.scope === 'business')
       .reduce((sum, debt) => sum + monthly(debt), 0);
     const personalFlowMinor =
-      config.personalIncomeMinor - config.livingCostsMinor - personalDebtMinor;
+      config.personalIncomeMinor - expenses.personalMinor - personalDebtMinor;
     const businessFlowMinor =
       Math.round(
         (config.businessIncomeMinor * config.businessContributionMarginBps) /
           10_000,
       ) -
-      config.businessFixedCostsMinor -
-      (index === 0 ? config.businessExtraordinaryMinor : 0) -
+      expenses.businessMonthlyMinor -
+      (index === 0 ? expenses.businessOneTimeMinor : 0) -
       businessDebtMinor;
     const businessSupportMinor = Math.max(0, -businessFlowMinor);
     const date = new Date(start.getFullYear(), start.getMonth() + index, 1);
