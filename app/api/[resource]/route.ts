@@ -65,6 +65,10 @@ import {
 import { getBusinessReport } from '@/lib/reporting';
 import { generateChatGPTAnalysis } from '@/lib/chatgpt-analysis';
 import {
+  getPersonalFinance,
+  savePersonalFinance,
+} from '@/lib/personal-finance';
+import {
   createInstallmentObligation,
   createRecurringExpense,
   getPlannedFinancialCalendar,
@@ -307,6 +311,7 @@ export async function GET(
           'purchases',
           'cash',
           'cash-flow',
+          'personal-finance',
           'financial-calendar',
           'expenses',
           'payables',
@@ -539,6 +544,8 @@ export async function GET(
       requirePermission(a, 'cash-flow');
       return reply(await consolidatedCashFlow());
     }
+    if (resource === 'personal-finance')
+      return reply(await getPersonalFinance(a));
     if (resource === 'customer-intelligence') {
       requirePermission(a, 'customer-intelligence');
       const customerId = url.searchParams.get('id');
@@ -885,6 +892,8 @@ export async function POST(
     await requireAdminPinForApi(req, resource, posWriteResources, a);
     if (resource === 'chatgpt-analysis')
       return reply(await generateChatGPTAnalysis(a, body));
+    if (resource === 'personal-finance')
+      return reply(await savePersonalFinance(a, body));
     if (resource === 'storage') return reply(await storageWrite(a, body), 201);
     if (resource === 'online-orders')
       return reply(await onlineOrderWrite(a, body));

@@ -47,6 +47,7 @@ import { Barcode } from '@/components/barcode';
 import { printCommerce } from '@/lib/printing';
 import { LoadingState } from '@/components/loading-state';
 import { ChatGPTAnalysisExport } from '@/components/chatgpt-analysis-export';
+import { PersonalFinanceControl } from '@/components/personal-finance-control';
 import { AdminSidebar, navigation } from '@/components/admin-navigation';
 const exportLabels: Record<string, string> = {
   products: 'Productos',
@@ -254,6 +255,8 @@ const descriptions: Record<string, string> = {
   purchases: 'Creá órdenes y registrá recepciones parciales o completas.',
   cash: 'Apertura, movimientos y cierre en un solo lugar.',
   'cash-flow': 'Proyectá cobros y compromisos registrados antes de decidir.',
+  'personal-finance':
+    'Deudas, flujo personal y decisiones de capital en un espacio privado.',
   'financial-calendar': 'Ordená vencimientos por fecha y nivel de urgencia.',
   expenses: 'Registrá y consultá los gastos del negocio.',
   payables: 'Anticipate a tus próximos compromisos.',
@@ -2057,6 +2060,9 @@ export default function Admin({ section }: { section: string }) {
                 </section>
               </div>
             </>
+          )}
+          {section === 'personal-finance' && data && (
+            <PersonalFinanceControl initial={data} />
           )}
           {section === 'customer-intelligence' && data && (
             <>

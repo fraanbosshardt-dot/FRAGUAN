@@ -84,6 +84,7 @@ export const navigationGroups: readonly NavigationGroup[] = [
       ['payables', 'Cuentas a pagar', CalendarClock],
       ['financial-calendar', 'Calendario financiero', CalendarClock],
       ['cash-flow', 'Flujo de fondos', TrendingUp],
+      ['personal-finance', 'Centro financiero', SlidersHorizontal],
       ['withdrawals', 'Retiros de socios', ArrowUpRight],
     ],
   },

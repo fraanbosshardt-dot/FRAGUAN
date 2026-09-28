@@ -17,6 +17,30 @@
   color: #f5f2e9;
 }
 
+.finance-control { display: grid; gap: 18px; }
+.finance-hero { display: flex; justify-content: space-between; align-items: start; gap: 24px; padding: clamp(22px,4vw,42px); background: linear-gradient(135deg,var(--card),color-mix(in srgb,var(--primary) 7%,var(--card))); }
+.finance-hero > div { display: grid; gap: 8px; }
+.finance-hero h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: clamp(25px,3vw,44px); letter-spacing: -.04em; }
+.finance-hero h2 input { width: 230px; height: 54px; font-size: 25px; font-weight: 850; }
+.finance-hero p:last-child { color: var(--muted-foreground); }
+.finance-strategies { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.finance-strategies button { display: grid; gap: 7px; padding: 20px; text-align: left; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--foreground); cursor: pointer; transition: transform .2s,border-color .2s; }
+.finance-strategies button:hover { transform: translateY(-2px); }
+.finance-strategies button.active { border: 2px solid var(--primary); }
+.finance-strategies strong { font-size: 18px; }
+.finance-strategies b { font-size: 15px; color: #397238; }
+.finance-strategies span,.finance-strategies small { color: var(--muted-foreground); }
+.finance-results .positive strong { color: #397238; }.finance-results .negative strong { color: #a33b31; }
+.finance-debt-list { display: grid; gap: 8px; margin-top: 15px; }
+.finance-debt-list > label { display: grid; grid-template-columns: auto minmax(0,1fr) minmax(190px,auto); align-items: center; gap: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+.finance-debt-list > label.selected { border-color: var(--primary); background: color-mix(in srgb,var(--primary) 5%,var(--card)); }
+.finance-debt-list > label > div { display: grid; gap: 3px; }.finance-debt-list > label > div:last-child { text-align: right; }
+.finance-debt-list span,.finance-debt-list small { color: var(--muted-foreground); font-size: 12px; }
+.finance-total { margin-top: 8px; padding-top: 12px; border-top: 2px solid var(--border); font-size: 17px; }
+.finance-export { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+@media(max-width:800px){.finance-strategies{grid-template-columns:1fr}.finance-hero{display:grid}.finance-debt-list>label{grid-template-columns:auto 1fr}.finance-debt-list>label>div:last-child{grid-column:2;text-align:left}}
+@media(max-width:520px){.finance-hero h2 input{width:100%}.finance-export{display:grid}.finance-export button{width:100%}}
+
 /* Exportador privado de análisis: superficie compacta dentro de Reportes. */
 .chatgpt-analysis { display: grid; gap: 22px; border-top: 4px solid var(--primary); }
 .chatgpt-analysis-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }

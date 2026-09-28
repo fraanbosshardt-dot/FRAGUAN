@@ -37,6 +37,7 @@ const adminSections = new Set([
   'payables',
   'financial-calendar',
   'cash-flow',
+  'personal-finance',
   'withdrawals',
   'reports',
   'insights',
