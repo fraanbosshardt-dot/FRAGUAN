@@ -148,6 +148,10 @@ export function PersonalFinanceControl({
     () => applyPaymentScenarios(draftConfig, scenarios),
     [draftConfig, scenarios],
   );
+  const baseline = useMemo(
+    () => applyPaymentScenarios(draftConfig, []),
+    [draftConfig],
+  );
   const projection = useMemo(
     () => projectFinance(result.config, []),
     [result.config],
@@ -161,6 +165,9 @@ export function PersonalFinanceControl({
       ? null
       : draftConfig.businessIncomeMinor + grossSalesNeeded;
   const editedDebt = draftConfig.debts.find((debt) => debt.id === editingDebt);
+  const simulationUsesReserve =
+    result.capitalRemainingMinor < draftConfig.reserveMinor;
+  const simulationExceedsCapital = result.capitalRemainingMinor < 0;
   const expenses = expenseTotals(draftConfig);
   const expenseGroups = useMemo(() => {
     const groups = new Map<string, PersonalFinanceConfig['expenses']>();
@@ -183,6 +190,21 @@ export function PersonalFinanceControl({
         expense.id === expenseId ? { ...expense, ...patch } : expense,
       ),
     }));
+  }
+  function removeScenario(debtId: string) {
+    setSelected((ids) => ids.filter((id) => id !== debtId));
+    setManualScenarios((items) =>
+      items.filter((item) => item.debtId !== debtId),
+    );
+  }
+  function clearSimulation() {
+    setSelected([]);
+    setManualScenarios([]);
+    setEditingDebt('');
+    setNotice({
+      text: 'Simulación limpia. Los datos reales no cambiaron.',
+      tone: 'success',
+    });
   }
   function beginEdit() {
     setEditSnapshot({
@@ -725,6 +747,99 @@ export function PersonalFinanceControl({
         title="Armá y confirmá el plan de pagos"
         description="Usá la casilla para simular una cancelación total u Opciones de pago para mínimos, cuotas, adelantos y otros importes."
       />
+      <section className="panel finance-simulator">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">SIMULACIÓN ACTIVA</p>
+            <h2>Tu combinación de pagos</h2>
+            <span>
+              Podés mezclar pagos totales y parciales. Nada se guarda hasta que
+              uses Registrar pago dentro de una deuda.
+            </span>
+          </div>
+          <Button variant="outline" onClick={clearSimulation}>
+            <X />
+            Limpiar simulación
+          </Button>
+        </div>
+        {scenarios.length === 0 ? (
+          <div className="finance-simulator-empty">
+            Elegí una estrategia, marcá una cancelación total o abrí Opciones de
+            pago para comenzar.
+          </div>
+        ) : (
+          <div className="finance-simulator-items">
+            {scenarios.map((scenario) => {
+              const debt = draftConfig.debts.find(
+                (item) => item.id === scenario.debtId,
+              );
+              if (!debt) return null;
+              return (
+                <div key={scenario.debtId}>
+                  <div>
+                    <strong>
+                      {debt.entity} · {debt.label}
+                    </strong>
+                    <span>
+                      {paymentModes[scenario.mode]}
+                      {scenario.installmentCount
+                        ? ` · ${scenario.installmentCount} cuota${scenario.installmentCount === 1 ? '' : 's'}`
+                        : ''}
+                    </span>
+                  </div>
+                  <b>{pesos(scenario.amountMinor)}</b>
+                  <button type="button" onClick={() => openPayment(debt)}>
+                    Cambiar
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Quitar ${debt.entity} ${debt.label} de la simulación`}
+                    onClick={() => removeScenario(debt.id)}
+                  >
+                    <X />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="finance-before-after">
+          <CompareMetric
+            label="Capital disponible"
+            before={baseline.capitalRemainingMinor}
+            after={result.capitalRemainingMinor}
+            higherIsBetter
+          />
+          <CompareMetric
+            label="Deuda pendiente"
+            before={baseline.debtRemainingMinor}
+            after={result.debtRemainingMinor}
+          />
+          <CompareMetric
+            label="Cuotas mensuales"
+            before={baseline.monthlyAfterMinor}
+            after={result.monthlyAfterMinor}
+          />
+          <CompareMetric
+            label="Resultado personal final"
+            before={baseline.personalAfterBusinessAfterMinor}
+            after={result.personalAfterBusinessAfterMinor}
+            higherIsBetter
+          />
+        </div>
+        {(simulationUsesReserve || simulationExceedsCapital) && (
+          <div className="finance-simulator-warning">
+            <strong>
+              {simulationExceedsCapital
+                ? 'La simulación supera el capital disponible.'
+                : 'La simulación usa parte de la reserva protegida.'}
+            </strong>
+            <span>
+              Ajustá pagos antes de tomar una decisión o reducí la selección.
+            </span>
+          </div>
+        )}
+      </section>
       <section className="panel">
         <div className="panel-heading">
           <div>
@@ -846,27 +961,33 @@ export function PersonalFinanceControl({
           {config.debts.map((debt) => {
             const efficiency = cancellationEfficiency(debt);
             const paid = ['paid', 'closed'].includes(debt.status);
+            const simulated = scenarios.find(
+              (scenario) => scenario.debtId === debt.id,
+            );
             return (
               <div
                 key={debt.id}
-                className={`${selected.includes(debt.id) ? 'selected' : ''} ${paid ? 'paid' : ''}`}
+                className={`${simulated ? 'selected' : ''} ${paid ? 'paid' : ''}`}
               >
-                <input
-                  aria-label={`Simular cancelación de ${debt.entity} ${debt.label}`}
-                  type="checkbox"
-                  disabled={paid}
-                  checked={selected.includes(debt.id)}
-                  onChange={(e) => {
-                    setManualScenarios((items) =>
-                      items.filter((item) => item.debtId !== debt.id),
-                    );
-                    setSelected((s) =>
-                      e.target.checked
-                        ? [...s, debt.id]
-                        : s.filter((id) => id !== debt.id),
-                    );
-                  }}
-                />
+                <label className="finance-total-choice">
+                  <input
+                    aria-label={`Simular cancelación total de ${debt.entity} ${debt.label}`}
+                    type="checkbox"
+                    disabled={paid}
+                    checked={selected.includes(debt.id)}
+                    onChange={(e) => {
+                      setManualScenarios((items) =>
+                        items.filter((item) => item.debtId !== debt.id),
+                      );
+                      setSelected((s) =>
+                        e.target.checked
+                          ? [...s, debt.id]
+                          : s.filter((id) => id !== debt.id),
+                      );
+                    }}
+                  />
+                  <span>Total</span>
+                </label>
                 <div>
                   <strong>
                     {debt.entity} · {debt.label}
@@ -876,6 +997,12 @@ export function PersonalFinanceControl({
                     {priorities[debt.priority]}
                   </span>
                   <small>{debt.decision}</small>
+                  {simulated && (
+                    <small className="finance-simulated-label">
+                      En simulación: {paymentModes[simulated.mode]} por{' '}
+                      {pesos(simulated.amountMinor)}
+                    </small>
+                  )}
                 </div>
                 <div className="finance-debt-amount">
                   <b>{pesos(debt.payoffMinor ?? debt.balanceMinor)}</b>
@@ -904,7 +1031,7 @@ export function PersonalFinanceControl({
                     ? 'Guardando…'
                     : paid
                       ? 'Reabrir'
-                      : 'Opciones de pago'}
+                      : 'Parcial / cuotas'}
                 </button>
               </div>
             );
@@ -1148,6 +1275,29 @@ function SignedMoney({ value }: { value: number }) {
       {value < 0 ? '− ' : '+ '}
       {pesos(Math.abs(value))}
     </td>
+  );
+}
+
+function CompareMetric({
+  label,
+  before,
+  after,
+  higherIsBetter = false,
+}: {
+  label: string;
+  before: number;
+  after: number;
+  higherIsBetter?: boolean;
+}) {
+  const improved = higherIsBetter ? after >= before : after <= before;
+  return (
+    <div className="finance-compare-metric">
+      <span>{label}</span>
+      <small>Antes {pesos(before)}</small>
+      <strong className={improved ? 'finance-positive' : 'finance-negative'}>
+        Después {pesos(after)}
+      </strong>
+    </div>
   );
 }
 
