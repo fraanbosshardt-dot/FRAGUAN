@@ -55,7 +55,6 @@ type FinancialEditSnapshot = {
     personalIncomeMinor: string;
     businessIncomeMinor: string;
   };
-  contributionMargin: string;
 };
 
 function parsePesos(value: string) {
@@ -82,9 +81,6 @@ export function PersonalFinanceControl({
       personalIncomeMinor: String(initial.personalIncomeMinor / 100),
       businessIncomeMinor: String(initial.businessIncomeMinor / 100),
     }),
-    [contributionMargin, setContributionMargin] = useState(
-      String(initial.businessContributionMarginBps / 100),
-    ),
     [selected, setSelected] = useState<string[]>(
       () =>
         suggestedPlan(initial, 'balanced', initial.availableMinor).selectedIds,
@@ -104,15 +100,10 @@ export function PersonalFinanceControl({
     ),
     [notice, setNotice] = useState({ text: '', tone: 'success' });
   const availableMinor = Math.round((parsePesos(available) ?? 0) * 100);
-  const marginPercent = Number(contributionMargin.replace(',', '.'));
-  const marginBps = Number.isFinite(marginPercent)
-    ? Math.max(0, Math.min(100, marginPercent)) * 100
-    : 0;
   const draftConfig = useMemo(() => {
     const next = {
       ...config,
       availableMinor,
-      businessContributionMarginBps: Math.round(marginBps),
     };
     for (const [key, value] of Object.entries(cashInputs)) {
       const parsed = parsePesos(value);
@@ -122,7 +113,7 @@ export function PersonalFinanceControl({
         );
     }
     return next;
-  }, [availableMinor, cashInputs, config, marginBps]);
+  }, [availableMinor, cashInputs, config]);
   const plans = useMemo(
     () => ({
       flow: suggestedPlan(draftConfig, 'flow', availableMinor),
@@ -198,7 +189,6 @@ export function PersonalFinanceControl({
       config: structuredClone(config),
       available,
       cashInputs: { ...cashInputs },
-      contributionMargin,
     });
     setIsEditing(true);
     setNotice({ text: 'Edición habilitada.', tone: 'success' });
@@ -208,7 +198,6 @@ export function PersonalFinanceControl({
       setConfig(editSnapshot.config);
       setAvailable(editSnapshot.available);
       setCashInputs(editSnapshot.cashInputs);
-      setContributionMargin(editSnapshot.contributionMargin);
     }
     setEditSnapshot(null);
     setIsEditing(false);
@@ -289,13 +278,7 @@ export function PersonalFinanceControl({
     const invalidCash = Object.values(cashInputs).some(
       (value) => parsePesos(value) == null,
     );
-    if (
-      parsed == null ||
-      invalidCash ||
-      !Number.isFinite(marginPercent) ||
-      marginPercent < 0 ||
-      marginPercent > 100
-    ) {
+    if (parsed == null || invalidCash) {
       setNotice({
         text: 'Revisá los importes ingresados.',
         tone: 'error',
@@ -382,7 +365,7 @@ export function PersonalFinanceControl({
     }
   }
   async function copy() {
-    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(availableMinor)}\nINGRESOS PERSONALES: ${pesos(draftConfig.personalIncomeMinor)}\nGASTOS PERSONALES DETALLADOS: ${pesos(expenses.personalMinor)}\nFLUJO PERSONAL ANTES DE DEUDAS: ${pesos(basePersonal)}\nVENTAS BRUTAS DEL NEGOCIO: ${pesos(draftConfig.businessIncomeMinor)}\nMARGEN DE CONTRIBUCIÓN: ${(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%\nGASTOS FIJOS DEL NEGOCIO: ${pesos(expenses.businessMonthlyMinor)}\nGASTOS EXTRAORDINARIOS DEL NEGOCIO: ${pesos(expenses.businessOneTimeMinor)}\nAPORTE PERSONAL NECESARIO AL NEGOCIO: ${pesos(result.businessSupportAfterMinor)}\nVENTA BRUTA ADICIONAL PARA CUBRIR EL DÉFICIT: ${grossSalesNeeded == null ? 'Margen no configurado' : pesos(grossSalesNeeded)}\nRESULTADO PERSONAL FINAL: ${pesos(result.personalAfterBusinessAfterMinor)}\n\nDETALLE DE EGRESOS ACTIVOS:\n${draftConfig.expenses
+    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(availableMinor)}\nINGRESOS PERSONALES: ${pesos(draftConfig.personalIncomeMinor)}\nGASTOS PERSONALES DETALLADOS: ${pesos(expenses.personalMinor)}\nFLUJO PERSONAL ANTES DE DEUDAS: ${pesos(basePersonal)}\nVENTAS BRUTAS DEL NEGOCIO: ${pesos(draftConfig.businessIncomeMinor)}\nGASTOS FIJOS DEL NEGOCIO: ${pesos(expenses.businessMonthlyMinor)}\nGASTOS EXTRAORDINARIOS DEL NEGOCIO: ${pesos(expenses.businessOneTimeMinor)}\nAPORTE PERSONAL NECESARIO AL NEGOCIO: ${pesos(result.businessSupportAfterMinor)}\nVENTA BRUTA ADICIONAL PARA CUBRIR EL DÉFICIT: ${grossSalesNeeded == null ? 'No disponible' : pesos(grossSalesNeeded)}\nRESULTADO PERSONAL FINAL: ${pesos(result.personalAfterBusinessAfterMinor)}\n\nDETALLE DE EGRESOS ACTIVOS:\n${draftConfig.expenses
       .filter((expense) => expense.active)
       .map(
         (expense) =>
@@ -472,7 +455,7 @@ export function PersonalFinanceControl({
         id="finance-step-1"
         number="01"
         title="Confirmá la foto actual"
-        description="Revisá capital, ingresos, ventas, margen y egresos. Solo habilitá Editar datos si algo cambió."
+        description="Revisá capital, ingresos, ventas y egresos. Solo habilitá Editar datos si algo cambió."
       />
       <section
         className={`panel finance-input-panel ${isEditing ? 'is-editing' : 'is-locked'}`}
@@ -520,25 +503,6 @@ export function PersonalFinanceControl({
               }))
             }
           />
-          <label htmlFor="finance-contribution-margin">
-            <span>Margen disponible sobre cada venta</span>
-            <div className="finance-percent-input">
-              <Input
-                id="finance-contribution-margin"
-                aria-label="Margen de contribución"
-                type="text"
-                inputMode="decimal"
-                disabled={!isEditing}
-                value={contributionMargin}
-                onChange={(event) => setContributionMargin(event.target.value)}
-              />
-              <b>%</b>
-            </div>
-            <small>
-              Después de mercadería, descuentos y costos variables. Ajustalo con
-              el margen real.
-            </small>
-          </label>
         </div>
       </section>
       <section className="panel finance-expenses">
@@ -703,9 +667,7 @@ export function PersonalFinanceControl({
         <Metric
           label="Venta bruta adicional para cubrirlo"
           value={
-            grossSalesNeeded == null
-              ? 'Configurá el margen'
-              : pesos(grossSalesNeeded)
+            grossSalesNeeded == null ? 'No disponible' : pesos(grossSalesNeeded)
           }
           tone={grossSalesNeeded === 0 ? 'positive' : 'negative'}
         />
@@ -729,16 +691,14 @@ export function PersonalFinanceControl({
           <p className="eyebrow">META DE FACTURACIÓN</p>
           <h2>
             {grossSalesTarget == null
-              ? 'Configurá el margen para calcularla'
+              ? 'No se pudo calcular la meta de venta'
               : grossSalesNeeded === 0
                 ? 'El negocio cubre sus gastos con la venta cargada'
                 : `Deberías vender ${pesos(grossSalesTarget)} brutos por mes`}
           </h2>
           <p>
-            Con un margen disponible de{' '}
-            {(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%, la
-            venta actual es {pesos(draftConfig.businessIncomeMinor)} y el
-            faltante bruto es{' '}
+            La venta actual cargada es {pesos(draftConfig.businessIncomeMinor)}
+            y el faltante bruto estimado es{' '}
             {grossSalesNeeded == null
               ? 'no disponible'
               : pesos(grossSalesNeeded)}
@@ -755,8 +715,7 @@ export function PersonalFinanceControl({
             )}
           </strong>
           <small>
-            La meta usa margen de contribución, no confunde facturación con
-            ganancia.
+            Es la venta estimada necesaria para cubrir los costos cargados.
           </small>
         </div>
       </section>
@@ -999,7 +958,7 @@ export function PersonalFinanceControl({
             reference
           />
           <Calc
-            name={`Margen disponible (${(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%)`}
+            name="Aporte estimado de las ventas"
             value={Math.round(
               (draftConfig.businessIncomeMinor *
                 draftConfig.businessContributionMarginBps) /
