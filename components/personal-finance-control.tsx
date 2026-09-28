@@ -443,6 +443,37 @@ export function PersonalFinanceControl({
           )}
         </div>
       </section>
+      <nav
+        className="finance-step-nav"
+        aria-label="Pasos del centro financiero"
+      >
+        <a href="#finance-step-1">
+          <b>1</b>
+          <span>Datos</span>
+        </a>
+        <a href="#finance-step-2">
+          <b>2</b>
+          <span>Objetivo</span>
+        </a>
+        <a href="#finance-step-3">
+          <b>3</b>
+          <span>Resultado</span>
+        </a>
+        <a href="#finance-step-4">
+          <b>4</b>
+          <span>Pagos</span>
+        </a>
+        <a href="#finance-step-5">
+          <b>5</b>
+          <span>Impacto</span>
+        </a>
+      </nav>
+      <StepHeader
+        id="finance-step-1"
+        number="01"
+        title="Confirmá la foto actual"
+        description="Revisá capital, ingresos, ventas, margen y egresos. Solo habilitá Editar datos si algo cambió."
+      />
       <section
         className={`panel finance-input-panel ${isEditing ? 'is-editing' : 'is-locked'}`}
       >
@@ -602,6 +633,12 @@ export function PersonalFinanceControl({
           })}
         </div>
       </section>
+      <StepHeader
+        id="finance-step-2"
+        number="02"
+        title="Elegí qué querés lograr"
+        description="Cada estrategia arma una simulación distinta. Todavía no registra pagos ni modifica saldos reales."
+      />
       <div className="finance-strategies">
         {(
           [
@@ -637,6 +674,12 @@ export function PersonalFinanceControl({
           </button>
         ))}
       </div>
+      <StepHeader
+        id="finance-step-3"
+        number="03"
+        title="Revisá la recomendación principal"
+        description="Mirá cuánto capital usarías, qué deuda quedaría y cuánto necesita vender el negocio para cubrir su déficit."
+      />
       <div className="metric-grid finance-results">
         <Metric
           label="Capital restante"
@@ -717,6 +760,12 @@ export function PersonalFinanceControl({
           </small>
         </div>
       </section>
+      <StepHeader
+        id="finance-step-4"
+        number="04"
+        title="Armá y confirmá el plan de pagos"
+        description="Usá la casilla para simular una cancelación total u Opciones de pago para mínimos, cuotas, adelantos y otros importes."
+      />
       <section className="panel">
         <div className="panel-heading">
           <div>
@@ -903,6 +952,12 @@ export function PersonalFinanceControl({
           })}
         </div>
       </section>
+      <StepHeader
+        id="finance-step-5"
+        number="05"
+        title="Comprobá el impacto antes de decidir"
+        description="Verificá el flujo personal, el aporte al negocio y la evolución mensual. Registrá un pago únicamente cuando ya ocurrió."
+      />
       <div className="dashboard-panels">
         <section className="panel">
           <div className="panel-heading">
@@ -1069,6 +1124,28 @@ export function PersonalFinanceControl({
         </output>
       )}
     </div>
+  );
+}
+function StepHeader({
+  id,
+  number,
+  title,
+  description,
+}: {
+  id: string;
+  number: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <header id={id} className="finance-step-heading">
+      <span>{number}</span>
+      <div>
+        <p>PASO {number}</p>
+        <h2>{title}</h2>
+        <small>{description}</small>
+      </div>
+    </header>
   );
 }
 function MoneyInput({

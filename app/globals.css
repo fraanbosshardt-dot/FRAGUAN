@@ -18,6 +18,13 @@
 }
 
 .finance-control { display: grid; gap: 18px; }
+.finance-step-nav { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+.finance-step-nav a { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 10px; border-radius: 9px; color: var(--muted-foreground); text-decoration: none; font-size: 12px; font-weight: 800; transition: background .18s,color .18s; }
+.finance-step-nav a:hover { background: var(--secondary); color: var(--foreground); }.finance-step-nav b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 999px; background: var(--secondary); color: var(--foreground); }
+.finance-step-heading { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 14px; margin-top: 10px; padding: 8px 2px 2px; scroll-margin-top: 90px; }
+.finance-step-heading > span { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: var(--primary); color: var(--primary-foreground); font-size: 16px; font-weight: 900; }
+.finance-step-heading > div { display: grid; gap: 2px; }.finance-step-heading p { color: var(--primary); font-size: 10px; font-weight: 900; letter-spacing: .14em; }.finance-step-heading h2 { font-size: clamp(20px,2vw,28px); letter-spacing: -.025em; }.finance-step-heading small { color: var(--muted-foreground); font-size: 13px; line-height: 1.45; }
+#finance-step-3 { margin-top: 14px; padding: 14px; border-radius: 14px; background: color-mix(in srgb,var(--primary) 7%,var(--card)); }
 .finance-hero { display: flex; justify-content: space-between; align-items: start; gap: 24px; padding: clamp(22px,4vw,42px); background: linear-gradient(135deg,var(--card),color-mix(in srgb,var(--primary) 7%,var(--card))); }
 .finance-hero > div { display: grid; gap: 8px; }
 .finance-hero h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: clamp(25px,3vw,44px); letter-spacing: -.04em; }
@@ -83,7 +90,7 @@
 @media(max-width:900px){.finance-money-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-sales-target{grid-template-columns:1fr}.finance-debt-list>div{grid-template-columns:auto 1fr auto}.finance-debt-amount{grid-column:2;text-align:left}.finance-paid-button{grid-column:3;grid-row:1 / span 2}}
 @media(max-width:800px){.finance-strategies{grid-template-columns:1fr}.finance-hero{display:grid}}
 @media(max-width:700px){.finance-expense-groups{grid-template-columns:1fr}}
-@media(max-width:600px){.finance-money-grid,.finance-payment-planner,.finance-expense-summary{grid-template-columns:1fr}.finance-expense-groups details>div>div{grid-template-columns:auto 1fr}.finance-expense-groups details>div>div input[type="text"]{grid-column:2}.finance-payment-planner>div:first-child,.finance-payment-actions{grid-column:auto}.finance-payment-actions{justify-content:stretch}.finance-payment-actions>button{flex:1}.finance-debt-list>div{grid-template-columns:auto 1fr}.finance-debt-amount{grid-column:2}.finance-paid-button{grid-column:2;grid-row:auto;justify-self:start}}
+@media(max-width:600px){.finance-step-nav{display:flex;overflow-x:auto;justify-content:flex-start}.finance-step-nav a{flex:0 0 auto}.finance-step-heading{align-items:start}.finance-money-grid,.finance-payment-planner,.finance-expense-summary{grid-template-columns:1fr}.finance-expense-groups details>div>div{grid-template-columns:auto 1fr}.finance-expense-groups details>div>div input[type="text"]{grid-column:2}.finance-payment-planner>div:first-child,.finance-payment-actions{grid-column:auto}.finance-payment-actions{justify-content:stretch}.finance-payment-actions>button{flex:1}.finance-debt-list>div{grid-template-columns:auto 1fr}.finance-debt-amount{grid-column:2}.finance-paid-button{grid-column:2;grid-row:auto;justify-self:start}}
 @media(max-width:520px){.finance-hero h2 input{width:100%}.finance-edit-actions,.finance-edit-actions button{width:100%}.finance-export{display:grid}.finance-export button{width:100%}}
 
 /* Exportador privado de análisis: superficie compacta dentro de Reportes. */
