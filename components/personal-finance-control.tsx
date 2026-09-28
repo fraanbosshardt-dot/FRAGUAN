@@ -4,9 +4,11 @@ import {
   Check,
   CircleCheck,
   Copy,
+  Pencil,
   RotateCcw,
   Save,
   SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +45,17 @@ const paymentModes: Record<PaymentMode, string> = {
   advance: 'Adelanto de cuotas',
   custom: 'Importe personalizado',
   total: 'Cancelación total',
+};
+
+type FinancialEditSnapshot = {
+  config: PersonalFinanceConfig;
+  available: string;
+  cashInputs: {
+    reserveMinor: string;
+    personalIncomeMinor: string;
+    businessIncomeMinor: string;
+  };
+  contributionMargin: string;
 };
 
 function parsePesos(value: string) {
@@ -85,6 +98,10 @@ export function PersonalFinanceControl({
     [paymentAmount, setPaymentAmount] = useState(''),
     [installmentCount, setInstallmentCount] = useState('1'),
     [busyDebt, setBusyDebt] = useState(''),
+    [isEditing, setIsEditing] = useState(false),
+    [editSnapshot, setEditSnapshot] = useState<FinancialEditSnapshot | null>(
+      null,
+    ),
     [notice, setNotice] = useState({ text: '', tone: 'success' });
   const availableMinor = Math.round((parsePesos(available) ?? 0) * 100);
   const marginPercent = Number(contributionMargin.replace(',', '.'));
@@ -168,12 +185,34 @@ export function PersonalFinanceControl({
     expenseId: string,
     patch: Partial<PersonalFinanceConfig['expenses'][number]>,
   ) {
+    if (!isEditing) return;
     setConfig((current) => ({
       ...current,
       expenses: current.expenses.map((expense) =>
         expense.id === expenseId ? { ...expense, ...patch } : expense,
       ),
     }));
+  }
+  function beginEdit() {
+    setEditSnapshot({
+      config: structuredClone(config),
+      available,
+      cashInputs: { ...cashInputs },
+      contributionMargin,
+    });
+    setIsEditing(true);
+    setNotice({ text: 'Edición habilitada.', tone: 'success' });
+  }
+  function cancelEdit() {
+    if (editSnapshot) {
+      setConfig(editSnapshot.config);
+      setAvailable(editSnapshot.available);
+      setCashInputs(editSnapshot.cashInputs);
+      setContributionMargin(editSnapshot.contributionMargin);
+    }
+    setEditSnapshot(null);
+    setIsEditing(false);
+    setNotice({ text: 'Cambios descartados.', tone: 'success' });
   }
   function openPayment(debt: PersonalDebt) {
     const initialMode: PaymentMode =
@@ -265,6 +304,8 @@ export function PersonalFinanceControl({
     }
     try {
       await persist(draftConfig, 'Datos y proyección guardados.');
+      setIsEditing(false);
+      setEditSnapshot(null);
     } catch (error) {
       setNotice({
         text:
@@ -371,6 +412,7 @@ export function PersonalFinanceControl({
               aria-label="Dinero disponible"
               type="text"
               inputMode="decimal"
+              disabled={!isEditing}
               value={available}
               onChange={(e) => setAvailable(e.target.value)}
             />
@@ -381,12 +423,29 @@ export function PersonalFinanceControl({
             negocio se muestran separados y también consolidados.
           </p>
         </div>
-        <Button onClick={save}>
-          <Save />
-          Guardar datos
-        </Button>
+        <div className="finance-edit-actions">
+          {isEditing ? (
+            <>
+              <Button variant="outline" onClick={cancelEdit}>
+                <X />
+                Cancelar
+              </Button>
+              <Button onClick={save}>
+                <Save />
+                Guardar cambios
+              </Button>
+            </>
+          ) : (
+            <Button onClick={beginEdit}>
+              <Pencil />
+              Editar datos
+            </Button>
+          )}
+        </div>
       </section>
-      <section className="panel finance-input-panel">
+      <section
+        className={`panel finance-input-panel ${isEditing ? 'is-editing' : 'is-locked'}`}
+      >
         <div className="panel-heading">
           <div>
             <h2>Ingresos y egresos mensuales</h2>
@@ -399,6 +458,7 @@ export function PersonalFinanceControl({
         <div className="finance-money-grid">
           <MoneyInput
             label="Reserva que no querés usar"
+            disabled={!isEditing}
             value={cashInputs.reserveMinor}
             onChange={(value) =>
               setCashInputs((current) => ({
@@ -409,6 +469,7 @@ export function PersonalFinanceControl({
           />
           <MoneyInput
             label="Ingresos personales"
+            disabled={!isEditing}
             value={cashInputs.personalIncomeMinor}
             onChange={(value) =>
               setCashInputs((current) => ({
@@ -419,6 +480,7 @@ export function PersonalFinanceControl({
           />
           <MoneyInput
             label="Ventas brutas mensuales del negocio"
+            disabled={!isEditing}
             value={cashInputs.businessIncomeMinor}
             onChange={(value) =>
               setCashInputs((current) => ({
@@ -435,6 +497,7 @@ export function PersonalFinanceControl({
                 aria-label="Margen de contribución"
                 type="text"
                 inputMode="decimal"
+                disabled={!isEditing}
                 value={contributionMargin}
                 onChange={(event) => setContributionMargin(event.target.value)}
               />
@@ -452,8 +515,9 @@ export function PersonalFinanceControl({
           <div>
             <h2>Detalle completo de egresos</h2>
             <span>
-              Cada concepto alimenta el flujo. Desactivá solamente lo que ya no
-              corresponda y guardá los cambios.
+              {isEditing
+                ? 'Cada concepto alimenta el flujo. Ajustá lo necesario y guardá los cambios.'
+                : 'Modo consulta. Pulsá “Editar datos” para modificar importes o conceptos activos.'}
             </span>
           </div>
         </div>
@@ -498,6 +562,7 @@ export function PersonalFinanceControl({
                       <input
                         aria-label={`Incluir ${expense.label}`}
                         type="checkbox"
+                        disabled={!isEditing}
                         checked={expense.active}
                         onChange={(event) =>
                           updateExpense(expense.id, {
@@ -519,6 +584,7 @@ export function PersonalFinanceControl({
                         aria-label={`Importe de ${expense.label}`}
                         type="text"
                         inputMode="decimal"
+                        disabled={!isEditing}
                         value={String(expense.amountMinor / 100)}
                         onChange={(event) => {
                           const value = parsePesos(event.target.value);
@@ -1009,10 +1075,12 @@ function MoneyInput({
   label,
   value,
   onChange,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <label>
@@ -1021,6 +1089,7 @@ function MoneyInput({
         aria-label={label}
         type="text"
         inputMode="decimal"
+        disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />

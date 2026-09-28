@@ -23,6 +23,10 @@
 .finance-hero h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: clamp(25px,3vw,44px); letter-spacing: -.04em; }
 .finance-hero h2 input { width: 230px; height: 54px; font-size: 25px; font-weight: 850; }
 .finance-hero p:last-child { color: var(--muted-foreground); }
+.finance-edit-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
+.finance-control input:disabled { opacity: 1; cursor: default; border-color: transparent; background: var(--secondary); color: var(--foreground); }
+.finance-control input[type="checkbox"]:disabled { opacity: .55; }
+.finance-input-panel.is-editing,.finance-expenses:has(input:not(:disabled)) { box-shadow: inset 4px 0 0 var(--primary); }
 .finance-strategies { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 12px; }
 .finance-strategies button { display: grid; gap: 7px; padding: 20px; text-align: left; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--foreground); cursor: pointer; transition: transform .2s,border-color .2s; }
 .finance-strategies button:hover { transform: translateY(-2px); }
@@ -80,7 +84,7 @@
 @media(max-width:800px){.finance-strategies{grid-template-columns:1fr}.finance-hero{display:grid}}
 @media(max-width:700px){.finance-expense-groups{grid-template-columns:1fr}}
 @media(max-width:600px){.finance-money-grid,.finance-payment-planner,.finance-expense-summary{grid-template-columns:1fr}.finance-expense-groups details>div>div{grid-template-columns:auto 1fr}.finance-expense-groups details>div>div input[type="text"]{grid-column:2}.finance-payment-planner>div:first-child,.finance-payment-actions{grid-column:auto}.finance-payment-actions{justify-content:stretch}.finance-payment-actions>button{flex:1}.finance-debt-list>div{grid-template-columns:auto 1fr}.finance-debt-amount{grid-column:2}.finance-paid-button{grid-column:2;grid-row:auto;justify-self:start}}
-@media(max-width:520px){.finance-hero h2 input{width:100%}.finance-export{display:grid}.finance-export button{width:100%}}
+@media(max-width:520px){.finance-hero h2 input{width:100%}.finance-edit-actions,.finance-edit-actions button{width:100%}.finance-export{display:grid}.finance-export button{width:100%}}
 
 /* Exportador privado de análisis: superficie compacta dentro de Reportes. */
 .chatgpt-analysis { display: grid; gap: 22px; border-top: 4px solid var(--primary); }
