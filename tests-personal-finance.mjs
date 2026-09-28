@@ -42,9 +42,23 @@ try {
   const saved = await fetch(origin + '/api/personal-finance', {
     method: 'POST',
     headers,
-    body: JSON.stringify({ ...config, availableMinor: 2400000000 }),
+    body: JSON.stringify({
+      ...config,
+      availableMinor: 2400000000,
+      businessIncomeMinor: 45000000,
+      debts: config.debts.map((debt) =>
+        debt.id === 'brubank-1' ? { ...debt, status: 'paid' } : debt,
+      ),
+    }),
   });
-  assert.equal(saved.status, 200, await saved.text());
+  const savedText = await saved.text();
+  assert.equal(saved.status, 200, savedText);
+  const savedConfig = JSON.parse(savedText);
+  assert.equal(savedConfig.businessIncomeMinor, 45000000);
+  assert.equal(
+    savedConfig.debts.find((debt) => debt.id === 'brubank-1').status,
+    'paid',
+  );
   database
     .prepare("UPDATE users SET role='VENDEDOR' WHERE id='local_seedy'")
     .run();
@@ -53,7 +67,7 @@ try {
     403,
   );
   console.log(
-    'PASS: centro financiero privado, datos iniciales, persistencia y bloqueo al vendedor.',
+    'PASS: centro financiero privado, flujos, pagos, persistencia y bloqueo al vendedor.',
   );
 } finally {
   database.prepare("UPDATE users SET role=? WHERE id='local_seedy'").run(role);

@@ -45,21 +45,66 @@ export type Simulation = {
   monthlyFreedMinor: number;
   personalFlowBeforeMinor: number;
   personalFlowAfterMinor: number;
+  businessFlowBeforeMinor: number;
+  businessFlowAfterMinor: number;
+  businessSupportBeforeMinor: number;
+  businessSupportAfterMinor: number;
+  personalAfterBusinessBeforeMinor: number;
+  personalAfterBusinessAfterMinor: number;
+  combinedFlowBeforeMinor: number;
+  combinedFlowAfterMinor: number;
+};
+
+export type FinanceProjectionMonth = {
+  month: string;
+  personalDebtMinor: number;
+  businessDebtMinor: number;
+  personalFlowMinor: number;
+  businessFlowMinor: number;
+  businessSupportMinor: number;
+  personalAfterBusinessMinor: number;
+  combinedFlowMinor: number;
 };
 
 const payable = (debt: PersonalDebt) => debt.payoffMinor ?? debt.balanceMinor;
 const monthly = (debt: PersonalDebt) =>
   debt.monthlyMinor ?? debt.minimumMinor ?? 0;
 
+const isOpen = (debt: PersonalDebt) =>
+  !['paid', 'closed'].includes(debt.status);
+
+function flowSnapshot(config: PersonalFinanceConfig, debts: PersonalDebt[]) {
+  const personalDebtMinor = debts
+    .filter((debt) => debt.scope === 'personal')
+    .reduce((sum, debt) => sum + monthly(debt), 0);
+  const businessDebtMinor = debts
+    .filter((debt) => debt.scope === 'business')
+    .reduce((sum, debt) => sum + monthly(debt), 0);
+  const personalFlowMinor =
+    config.personalIncomeMinor - config.livingCostsMinor - personalDebtMinor;
+  const businessFlowMinor =
+    config.businessIncomeMinor -
+    config.businessFixedCostsMinor -
+    config.businessExtraordinaryMinor -
+    businessDebtMinor;
+  const businessSupportMinor = Math.max(0, -businessFlowMinor);
+  return {
+    personalFlowMinor,
+    businessFlowMinor,
+    businessSupportMinor,
+    personalAfterBusinessMinor: personalFlowMinor - businessSupportMinor,
+    combinedFlowMinor: personalFlowMinor + businessFlowMinor,
+  };
+}
+
 export function simulateFinance(
   config: PersonalFinanceConfig,
   selectedIds: string[],
   availableMinor = config.availableMinor,
 ): Simulation {
-  const open = config.debts.filter(
-    (debt) => !['paid', 'closed'].includes(debt.status),
-  );
+  const open = config.debts.filter(isOpen);
   const selected = open.filter((debt) => selectedIds.includes(debt.id));
+  const remaining = open.filter((debt) => !selectedIds.includes(debt.id));
   const debtBeforeMinor = open.reduce(
     (sum, debt) => sum + debt.balanceMinor,
     0,
@@ -73,7 +118,8 @@ export function simulateFinance(
     (sum, debt) => sum + monthly(debt),
     0,
   );
-  const baseFlow = config.personalIncomeMinor - config.livingCostsMinor;
+  const before = flowSnapshot(config, open);
+  const after = flowSnapshot(config, remaining);
   return {
     selectedIds: selected.map((debt) => debt.id),
     capitalUsedMinor,
@@ -87,9 +133,60 @@ export function simulateFinance(
     monthlyBeforeMinor,
     monthlyAfterMinor: Math.max(0, monthlyBeforeMinor - monthlyFreedMinor),
     monthlyFreedMinor,
-    personalFlowBeforeMinor: baseFlow - monthlyBeforeMinor,
-    personalFlowAfterMinor: baseFlow - monthlyBeforeMinor + monthlyFreedMinor,
+    personalFlowBeforeMinor: before.personalFlowMinor,
+    personalFlowAfterMinor: after.personalFlowMinor,
+    businessFlowBeforeMinor: before.businessFlowMinor,
+    businessFlowAfterMinor: after.businessFlowMinor,
+    businessSupportBeforeMinor: before.businessSupportMinor,
+    businessSupportAfterMinor: after.businessSupportMinor,
+    personalAfterBusinessBeforeMinor: before.personalAfterBusinessMinor,
+    personalAfterBusinessAfterMinor: after.personalAfterBusinessMinor,
+    combinedFlowBeforeMinor: before.combinedFlowMinor,
+    combinedFlowAfterMinor: after.combinedFlowMinor,
   };
+}
+
+export function projectFinance(
+  config: PersonalFinanceConfig,
+  selectedIds: string[],
+  months = 12,
+  start = new Date(),
+): FinanceProjectionMonth[] {
+  const debts = config.debts.filter(
+    (debt) => isOpen(debt) && !selectedIds.includes(debt.id),
+  );
+  return Array.from({ length: months }, (_, index) => {
+    const active = debts.filter(
+      (debt) =>
+        debt.remainingInstallments == null ||
+        debt.remainingInstallments > index,
+    );
+    const personalDebtMinor = active
+      .filter((debt) => debt.scope === 'personal')
+      .reduce((sum, debt) => sum + monthly(debt), 0);
+    const businessDebtMinor = active
+      .filter((debt) => debt.scope === 'business')
+      .reduce((sum, debt) => sum + monthly(debt), 0);
+    const personalFlowMinor =
+      config.personalIncomeMinor - config.livingCostsMinor - personalDebtMinor;
+    const businessFlowMinor =
+      config.businessIncomeMinor -
+      config.businessFixedCostsMinor -
+      (index === 0 ? config.businessExtraordinaryMinor : 0) -
+      businessDebtMinor;
+    const businessSupportMinor = Math.max(0, -businessFlowMinor);
+    const date = new Date(start.getFullYear(), start.getMonth() + index, 1);
+    return {
+      month: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+      personalDebtMinor,
+      businessDebtMinor,
+      personalFlowMinor,
+      businessFlowMinor,
+      businessSupportMinor,
+      personalAfterBusinessMinor: personalFlowMinor - businessSupportMinor,
+      combinedFlowMinor: personalFlowMinor + businessFlowMinor,
+    };
+  });
 }
 
 export function suggestedPlan(
@@ -99,10 +196,7 @@ export function suggestedPlan(
 ) {
   const budget = Math.max(0, availableMinor - config.reserveMinor);
   const candidates = config.debts.filter(
-    (debt) =>
-      !['paid', 'closed'].includes(debt.status) &&
-      payable(debt) > 0 &&
-      payable(debt) <= budget,
+    (debt) => isOpen(debt) && payable(debt) > 0 && payable(debt) <= budget,
   );
   const ranked = [...candidates].sort((a, b) => {
     const efficiencyA = monthly(a)
