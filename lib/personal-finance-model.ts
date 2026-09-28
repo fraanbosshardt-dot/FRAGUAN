@@ -1,6 +1,28 @@
 export type DataQuality = 'confirmed' | 'estimated' | 'pending';
 export type FinanceScope = 'personal' | 'business';
 export type DebtKind = 'card' | 'loan' | 'credit';
+export type PaymentMode =
+  | 'minimum'
+  | 'installment'
+  | 'advance'
+  | 'custom'
+  | 'total';
+
+export type FinancePayment = {
+  id: string;
+  debtId: string;
+  paidOn: string;
+  amountMinor: number;
+  mode: PaymentMode;
+  installmentCount: number | null;
+};
+
+export type PaymentScenario = {
+  debtId: string;
+  amountMinor: number;
+  mode: PaymentMode;
+  installmentCount: number | null;
+};
 
 export type PersonalDebt = {
   id: string;
@@ -31,7 +53,9 @@ export type PersonalFinanceConfig = {
   businessIncomeMinor: number;
   businessFixedCostsMinor: number;
   businessExtraordinaryMinor: number;
+  businessContributionMarginBps: number;
   debts: PersonalDebt[];
+  payments: FinancePayment[];
 };
 
 export type Simulation = {
@@ -66,6 +90,10 @@ export type FinanceProjectionMonth = {
   combinedFlowMinor: number;
 };
 
+export type PaymentSimulation = Simulation & {
+  config: PersonalFinanceConfig;
+};
+
 const payable = (debt: PersonalDebt) => debt.payoffMinor ?? debt.balanceMinor;
 const monthly = (debt: PersonalDebt) =>
   debt.monthlyMinor ?? debt.minimumMinor ?? 0;
@@ -83,7 +111,10 @@ function flowSnapshot(config: PersonalFinanceConfig, debts: PersonalDebt[]) {
   const personalFlowMinor =
     config.personalIncomeMinor - config.livingCostsMinor - personalDebtMinor;
   const businessFlowMinor =
-    config.businessIncomeMinor -
+    Math.round(
+      (config.businessIncomeMinor * config.businessContributionMarginBps) /
+        10_000,
+    ) -
     config.businessFixedCostsMinor -
     config.businessExtraordinaryMinor -
     businessDebtMinor;
@@ -94,6 +125,69 @@ function flowSnapshot(config: PersonalFinanceConfig, debts: PersonalDebt[]) {
     businessSupportMinor,
     personalAfterBusinessMinor: personalFlowMinor - businessSupportMinor,
     combinedFlowMinor: personalFlowMinor + businessFlowMinor,
+  };
+}
+
+export function businessGrossSalesNeeded(
+  deficitMinor: number,
+  contributionMarginBps: number,
+) {
+  if (deficitMinor <= 0) return 0;
+  if (contributionMarginBps <= 0) return null;
+  return Math.ceil((deficitMinor * 10_000) / contributionMarginBps);
+}
+
+export function applyPaymentScenarios(
+  config: PersonalFinanceConfig,
+  scenarios: PaymentScenario[],
+): PaymentSimulation {
+  let capitalUsedMinor = 0;
+  const byDebt = new Map(
+    scenarios.map((scenario) => [scenario.debtId, scenario]),
+  );
+  const debts = config.debts.map((debt) => {
+    const scenario = byDebt.get(debt.id);
+    if (!scenario || !isOpen(debt)) return debt;
+    const maximum = payable(debt);
+    const amount = Math.max(0, Math.min(maximum, scenario.amountMinor));
+    capitalUsedMinor += amount;
+    const total = scenario.mode === 'total' || amount >= maximum;
+    const installments =
+      scenario.mode === 'advance' || scenario.mode === 'installment'
+        ? Math.max(1, scenario.installmentCount ?? 1)
+        : 0;
+    const remainingInstallments =
+      debt.remainingInstallments == null
+        ? null
+        : Math.max(0, debt.remainingInstallments - installments);
+    return {
+      ...debt,
+      balanceMinor: total ? 0 : Math.max(0, debt.balanceMinor - amount),
+      payoffMinor:
+        debt.payoffMinor == null
+          ? null
+          : total
+            ? 0
+            : Math.max(0, debt.payoffMinor - amount),
+      remainingInstallments,
+      status:
+        total || remainingInstallments === 0 ? ('paid' as const) : debt.status,
+    };
+  });
+  const simulatedConfig = { ...config, debts };
+  const result = simulateFinance(simulatedConfig, [], config.availableMinor);
+  const originalDebt = config.debts
+    .filter(isOpen)
+    .reduce((sum, debt) => sum + debt.balanceMinor, 0);
+  return {
+    ...result,
+    config: simulatedConfig,
+    capitalUsedMinor,
+    capitalRemainingMinor: config.availableMinor - capitalUsedMinor,
+    debtBeforeMinor: originalDebt,
+    debtRemainingMinor: debts
+      .filter(isOpen)
+      .reduce((sum, debt) => sum + debt.balanceMinor, 0),
   };
 }
 
@@ -170,7 +264,10 @@ export function projectFinance(
     const personalFlowMinor =
       config.personalIncomeMinor - config.livingCostsMinor - personalDebtMinor;
     const businessFlowMinor =
-      config.businessIncomeMinor -
+      Math.round(
+        (config.businessIncomeMinor * config.businessContributionMarginBps) /
+          10_000,
+      ) -
       config.businessFixedCostsMinor -
       (index === 0 ? config.businessExtraordinaryMinor : 0) -
       businessDebtMinor;
@@ -191,7 +288,7 @@ export function projectFinance(
 
 export function suggestedPlan(
   config: PersonalFinanceConfig,
-  mode: 'flow' | 'interest' | 'balanced',
+  mode: 'flow' | 'interest' | 'balanced' | 'deficit' | 'risk',
   availableMinor = config.availableMinor,
 ) {
   const budget = Math.max(0, availableMinor - config.reserveMinor);
@@ -205,13 +302,19 @@ export function suggestedPlan(
     const efficiencyB = monthly(b)
       ? payable(b) / monthly(b)
       : Number.MAX_SAFE_INTEGER;
-    if (mode === 'flow') return efficiencyA - efficiencyB;
+    if (mode === 'flow' || mode === 'deficit') return efficiencyA - efficiencyB;
     if (mode === 'interest')
       return (
         (b.annualRateBps ?? (b.kind === 'card' ? 10000 : 0)) -
         (a.annualRateBps ?? (a.kind === 'card' ? 10000 : 0))
       );
     const priority = { urgent: 0, high: 1, medium: 2, low: 3, maintain: 4 };
+    if (mode === 'risk')
+      return (
+        priority[a.priority] - priority[b.priority] ||
+        Number(b.kind === 'card') - Number(a.kind === 'card') ||
+        (b.annualRateBps ?? 0) - (a.annualRateBps ?? 0)
+      );
     return (
       priority[a.priority] - priority[b.priority] || efficiencyA - efficiencyB
     );
@@ -223,6 +326,12 @@ export function suggestedPlan(
     if (used + cost <= budget) {
       ids.push(debt.id);
       used += cost;
+      if (
+        mode === 'deficit' &&
+        simulateFinance(config, ids, availableMinor)
+          .personalAfterBusinessAfterMinor >= 0
+      )
+        break;
     }
   }
   return simulateFinance(config, ids, availableMinor);

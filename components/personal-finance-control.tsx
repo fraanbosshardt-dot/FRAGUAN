@@ -12,10 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api, money } from '@/lib/client';
 import {
+  applyPaymentScenarios,
+  businessGrossSalesNeeded,
   cancellationEfficiency,
   projectFinance,
-  simulateFinance,
   suggestedPlan,
+  type PaymentMode,
+  type PaymentScenario,
+  type PersonalDebt,
   type PersonalFinanceConfig,
 } from '@/lib/personal-finance-model';
 
@@ -31,6 +35,13 @@ const priorities = {
   medium: 'Media',
   low: 'Baja',
   maintain: 'Mantener',
+};
+const paymentModes: Record<PaymentMode, string> = {
+  minimum: 'Pago mínimo',
+  installment: 'Cuota del mes',
+  advance: 'Adelanto de cuotas',
+  custom: 'Importe personalizado',
+  total: 'Cancelación total',
 };
 
 function parsePesos(value: string) {
@@ -62,13 +73,34 @@ export function PersonalFinanceControl({
         initial.businessExtraordinaryMinor / 100,
       ),
     }),
-    [selected, setSelected] = useState<string[]>([]),
-    [mode, setMode] = useState<'flow' | 'interest' | 'balanced'>('balanced'),
+    [contributionMargin, setContributionMargin] = useState(
+      String(initial.businessContributionMarginBps / 100),
+    ),
+    [selected, setSelected] = useState<string[]>(
+      () =>
+        suggestedPlan(initial, 'balanced', initial.availableMinor).selectedIds,
+    ),
+    [manualScenarios, setManualScenarios] = useState<PaymentScenario[]>([]),
+    [mode, setMode] = useState<
+      'flow' | 'interest' | 'balanced' | 'deficit' | 'risk'
+    >('balanced'),
+    [editingDebt, setEditingDebt] = useState(''),
+    [paymentMode, setPaymentMode] = useState<PaymentMode>('custom'),
+    [paymentAmount, setPaymentAmount] = useState(''),
+    [installmentCount, setInstallmentCount] = useState('1'),
     [busyDebt, setBusyDebt] = useState(''),
     [notice, setNotice] = useState({ text: '', tone: 'success' });
   const availableMinor = Math.round((parsePesos(available) ?? 0) * 100);
+  const marginPercent = Number(contributionMargin.replace(',', '.'));
+  const marginBps = Number.isFinite(marginPercent)
+    ? Math.max(0, Math.min(100, marginPercent)) * 100
+    : 0;
   const draftConfig = useMemo(() => {
-    const next = { ...config, availableMinor };
+    const next = {
+      ...config,
+      availableMinor,
+      businessContributionMarginBps: Math.round(marginBps),
+    };
     for (const [key, value] of Object.entries(cashInputs)) {
       const parsed = parsePesos(value);
       if (parsed != null)
@@ -77,26 +109,119 @@ export function PersonalFinanceControl({
         );
     }
     return next;
-  }, [availableMinor, cashInputs, config]);
+  }, [availableMinor, cashInputs, config, marginBps]);
   const plans = useMemo(
     () => ({
       flow: suggestedPlan(draftConfig, 'flow', availableMinor),
       interest: suggestedPlan(draftConfig, 'interest', availableMinor),
       balanced: suggestedPlan(draftConfig, 'balanced', availableMinor),
+      deficit: suggestedPlan(draftConfig, 'deficit', availableMinor),
+      risk: suggestedPlan(draftConfig, 'risk', availableMinor),
     }),
     [draftConfig, availableMinor],
   );
+  const scenarios = useMemo(
+    () => [
+      ...manualScenarios,
+      ...selected
+        .filter(
+          (debtId) =>
+            !manualScenarios.some((scenario) => scenario.debtId === debtId),
+        )
+        .map((debtId) => {
+          const debt = draftConfig.debts.find((item) => item.id === debtId)!;
+          return {
+            debtId,
+            amountMinor: debt.payoffMinor ?? debt.balanceMinor,
+            mode: 'total' as const,
+            installmentCount: null,
+          };
+        }),
+    ],
+    [draftConfig.debts, manualScenarios, selected],
+  );
   const result = useMemo(
-    () => simulateFinance(draftConfig, selected, availableMinor),
-    [draftConfig, selected, availableMinor],
+    () => applyPaymentScenarios(draftConfig, scenarios),
+    [draftConfig, scenarios],
   );
   const projection = useMemo(
-    () => projectFinance(draftConfig, selected),
-    [draftConfig, selected],
+    () => projectFinance(result.config, []),
+    [result.config],
   );
+  const grossSalesNeeded = businessGrossSalesNeeded(
+    result.businessSupportAfterMinor,
+    draftConfig.businessContributionMarginBps,
+  );
+  const grossSalesTarget =
+    grossSalesNeeded == null
+      ? null
+      : draftConfig.businessIncomeMinor + grossSalesNeeded;
+  const editedDebt = draftConfig.debts.find((debt) => debt.id === editingDebt);
   const activePlan = plans[mode];
   const basePersonal =
     draftConfig.personalIncomeMinor - draftConfig.livingCostsMinor;
+  function openPayment(debt: PersonalDebt) {
+    const initialMode: PaymentMode =
+      debt.kind === 'card'
+        ? debt.minimumMinor
+          ? 'minimum'
+          : 'custom'
+        : debt.monthlyMinor
+          ? 'installment'
+          : 'custom';
+    setEditingDebt(debt.id);
+    setPaymentMode(initialMode);
+    setInstallmentCount('1');
+    setPaymentAmount(
+      String(
+        ((initialMode === 'minimum'
+          ? debt.minimumMinor
+          : initialMode === 'installment'
+            ? debt.monthlyMinor
+            : 0) ?? 0) / 100,
+      ),
+    );
+  }
+  function paymentScenario(debt: PersonalDebt) {
+    const count = Math.max(1, Number.parseInt(installmentCount, 10) || 1);
+    let amountMinor = Math.round((parsePesos(paymentAmount) ?? 0) * 100);
+    if (paymentMode === 'minimum') amountMinor = debt.minimumMinor ?? 0;
+    if (paymentMode === 'installment') amountMinor = debt.monthlyMinor ?? 0;
+    if (paymentMode === 'advance')
+      amountMinor = (debt.monthlyMinor ?? 0) * count;
+    if (paymentMode === 'total')
+      amountMinor = debt.payoffMinor ?? debt.balanceMinor;
+    return {
+      debtId: debt.id,
+      amountMinor: Math.min(
+        debt.payoffMinor ?? debt.balanceMinor,
+        Math.max(0, amountMinor),
+      ),
+      mode: paymentMode,
+      installmentCount:
+        paymentMode === 'advance'
+          ? count
+          : paymentMode === 'installment'
+            ? 1
+            : null,
+    } satisfies PaymentScenario;
+  }
+  function simulatePayment(debt: PersonalDebt) {
+    const scenario = paymentScenario(debt);
+    if (scenario.amountMinor <= 0) {
+      setNotice({ text: 'Ingresá un pago válido.', tone: 'error' });
+      return;
+    }
+    setSelected((ids) => ids.filter((id) => id !== debt.id));
+    setManualScenarios((items) => [
+      ...items.filter((item) => item.debtId !== debt.id),
+      scenario,
+    ]);
+    setNotice({
+      text: 'Pago agregado a la simulación. La deuda real no cambió.',
+      tone: 'success',
+    });
+  }
   async function persist(next: PersonalFinanceConfig, message: string) {
     const saved = await api('personal-finance', {
       method: 'POST',
@@ -110,7 +235,13 @@ export function PersonalFinanceControl({
     const invalidCash = Object.values(cashInputs).some(
       (value) => parsePesos(value) == null,
     );
-    if (parsed == null || invalidCash) {
+    if (
+      parsed == null ||
+      invalidCash ||
+      !Number.isFinite(marginPercent) ||
+      marginPercent < 0 ||
+      marginPercent > 100
+    ) {
       setNotice({
         text: 'Revisá los importes ingresados.',
         tone: 'error',
@@ -129,25 +260,35 @@ export function PersonalFinanceControl({
       });
     }
   }
-  async function setDebtPaid(debtId: string, paid: boolean) {
-    setBusyDebt(debtId);
+  async function recordPayment(debt: PersonalDebt) {
+    const scenario = paymentScenario(debt);
+    if (scenario.amountMinor <= 0) {
+      setNotice({ text: 'Ingresá un pago válido.', tone: 'error' });
+      return;
+    }
+    setBusyDebt(debt.id);
     try {
+      const applied = applyPaymentScenarios(draftConfig, [scenario]).config;
       const next = {
-        ...draftConfig,
-        debts: draftConfig.debts.map((debt) =>
-          debt.id === debtId
-            ? {
-                ...debt,
-                status: paid ? ('paid' as const) : ('pending' as const),
-              }
-            : debt,
-        ),
+        ...applied,
+        payments: [
+          ...draftConfig.payments,
+          {
+            id: crypto.randomUUID(),
+            debtId: debt.id,
+            paidOn: new Date().toISOString(),
+            amountMinor: scenario.amountMinor,
+            mode: scenario.mode,
+            installmentCount: scenario.installmentCount,
+          },
+        ],
       };
-      await persist(
-        next,
-        paid ? 'Deuda marcada como pagada.' : 'Deuda reabierta.',
+      await persist(next, 'Pago registrado y saldo actualizado.');
+      setSelected((ids) => ids.filter((id) => id !== debt.id));
+      setManualScenarios((items) =>
+        items.filter((item) => item.debtId !== debt.id),
       );
-      if (paid) setSelected((ids) => ids.filter((id) => id !== debtId));
+      setEditingDebt('');
     } catch (error) {
       setNotice({
         text:
@@ -160,8 +301,32 @@ export function PersonalFinanceControl({
       setBusyDebt('');
     }
   }
+  async function reopenDebt(debtId: string) {
+    setBusyDebt(debtId);
+    try {
+      await persist(
+        {
+          ...draftConfig,
+          debts: draftConfig.debts.map((debt) =>
+            debt.id === debtId ? { ...debt, status: 'pending' as const } : debt,
+          ),
+        },
+        'Deuda reabierta.',
+      );
+    } catch (error) {
+      setNotice({
+        text:
+          error instanceof Error
+            ? error.message
+            : 'No se pudo reabrir la deuda.',
+        tone: 'error',
+      });
+    } finally {
+      setBusyDebt('');
+    }
+  }
   async function copy() {
-    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(availableMinor)}\nINGRESOS PERSONALES: ${pesos(draftConfig.personalIncomeMinor)}\nGASTOS PERSONALES: ${pesos(draftConfig.livingCostsMinor)}\nFLUJO PERSONAL ANTES DE DEUDAS: ${pesos(basePersonal)}\nINGRESOS DEL NEGOCIO: ${pesos(draftConfig.businessIncomeMinor)}\nGASTOS FIJOS DEL NEGOCIO: ${pesos(draftConfig.businessFixedCostsMinor)}\nGASTOS EXTRAORDINARIOS DEL NEGOCIO: ${pesos(draftConfig.businessExtraordinaryMinor)}\nAPORTE PERSONAL NECESARIO AL NEGOCIO: ${pesos(result.businessSupportAfterMinor)}\nRESULTADO PERSONAL FINAL: ${pesos(result.personalAfterBusinessAfterMinor)}\n\nDEUDAS:\n${draftConfig.debts.map((d) => `- ${d.entity} · ${d.label}: saldo ${pesos(d.balanceMinor)}, cancelación ${d.payoffMinor == null ? 'Dato pendiente' : pesos(d.payoffMinor)}, pago mensual ${d.monthlyMinor == null && d.minimumMinor == null ? 'Dato pendiente' : pesos(d.monthlyMinor ?? d.minimumMinor ?? 0)}, estado ${d.status}, prioridad ${priorities[d.priority]}, calidad ${quality[d.quality]}. ${d.decision}`).join('\n')}\n\nCompará qué conviene cancelar y qué mantener. Explicá qué hacer, por qué, flujo resultante, aporte requerido por el negocio, riesgos y próximos pasos.`;
+    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(availableMinor)}\nINGRESOS PERSONALES: ${pesos(draftConfig.personalIncomeMinor)}\nGASTOS PERSONALES: ${pesos(draftConfig.livingCostsMinor)}\nFLUJO PERSONAL ANTES DE DEUDAS: ${pesos(basePersonal)}\nVENTAS BRUTAS DEL NEGOCIO: ${pesos(draftConfig.businessIncomeMinor)}\nMARGEN DE CONTRIBUCIÓN: ${(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%\nGASTOS FIJOS DEL NEGOCIO: ${pesos(draftConfig.businessFixedCostsMinor)}\nGASTOS EXTRAORDINARIOS DEL NEGOCIO: ${pesos(draftConfig.businessExtraordinaryMinor)}\nAPORTE PERSONAL NECESARIO AL NEGOCIO: ${pesos(result.businessSupportAfterMinor)}\nVENTA BRUTA ADICIONAL PARA CUBRIR EL DÉFICIT: ${grossSalesNeeded == null ? 'Margen no configurado' : pesos(grossSalesNeeded)}\nRESULTADO PERSONAL FINAL: ${pesos(result.personalAfterBusinessAfterMinor)}\n\nDEUDAS:\n${draftConfig.debts.map((d) => `- ${d.entity} · ${d.label}: saldo ${pesos(d.balanceMinor)}, cancelación ${d.payoffMinor == null ? 'Dato pendiente' : pesos(d.payoffMinor)}, pago mensual ${d.monthlyMinor == null && d.minimumMinor == null ? 'Dato pendiente' : pesos(d.monthlyMinor ?? d.minimumMinor ?? 0)}, estado ${d.status}, prioridad ${priorities[d.priority]}, calidad ${quality[d.quality]}. ${d.decision}`).join('\n')}\n\nCompará qué conviene cancelar y qué mantener. Explicá qué hacer, por qué, flujo resultante, aporte requerido por el negocio, riesgos y próximos pasos.`;
     try {
       await navigator.clipboard.writeText(text);
       setNotice({ text: 'Prompt copiado.', tone: 'success' });
@@ -240,7 +405,7 @@ export function PersonalFinanceControl({
             }
           />
           <MoneyInput
-            label="Ingresos del negocio"
+            label="Ventas brutas mensuales del negocio"
             value={cashInputs.businessIncomeMinor}
             onChange={(value) =>
               setCashInputs((current) => ({
@@ -249,6 +414,24 @@ export function PersonalFinanceControl({
               }))
             }
           />
+          <label htmlFor="finance-contribution-margin">
+            <span>Margen disponible sobre cada venta</span>
+            <div className="finance-percent-input">
+              <Input
+                id="finance-contribution-margin"
+                aria-label="Margen de contribución"
+                type="text"
+                inputMode="decimal"
+                value={contributionMargin}
+                onChange={(event) => setContributionMargin(event.target.value)}
+              />
+              <b>%</b>
+            </div>
+            <small>
+              Después de mercadería, descuentos y costos variables. Ajustalo con
+              el margen real.
+            </small>
+          </label>
           <MoneyInput
             label="Gastos fijos del negocio"
             value={cashInputs.businessFixedCostsMinor}
@@ -274,20 +457,32 @@ export function PersonalFinanceControl({
       <div className="finance-strategies">
         {(
           [
-            ['flow', 'Maximizar flujo mensual'],
-            ['interest', 'Minimizar intereses'],
-            ['balanced', 'Equilibrado'],
+            ['flow', 'Maximizar flujo', 'Libera la mayor cuota mensual.'],
+            [
+              'interest',
+              'Minimizar intereses',
+              'Prioriza las tasas más altas.',
+            ],
+            ['balanced', 'Equilibrado', 'Combina urgencia, costo y liquidez.'],
+            [
+              'deficit',
+              'Salir del déficit',
+              'Cancela solo hasta recuperar flujo.',
+            ],
+            ['risk', 'Bajar riesgo', 'Prioriza tarjetas y deudas urgentes.'],
           ] as const
-        ).map(([key, label]) => (
+        ).map(([key, label, detail]) => (
           <button
             key={key}
             className={mode === key ? 'active' : ''}
             onClick={() => {
               setMode(key);
               setSelected(plans[key].selectedIds);
+              setManualScenarios([]);
             }}
           >
             <strong>{label}</strong>
+            <small>{detail}</small>
             <span>Usar {pesos(plans[key].capitalUsedMinor)}</span>
             <b>Libera {pesos(plans[key].monthlyFreedMinor)}/mes</b>
             <small>{plans[key].selectedIds.length} deudas seleccionadas</small>
@@ -315,6 +510,15 @@ export function PersonalFinanceControl({
           }
         />
         <Metric
+          label="Venta bruta adicional para cubrirlo"
+          value={
+            grossSalesNeeded == null
+              ? 'Configurá el margen'
+              : pesos(grossSalesNeeded)
+          }
+          tone={grossSalesNeeded === 0 ? 'positive' : 'negative'}
+        />
+        <Metric
           label="Personal después de sostener el negocio"
           value={pesos(result.personalAfterBusinessAfterMinor)}
           tone={
@@ -329,23 +533,159 @@ export function PersonalFinanceControl({
           tone={result.combinedFlowAfterMinor >= 0 ? 'positive' : 'negative'}
         />
       </div>
+      <section className="panel finance-sales-target">
+        <div>
+          <p className="eyebrow">META DE FACTURACIÓN</p>
+          <h2>
+            {grossSalesTarget == null
+              ? 'Configurá el margen para calcularla'
+              : grossSalesNeeded === 0
+                ? 'El negocio cubre sus gastos con la venta cargada'
+                : `Deberías vender ${pesos(grossSalesTarget)} brutos por mes`}
+          </h2>
+          <p>
+            Con un margen disponible de{' '}
+            {(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%, la
+            venta actual es {pesos(draftConfig.businessIncomeMinor)} y el
+            faltante bruto es{' '}
+            {grossSalesNeeded == null
+              ? 'no disponible'
+              : pesos(grossSalesNeeded)}
+            .
+          </p>
+        </div>
+        <div>
+          <span>Gastos y cuotas a cubrir este mes</span>
+          <strong>
+            {pesos(
+              draftConfig.businessFixedCostsMinor +
+                draftConfig.businessExtraordinaryMinor +
+                (projection[0]?.businessDebtMinor ?? 0),
+            )}
+          </strong>
+          <small>
+            La meta usa margen de contribución, no confunde facturación con
+            ganancia.
+          </small>
+        </div>
+      </section>
       <section className="panel">
         <div className="panel-heading">
           <div>
             <h2>Armá tu escenario</h2>
             <span>
-              Marcá o desmarcá cancelaciones; los resultados cambian al
-              instante.
+              La casilla simula cancelación total. “Opciones de pago” permite
+              mínimo, cuota, adelanto, otro importe o total.
             </span>
           </div>
           <Button
             variant="outline"
-            onClick={() => setSelected(activePlan.selectedIds)}
+            onClick={() => {
+              setSelected(activePlan.selectedIds);
+              setManualScenarios([]);
+            }}
           >
             <SlidersHorizontal />
             Aplicar estrategia
           </Button>
         </div>
+        {editedDebt && (
+          <div className="finance-payment-planner">
+            <div>
+              <p className="eyebrow">PLANIFICAR PAGO</p>
+              <h3>
+                {editedDebt.entity} · {editedDebt.label}
+              </h3>
+              <span>
+                Saldo {pesos(editedDebt.balanceMinor)} · Cancelación{' '}
+                {pesos(editedDebt.payoffMinor ?? editedDebt.balanceMinor)}
+              </span>
+            </div>
+            <label>
+              <span>Qué querés pagar</span>
+              <select
+                value={paymentMode}
+                onChange={(event) =>
+                  setPaymentMode(event.target.value as PaymentMode)
+                }
+              >
+                {editedDebt.kind === 'card' ? (
+                  <>
+                    <option value="minimum">Pago mínimo</option>
+                    <option value="custom">Otro importe</option>
+                    <option value="total">Total</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="installment">Cuota del mes</option>
+                    <option value="advance">Adelantar cuotas</option>
+                    <option value="custom">Otro importe</option>
+                    <option value="total">Cancelación total</option>
+                  </>
+                )}
+              </select>
+            </label>
+            {paymentMode === 'advance' && (
+              <label htmlFor="finance-installment-count">
+                <span>Cuotas a adelantar</span>
+                <Input
+                  id="finance-installment-count"
+                  type="number"
+                  min="1"
+                  max={editedDebt.remainingInstallments ?? 600}
+                  value={installmentCount}
+                  onChange={(event) => setInstallmentCount(event.target.value)}
+                />
+              </label>
+            )}
+            {paymentMode === 'custom' && (
+              <MoneyInput
+                label="Importe a pagar"
+                value={paymentAmount}
+                onChange={setPaymentAmount}
+              />
+            )}
+            <div className="finance-payment-total">
+              <span>Importe calculado</span>
+              <strong>{pesos(paymentScenario(editedDebt).amountMinor)}</strong>
+              {paymentMode === 'minimum' && !editedDebt.minimumMinor && (
+                <small>Cargá el mínimo usando “Otro importe”.</small>
+              )}
+              {paymentMode === 'advance' && !editedDebt.monthlyMinor && (
+                <small>Cargá la cuota antes de adelantar.</small>
+              )}
+              {paymentMode === 'advance' && editedDebt.monthlyMinor && (
+                <small>
+                  Estimación cuota × cantidad. Confirmá el importe exacto con la
+                  entidad.
+                </small>
+              )}
+              {paymentMode === 'minimum' && editedDebt.minimumMinor && (
+                <small>
+                  El próximo resumen puede sumar intereses y consumos nuevos.
+                </small>
+              )}
+            </div>
+            <div className="finance-payment-actions">
+              <Button
+                variant="outline"
+                onClick={() => simulatePayment(editedDebt)}
+              >
+                Simular
+              </Button>
+              <Button
+                disabled={busyDebt === editedDebt.id}
+                onClick={() => recordPayment(editedDebt)}
+              >
+                <CircleCheck />
+                {busyDebt === editedDebt.id ? 'Guardando…' : 'Registrar pago'}
+              </Button>
+              <button type="button" onClick={() => setEditingDebt('')}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
         <div className="finance-debt-list">
           {config.debts.map((debt) => {
             const efficiency = cancellationEfficiency(debt);
@@ -360,13 +700,16 @@ export function PersonalFinanceControl({
                   type="checkbox"
                   disabled={paid}
                   checked={selected.includes(debt.id)}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setManualScenarios((items) =>
+                      items.filter((item) => item.debtId !== debt.id),
+                    );
                     setSelected((s) =>
                       e.target.checked
                         ? [...s, debt.id]
                         : s.filter((id) => id !== debt.id),
-                    )
-                  }
+                    );
+                  }}
                 />
                 <div>
                   <strong>
@@ -396,14 +739,16 @@ export function PersonalFinanceControl({
                   type="button"
                   className="finance-paid-button"
                   disabled={busyDebt === debt.id}
-                  onClick={() => setDebtPaid(debt.id, !paid)}
+                  onClick={() =>
+                    paid ? reopenDebt(debt.id) : openPayment(debt)
+                  }
                 >
-                  {paid ? <RotateCcw /> : <CircleCheck />}
+                  {paid ? <RotateCcw /> : <SlidersHorizontal />}
                   {busyDebt === debt.id
                     ? 'Guardando…'
                     : paid
                       ? 'Reabrir'
-                      : 'Marcar pagada'}
+                      : 'Opciones de pago'}
                 </button>
               </div>
             );
@@ -443,8 +788,17 @@ export function PersonalFinanceControl({
             <span>Se calcula separado antes del aporte</span>
           </div>
           <Calc
-            name="Ingresos registrados"
+            name="Ventas brutas (referencia)"
             value={draftConfig.businessIncomeMinor}
+            reference
+          />
+          <Calc
+            name={`Margen disponible (${(draftConfig.businessContributionMarginBps / 100).toFixed(1)}%)`}
+            value={Math.round(
+              (draftConfig.businessIncomeMinor *
+                draftConfig.businessContributionMarginBps) /
+                10_000,
+            )}
           />
           <Calc
             name="Costos fijos"
@@ -511,6 +865,45 @@ export function PersonalFinanceControl({
           hasta completar esos datos.
         </p>
       </section>
+      {config.payments.length > 0 && (
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Pagos registrados</h2>
+              <span>Últimos movimientos confirmados en este centro.</span>
+            </div>
+          </div>
+          <div className="finance-payment-history">
+            {[...config.payments]
+              .sort((a, b) => b.paidOn.localeCompare(a.paidOn))
+              .slice(0, 8)
+              .map((payment) => {
+                const debt = config.debts.find(
+                  (item) => item.id === payment.debtId,
+                );
+                return (
+                  <div key={payment.id}>
+                    <div>
+                      <strong>
+                        {debt
+                          ? `${debt.entity} · ${debt.label}`
+                          : 'Deuda registrada'}
+                      </strong>
+                      <span>
+                        {paymentModes[payment.mode]} ·{' '}
+                        {new Intl.DateTimeFormat('es-AR', {
+                          dateStyle: 'medium',
+                          timeZone: 'America/Argentina/Buenos_Aires',
+                        }).format(new Date(payment.paidOn))}
+                      </span>
+                    </div>
+                    <b>{pesos(payment.amountMinor)}</b>
+                  </div>
+                );
+              })}
+          </div>
+        </section>
+      )}
       <section className="panel finance-export">
         <div>
           <h2>Exportar para ChatGPT</h2>
@@ -591,16 +984,20 @@ function Calc({
   name,
   value,
   total,
+  reference,
 }: {
   name: string;
   value: number;
   total?: boolean;
+  reference?: boolean;
 }) {
   return (
-    <div className={`rank-row ${total ? 'finance-total' : ''}`}>
+    <div
+      className={`rank-row ${total ? 'finance-total' : ''} ${reference ? 'quiet' : ''}`}
+    >
       <strong>{name}</strong>
       <span>
-        {value < 0 ? '− ' : value > 0 ? '+ ' : ''}
+        {!reference && (value < 0 ? '− ' : value > 0 ? '+ ' : '')}
         {pesos(Math.abs(value))}
       </span>
     </div>

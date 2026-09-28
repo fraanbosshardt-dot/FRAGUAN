@@ -33,6 +33,8 @@ try {
   assert.equal(response.status, 200);
   const config = await response.json();
   assert.equal(config.availableMinor, 2500000000);
+  assert.equal(config.businessContributionMarginBps, 4000);
+  assert(Array.isArray(config.payments));
   assert(config.debts.length >= 16);
   assert(
     config.debts.some(
@@ -46,6 +48,17 @@ try {
       ...config,
       availableMinor: 2400000000,
       businessIncomeMinor: 45000000,
+      payments: [
+        ...config.payments,
+        {
+          id: 'test-payment',
+          debtId: 'brubank-1',
+          paidOn: '2026-09-28T12:00:00.000Z',
+          amountMinor: 21429568,
+          mode: 'total',
+          installmentCount: null,
+        },
+      ],
       debts: config.debts.map((debt) =>
         debt.id === 'brubank-1' ? { ...debt, status: 'paid' } : debt,
       ),
@@ -55,6 +68,7 @@ try {
   assert.equal(saved.status, 200, savedText);
   const savedConfig = JSON.parse(savedText);
   assert.equal(savedConfig.businessIncomeMinor, 45000000);
+  assert.equal(savedConfig.payments.at(-1).mode, 'total');
   assert.equal(
     savedConfig.debts.find((debt) => debt.id === 'brubank-1').status,
     'paid',
