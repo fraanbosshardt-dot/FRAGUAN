@@ -25,42 +25,67 @@ const priorities = {
   maintain: 'Mantener',
 };
 
+function parsePesos(value: string) {
+  const cleaned = value.trim().replace(/[$\s]/g, '');
+  if (!cleaned) return 0;
+  const normalized = cleaned.includes(',')
+    ? cleaned.replace(/\./g, '').replace(',', '.')
+    : /^\d{1,3}(\.\d{3})+$/.test(cleaned)
+      ? cleaned.replace(/\./g, '')
+      : cleaned;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+}
+
 export function PersonalFinanceControl({
   initial,
 }: {
   initial: PersonalFinanceConfig;
 }) {
   const [config, setConfig] = useState(initial),
-    [available, setAvailable] = useState(initial.availableMinor / 100),
+    [available, setAvailable] = useState(String(initial.availableMinor / 100)),
     [selected, setSelected] = useState<string[]>([]),
     [mode, setMode] = useState<'flow' | 'interest' | 'balanced'>('balanced'),
     [notice, setNotice] = useState('');
+  const availableMinor = Math.round((parsePesos(available) ?? 0) * 100);
   const plans = useMemo(
     () => ({
-      flow: suggestedPlan(config, 'flow', Math.round(available * 100)),
-      interest: suggestedPlan(config, 'interest', Math.round(available * 100)),
-      balanced: suggestedPlan(config, 'balanced', Math.round(available * 100)),
+      flow: suggestedPlan(config, 'flow', availableMinor),
+      interest: suggestedPlan(config, 'interest', availableMinor),
+      balanced: suggestedPlan(config, 'balanced', availableMinor),
     }),
-    [config, available],
+    [config, availableMinor],
   );
   const result = useMemo(
-    () => simulateFinance(config, selected, Math.round(available * 100)),
-    [config, selected, available],
+    () => simulateFinance(config, selected, availableMinor),
+    [config, selected, availableMinor],
   );
   const activePlan = plans[mode];
   const basePersonal = config.personalIncomeMinor - config.livingCostsMinor;
   async function save() {
-    const next = { ...config, availableMinor: Math.round(available * 100) };
-    setConfig(
-      await api('personal-finance', {
+    const parsed = parsePesos(available);
+    if (parsed == null) {
+      setNotice('Ingresá un importe válido.');
+      return;
+    }
+    try {
+      const next = { ...config, availableMinor: Math.round(parsed * 100) };
+      const saved = await api('personal-finance', {
         method: 'POST',
         body: JSON.stringify(next),
-      }),
-    );
-    setNotice('Datos guardados.');
+      });
+      setConfig(saved);
+      setNotice('Datos guardados.');
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : 'No se pudieron guardar los datos.',
+      );
+    }
   }
   async function copy() {
-    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(Math.round(available * 100))}\nINGRESOS PERSONALES: ${pesos(config.personalIncomeMinor)}\nGASTOS PERSONALES: ${pesos(config.livingCostsMinor)}\nFLUJO ANTES DE DEUDAS: ${pesos(basePersonal)}\n\nDEUDAS:\n${config.debts.map((d) => `- ${d.entity} · ${d.label}: saldo ${pesos(d.balanceMinor)}, cancelación ${d.payoffMinor == null ? 'Dato pendiente' : pesos(d.payoffMinor)}, pago mensual ${d.monthlyMinor == null && d.minimumMinor == null ? 'Dato pendiente' : pesos(d.monthlyMinor ?? d.minimumMinor ?? 0)}, prioridad ${priorities[d.priority]}, calidad ${quality[d.quality]}. ${d.decision}`).join('\n')}\n\nCompará qué conviene cancelar y qué mantener. Explicá qué hacer, por qué, flujo resultante, riesgos y próximos pasos.`;
+    const text = `Analizá mi situación financiera actual. No inventes datos.\n\nDINERO DISPONIBLE: ${pesos(availableMinor)}\nINGRESOS PERSONALES: ${pesos(config.personalIncomeMinor)}\nGASTOS PERSONALES: ${pesos(config.livingCostsMinor)}\nFLUJO ANTES DE DEUDAS: ${pesos(basePersonal)}\n\nDEUDAS:\n${config.debts.map((d) => `- ${d.entity} · ${d.label}: saldo ${pesos(d.balanceMinor)}, cancelación ${d.payoffMinor == null ? 'Dato pendiente' : pesos(d.payoffMinor)}, pago mensual ${d.monthlyMinor == null && d.minimumMinor == null ? 'Dato pendiente' : pesos(d.monthlyMinor ?? d.minimumMinor ?? 0)}, prioridad ${priorities[d.priority]}, calidad ${quality[d.quality]}. ${d.decision}`).join('\n')}\n\nCompará qué conviene cancelar y qué mantener. Explicá qué hacer, por qué, flujo resultante, riesgos y próximos pasos.`;
     await navigator.clipboard.writeText(text);
     setNotice('Prompt copiado.');
   }
@@ -73,9 +98,10 @@ export function PersonalFinanceControl({
             Si hoy tengo{' '}
             <Input
               aria-label="Dinero disponible"
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={available}
-              onChange={(e) => setAvailable(Number(e.target.value))}
+              onChange={(e) => setAvailable(e.target.value)}
             />
             , ¿qué hago?
           </h2>
