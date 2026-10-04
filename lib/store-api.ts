@@ -37,6 +37,8 @@ export async function forwardStoreApi(req: Request): Promise<Response | null> {
   headers.delete('content-length');
   // Ignore browser-supplied proxy identity headers. The backend uses customer
   // cookies and validates the public site's Origin for writes.
+  // Snapshot the names: deleting from Headers changes its live iterator.
+  // oxlint-disable-next-line unicorn/no-useless-spread
   for (const name of [...headers.keys()]) {
     if (name.startsWith('oai-') || name.startsWith('x-forwarded-') || name === 'forwarded')
       headers.delete(name);

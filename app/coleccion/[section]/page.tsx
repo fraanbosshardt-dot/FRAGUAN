@@ -34,7 +34,7 @@ export default async function Page({
   if (isProductionComingSoon()) return <ComingSoon />;
   const key = (await params).section.toLowerCase();
   const initialSection = names[key] || key.replaceAll('-', ' ');
-  const catalog = await storeCatalog('', initialSection);
+  const catalog = await storeCatalog();
   return (
     <Storefront initialSection={initialSection} initialCatalog={catalog} />
   );

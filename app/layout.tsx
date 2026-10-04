@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './store-design.css';
+import { StoreDesignBoundary } from '@/components/store-design';
 import { StoreExperience } from '@/components/store-experience';
 export const metadata: Metadata = {
   title: 'FRAGUAN | Tienda oficial',
@@ -56,7 +58,7 @@ export default function RootLayout({
     publisher: { '@id': 'https://fraguan.com/#organization' },
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://fraguan.com/?search={search_term_string}',
+      target: 'https://fraguan.com/tienda?search={search_term_string}',
       'query-input': 'required name=search_term_string',
     },
   };
@@ -75,7 +77,7 @@ export default function RootLayout({
             __html: JSON.stringify(website).replaceAll('<', '\\u003c'),
           }}
         />
-        {children}
+        <StoreDesignBoundary>{children}</StoreDesignBoundary>
         <StoreExperience />
       </body>
     </html>

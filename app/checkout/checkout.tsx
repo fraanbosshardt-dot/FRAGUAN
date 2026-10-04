@@ -11,8 +11,6 @@ import {
   Truck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { StoreHeader } from '@/components/store-header';
-import { StoreFooter } from '@/components/store-footer';
 import {
   storeApi,
   storeMoney,
@@ -34,8 +32,17 @@ type CheckoutQuote = {
   total: number;
   appliedDiscounts: { promotionName: string }[];
 };
-export default function Checkout() {
+export default function Checkout({
+  passwordAuthEnabled = import.meta.env.DEV,
+}: {
+  passwordAuthEnabled?: boolean;
+}) {
   const { cart, subtotal, clear, update } = useStoreCart();
+  const [step, setStep] = useState(1);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const [createAccount, setCreateAccount] = useState(false);
+  const [cardChoice, setCardChoice] = useState<'card' | 'mp'>('card');
   const [payment, setPayment] = useState<'transfer' | 'card'>('transfer');
   const [shippingMethod, setShippingMethod] = useState<
     'correo-argentino-home' | 'pickup'
@@ -177,6 +184,26 @@ export default function Checkout() {
     setError('');
     const form = new FormData(event.currentTarget);
     try {
+      if (createAccount && !session?.customer) {
+        await storeApi('store-account', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'register',
+            email: form.get('email'),
+            password: form.get('accountPassword'),
+            name: form.get('firstName'),
+            surname: form.get('surname'),
+            phone: form.get('phone'),
+            marketingConsent: false,
+          }),
+        });
+        const account = await storeApi('store-account');
+        setSession(account);
+        setCreateAccount(false);
+        dispatchEvent(
+          new CustomEvent('fraguan-account', { detail: account.customer }),
+        );
+      }
       const result = await storeApi<Order>('store-checkout', {
         method: 'POST',
         body: JSON.stringify({
@@ -186,7 +213,8 @@ export default function Checkout() {
           })),
           email: form.get('email'),
           emailVerificationToken,
-          customerName: form.get('customerName'),
+          customerName:
+            `${(form.get('firstName') as string) || ''} ${(form.get('surname') as string) || ''}`.trim(),
           phone: form.get('phone'),
           document: form.get('document') || '',
           paymentMethod: payment,
@@ -344,20 +372,27 @@ export default function Checkout() {
       setBusy(false);
     }
   }
+  function advance() {
+    const section = checkoutForm.current?.querySelector(
+      '[data-checkout-step="' + step + '"]',
+    );
+    for (const field of Array.from(
+      section?.querySelectorAll('input,select') || [],
+    )) {
+      if (!(field as HTMLInputElement).reportValidity()) return;
+    }
+    setError('');
+    setStep(step + 1);
+  }
   if (order)
     return (
       <div className="store-shell">
-        <StoreHeader />
-        <main className="store-order-success">
+        <section className="store-order-success">
           <div className="store-success-mark">
             <Check />
           </div>
           <span>PEDIDO #{order.orderNumber}</span>
-          <h1>
-            {payment === 'transfer'
-              ? 'Tu stock está reservado.'
-              : 'Pedido creado.'}
-          </h1>
+          <h1 className="d">¡Gracias por tu compra!</h1>
           {payment === 'transfer' ? (
             <>
               <p>
@@ -429,41 +464,61 @@ export default function Checkout() {
           <a href={`/pedido/${order.id}`}>
             Seguir este pedido <ArrowRight />
           </a>
-        </main>
-        <StoreFooter />
+        </section>
       </div>
+    );
+  if (!hydrated)
+    return (
+      <section className="sec lt pg">
+        <h1 className="d h1">Pagar</h1>
+        <p className="em0" aria-busy="true">
+          Cargando tu selección…
+        </p>
+      </section>
     );
   if (!cart.length)
     return (
       <div className="store-shell">
-        <StoreHeader />
-        <main className="store-empty-checkout">
+        <section className="store-empty-checkout">
           <h1>Tu carrito está vacío.</h1>
           <a href="/">
             <ArrowLeft /> Volver a la tienda
           </a>
-        </main>
-        <StoreFooter />
+        </section>
       </div>
     );
   return (
     <div className="store-shell">
-      <StoreHeader />
-      <main className="store-checkout">
+      <section className="store-checkout sec lt pg">
         <a href="/">
           <ArrowLeft /> Seguir comprando
         </a>
-        <div className="store-checkout-heading">
-          <span>CHECKOUT SEGURO</span>
-          <h1>Terminemos tu compra.</h1>
+        <h1 className="d h1">Pagar</h1>
+        <div className="steps" aria-label="Pasos de compra">
+          {['1 · TUS DATOS', '2 · ENVÍO', '3 · PAGO'].map((label, i) => (
+            <span
+              key={label}
+              className={step === i + 1 ? 'on' : ''}
+              aria-current={step === i + 1 ? 'step' : undefined}
+            >
+              {label}
+            </span>
+          ))}
         </div>
         <div className="store-checkout-grid">
           <form
             ref={checkoutForm}
-            onSubmit={submit}
+            onSubmit={(event) => {
+              if (step < 3) {
+                event.preventDefault();
+                advance();
+              } else void submit(event);
+            }}
+            noValidate={step < 3}
             className="store-checkout-form"
+            data-step={step}
           >
-            <section>
+            <section data-checkout-step={1} hidden={step !== 1}>
               <div className="store-form-step">
                 <span>01</span>
                 <div>
@@ -482,15 +537,21 @@ export default function Checkout() {
               </div>
               <div className="store-fields">
                 <label>
-                  Nombre y apellido
+                  NOMBRE
                   <input
-                    name="customerName"
+                    name="firstName"
                     autoComplete="name"
-                    defaultValue={
-                      session?.customer
-                        ? `${session.customer.name} ${session.customer.surname}`
-                        : ''
-                    }
+                    defaultValue={session?.customer?.name || ''}
+                    maxLength={80}
+                    required
+                  />
+                </label>
+                <label>
+                  APELLIDO
+                  <input
+                    name="surname"
+                    autoComplete="name"
+                    defaultValue={session?.customer?.surname || ''}
                     maxLength={80}
                     required
                   />
@@ -586,7 +647,7 @@ export default function Checkout() {
                 </label>
               </div>
             </section>
-            <section>
+            <section data-checkout-step={2} hidden={step !== 2}>
               <div className="store-form-step">
                 <span>02</span>
                 <div>
@@ -608,7 +669,7 @@ export default function Checkout() {
                   }}
                 >
                   <Truck />
-                  <strong>Correo Argentino</strong>
+                  <strong>Envío a domicilio</strong>
                   <small>A domicilio</small>
                 </button>
                 <button
@@ -622,7 +683,7 @@ export default function Checkout() {
                   }}
                 >
                   <PackageCheck />
-                  <strong>Retiro</strong>
+                  <strong>Retiro en el local</strong>
                   <small>Sin costo</small>
                 </button>
               </div>
@@ -766,7 +827,7 @@ export default function Checkout() {
                 </label>
               )}
             </section>
-            <section>
+            <section data-checkout-step={3} hidden={step !== 3}>
               <div className="store-form-step">
                 <span>03</span>
                 <div>
@@ -790,16 +851,19 @@ export default function Checkout() {
                 >
                   <Landmark />
                   <span>
-                    <strong>Transferencia</strong>
+                    <strong>Transferencia bancaria · 10% OFF</strong>
                     <small>10% OFF automático</small>
                   </span>
                   <b>{storeMoney(subtotal - discount)}</b>
                 </button>
                 <button
                   type="button"
-                  className={payment === 'card' ? 'active' : ''}
+                  className={
+                    payment === 'card' && cardChoice === 'card' ? 'active' : ''
+                  }
                   onClick={() => {
                     setPayment('card');
+                    setCardChoice('card');
                     setAppliedCouponCode('');
                     setCouponCode('');
                     setCouponMessage('');
@@ -810,12 +874,69 @@ export default function Checkout() {
                 >
                   <CreditCard />
                   <span>
-                    <strong>Tarjeta</strong>
+                    <strong>Tarjeta de crédito o débito</strong>
                     <small>Crédito o débito</small>
                   </span>
                   <b>{storeMoney(subtotal)}</b>
                 </button>
+
+                <button
+                  type="button"
+                  className={
+                    payment === 'card' && cardChoice === 'mp' ? 'active' : ''
+                  }
+                  onClick={() => {
+                    setPayment('card');
+                    setCardChoice('mp');
+                    setAppliedCouponCode('');
+                    setCouponCode('');
+                    setCouponMessage('');
+                  }}
+                >
+                  <CreditCard />
+                  <span>
+                    <strong>Mercado Pago</strong>
+                    <small>Dinero en cuenta, tarjetas guardadas</small>
+                  </span>
+                </button>
+                <button type="button" disabled>
+                  <Landmark />
+                  <span>
+                    <strong>Efectivo en el local</strong>
+                    <small>
+                      {shippingMethod === 'pickup'
+                        ? 'Próximamente'
+                        : 'Solo con retiro en el local'}
+                    </small>
+                  </span>
+                </button>
               </div>
+              {!session?.customer && (
+                <>
+                  <label className="design-consent">
+                    <input
+                      type="checkbox"
+                      checked={createAccount}
+                      disabled={!passwordAuthEnabled}
+                      onChange={(e) => setCreateAccount(e.target.checked)}
+                    />
+                    Crear mi cuenta con estos datos
+                  </label>
+                  {createAccount && (
+                    <label className="fi">
+                      CONTRASEÑA (8+)
+                      <input
+                        name="accountPassword"
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={8}
+                        maxLength={128}
+                        required
+                      />
+                    </label>
+                  )}
+                </>
+              )}
             </section>
             <label className="store-notes">
               Notas para el pedido
@@ -903,7 +1024,9 @@ export default function Checkout() {
                 busy ||
                 pricingBusy ||
                 !pricing ||
-                (!session?.customer && !emailVerificationToken)
+                (!session?.customer &&
+                  !emailVerificationToken &&
+                  !createAccount)
               }
             >
               {busy
@@ -913,12 +1036,31 @@ export default function Checkout() {
                   : 'Continuar al pago'}
               <ArrowRight />
             </button>
+            <div className="row design-checkout-actions">
+              {step > 1 && (
+                <button
+                  type="button"
+                  className="btn g"
+                  onClick={() => {
+                    setStep(step - 1);
+                    setError('');
+                  }}
+                >
+                  ← VOLVER
+                </button>
+              )}
+              {step < 3 && (
+                <button type="button" className="btn a" onClick={advance}>
+                  CONTINUAR →
+                </button>
+              )}
+            </div>
             <p className="store-secure">
               <ShieldCheck /> Tus prendas se reservan al crear el pedido.
             </p>
           </form>
           <aside className="store-order-summary">
-            <h2>Tu pedido</h2>
+            <h2 className="d">Resumen</h2>
             {cart.map((item) => (
               <div className="store-summary-item" key={item.id}>
                 <span>
@@ -1011,8 +1153,7 @@ export default function Checkout() {
             </dl>
           </aside>
         </div>
-      </main>
-      <StoreFooter />
+      </section>
     </div>
   );
 }

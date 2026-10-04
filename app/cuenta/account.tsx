@@ -1,16 +1,7 @@
 'use client';
-import {
-  ArrowRight,
-  Gift,
-  LogOut,
-  Package,
-  Sparkles,
-  UserRound,
-} from 'lucide-react';
+
 import { useEffect, useState } from 'react';
-import { StoreHeader } from '@/components/store-header';
-import { StoreFooter } from '@/components/store-footer';
-import { StoreProductCard } from '@/components/store-product-card';
+import { DesignProductGrid } from '@/components/store-design';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import {
   StoreProduct,
@@ -18,7 +9,32 @@ import {
   storeMoney,
   useStoreFavorites,
 } from '@/lib/store-client';
-const ARGENTINA_PROVINCES = ['Buenos Aires','CABA','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'] as const;
+const ARGENTINA_PROVINCES = [
+  'Buenos Aires',
+  'CABA',
+  'Catamarca',
+  'Chaco',
+  'Chubut',
+  'Córdoba',
+  'Corrientes',
+  'Entre Ríos',
+  'Formosa',
+  'Jujuy',
+  'La Pampa',
+  'La Rioja',
+  'Mendoza',
+  'Misiones',
+  'Neuquén',
+  'Río Negro',
+  'Salta',
+  'San Juan',
+  'San Luis',
+  'Santa Cruz',
+  'Santa Fe',
+  'Santiago del Estero',
+  'Tierra del Fuego',
+  'Tucumán',
+] as const;
 export default function Account({
   googleClientId,
   passwordAuthEnabled,
@@ -27,20 +43,29 @@ export default function Account({
   passwordAuthEnabled: boolean;
 }) {
   const [data, setData] = useState<any>(null);
+  const [panel, setPanel] = useState('datos');
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [catalog, setCatalog] = useState<StoreProduct[]>([]);
   const [profileState, setProfileState] = useState('');
   const { favorites } = useStoreFavorites();
-  const load = () => storeApi('store-account').then(setData);
+  const load = () =>
+    storeApi('store-account').then((result) => {
+      setData(result);
+      dispatchEvent(
+        new CustomEvent('fraguan-account', { detail: result.customer }),
+      );
+    });
   useEffect(() => {
     load().catch((e) => setError(e.message));
     storeApi<{ products: StoreProduct[] }>('store-catalog')
       .then((result) => setCatalog(result.products))
       .catch(() => undefined);
   }, []);
-  const savedProducts = catalog.filter((product) => favorites.includes(product.id));
+  const savedProducts = catalog.filter((product) =>
+    favorites.includes(product.id),
+  );
   async function submit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -71,6 +96,7 @@ export default function Account({
       method: 'POST',
       body: JSON.stringify({ action: 'logout' }),
     });
+    dispatchEvent(new CustomEvent('fraguan-account', { detail: null }));
     setData({ customer: null, orders: [], addresses: [], benefits: [] });
   }
   async function updateProfile(event: React.SyntheticEvent<HTMLFormElement>) {
@@ -104,208 +130,297 @@ export default function Account({
     }
   }
   const primaryAddress = data?.addresses?.[0];
+  const field = (
+    label: string,
+    name: string,
+    value = '',
+    extra: Record<string, any> = {},
+  ) => (
+    <label className="fi">
+      {label}
+      <input
+        name={name}
+        defaultValue={value}
+        required
+        maxLength={100}
+        {...extra}
+      />
+    </label>
+  );
   return (
-    <div className="store-shell">
-      <StoreHeader />
-      <main className="store-account">
-        {data?.customer ? (
-          <>
-            <header>
-              <span>MI FRAGUAN</span>
-              <h1>Hola, {data.customer.name}.</h1>
-              <button onClick={logout}>
-                <LogOut /> Salir
-              </button>
-            </header>
-            <section className="store-account-metrics">
-              <article>
-                <Sparkles />
-                <span>Nivel</span>
-                <strong>{data.customer.level}</strong>
-                <small>Tu actividad del local y online, en un lugar.</small>
-              </article>
-              <article>
-                <Gift />
-                <span>Beneficios</span>
-                <strong>Por tus compras</strong>
-                <small>{data.benefits?.[0] || 'Te avisamos cuando tengas un beneficio disponible.'}</small>
-              </article>
-              <article>
-                <UserRound />
-                <span>Dirección</span>
-                <strong>{primaryAddress ? 'Lista para usar' : 'Completala una vez'}</strong>
-                <small>La sugerimos al comprar y siempre podés usar otra.</small>
-              </article>
-            </section>
-            <section className="store-account-profile">
-              <div>
-                <span>TUS DATOS</span>
-                <h2>Todo listo para comprar más rápido.</h2>
-                <p>Guardá tu contacto y dirección principal. En cada compra podés confirmarla, editarla o usar otra.</p>
-              </div>
-              <form onSubmit={updateProfile}>
-                <label>Nombre<input name="name" autoComplete="name" maxLength={80} defaultValue={data.customer.name} required /></label>
-                <label>Apellido<input name="surname" autoComplete="name" maxLength={80} defaultValue={data.customer.surname} required /></label>
-                <label>Teléfono<input name="phone" type="tel" autoComplete="tel" maxLength={25} defaultValue={data.customer.phone} required /></label>
-                <label>País<select name="country" autoComplete="country-name" defaultValue={primaryAddress?.country || 'Argentina'} required><option>Argentina</option></select></label>
-                <label>Dirección<input name="address" autoComplete="street-address" maxLength={100} placeholder="Calle y número" defaultValue={primaryAddress?.address || ''} required /></label>
-                <label>Piso / departamento <small>Opcional</small><input name="addressExtra" autoComplete="address-line2" maxLength={50} defaultValue={primaryAddress?.addressExtra || ''} /></label>
-                <label>Ciudad / localidad<input name="city" autoComplete="address-level2" maxLength={60} defaultValue={primaryAddress?.city || ''} required /></label>
-                <label>Provincia<select name="province" autoComplete="address-level1" defaultValue={primaryAddress?.province || ''} required><option value="" disabled>Seleccionar</option>{ARGENTINA_PROVINCES.map((province) => <option key={province}>{province}</option>)}</select></label>
-                <label>Código postal<input name="postalCode" autoComplete="postal-code" inputMode="numeric" pattern="[0-9]{4}" minLength={4} maxLength={4} defaultValue={primaryAddress?.postalCode || ''} required /></label>
-                <label className="store-consent wide"><input name="marketingConsent" type="checkbox" defaultChecked={data.customer.marketingConsent} /> Quiero recibir novedades y beneficios.</label>
-                <button className="store-auth-submit wide" disabled={busy}>Guardar mis datos <ArrowRight /></button>
-                {profileState && <small className="wide">{profileState}</small>}
-              </form>
-            </section>
-            {data.addresses?.length > 1 && <section className="store-account-orders"><div><span>OTRAS DIRECCIONES</span><h2>Direcciones usadas</h2></div><div className="store-address-list">{data.addresses.slice(1).map((address: any) => <article key={address.id}><strong>{address.label}</strong><p>{address.address}{address.addressExtra ? `, ${address.addressExtra}` : ''}<br />{address.postalCode} · {address.city}, {address.province} · {address.country}</p></article>)}</div></section>}
-            <section className="store-account-orders">
-              <div>
-                <span>TUS COMPRAS</span>
-                <h2>Pedidos online</h2>
-              </div>
-              {data.orders.length ? (
-                data.orders.map((order: any) => (
-                  <a className="store-account-order-link" href={`/pedido/${order.id}`} key={order.id}>
-                    <Package />
-                    <span>
-                      <strong>Pedido #{order.orderNumber}</strong>
-                      <small>
-                        {new Date(order.createdAt).toLocaleDateString('es-AR')}{' '}
-                        ·{' '}
-                        {order.paymentStatus === 'paid'
-                          ? 'Pago confirmado'
-                          : 'Pago pendiente'}
-                      </small>
-                    </span>
-                    <b>{storeMoney(order.total)}</b>
-                    <em>
-                      {order.fulfillmentStatus === 'shipped'
-                        ? 'Despachado'
-                        : order.fulfillmentStatus === 'preparing'
-                          ? 'Preparando'
-                          : 'Recibido'}
-                    </em>
-                  </a>
-                ))
-              ) : (
-                <div className="store-account-empty">
-                  <Package />
-                  <h3>Todavía no tenés pedidos online.</h3>
-                  <a href="/">
-                    Explorar la colección <ArrowRight />
-                  </a>
-                </div>
-              )}
-            </section>
-            <section className="store-account-orders">
-              <div>
-                <span>TUS FAVORITOS</span>
-                <h2>Prendas guardadas</h2>
-              </div>
-              {savedProducts.length ? (
-                <div className="store-product-grid">
-                  {savedProducts.map((product, index) => (
-                    <StoreProductCard product={product} index={index} key={product.id} />
-                  ))}
-                </div>
-              ) : (
-                <div className="store-account-empty">
-                  <Gift />
-                  <h3>Todavía no guardaste prendas.</h3>
-                  <a href="/">Explorar la colección <ArrowRight /></a>
-                </div>
-              )}
-            </section>
-          </>
-        ) : (
-          <section className="store-login">
-            <div className="store-login-copy">
-              <span>MI FRAGUAN</span>
-              <h1>Tu estilo también tiene memoria.</h1>
-              <p>
-                Uní tus compras del local y online. Guardá tus datos, seguí
-                pedidos y acumulá beneficios.
+    <section className="sec lt pg">
+      {data?.customer ? (
+        <>
+          <b className="k">CLUB FRAGUAN</b>
+          <h1 className="d h1">Hola, {data.customer.name}</h1>
+          <div className="pills">
+            <button
+              className={panel === 'datos' ? 'on' : ''}
+              onClick={() => setPanel('datos')}
+            >
+              MIS DATOS
+            </button>
+            <button
+              className={panel === 'pedidos' ? 'on' : ''}
+              onClick={() => setPanel('pedidos')}
+            >
+              MIS PEDIDOS ({data.orders.length})
+            </button>
+            <button
+              className={panel === 'favoritos' ? 'on' : ''}
+              onClick={() => setPanel('favoritos')}
+            >
+              FAVORITOS ({favorites.length})
+            </button>
+            <button onClick={() => logout().catch((e) => setError(e.message))}>
+              SALIR
+            </button>
+          </div>
+          {error && (
+            <p className="err" role="alert">
+              {error}
+            </p>
+          )}
+          {panel === 'datos' && (
+            <>
+              <p style={{ marginBottom: 16 }}>
+                Estos datos se completan solos cuando pagás.
               </p>
-              <div>
-                <p>
-                  <Package /> Historial y seguimiento
-                </p>
-                <p>
-                  <Gift /> Beneficios según tus compras
-                </p>
-                <p>
-                  <UserRound /> Checkout más rápido
-                </p>
-              </div>
-            </div>
-            <form onSubmit={submit}>
-              <GoogleSignIn clientId={googleClientId} onError={setError} />
-              {passwordAuthEnabled && <div className="store-auth-separator"><span>o continuá con email</span></div>}
-              {passwordAuthEnabled && <>
-              <div className="store-auth-tabs">
-                <button
-                  type="button"
-                  className={mode === 'login' ? 'active' : ''}
-                  onClick={() => setMode('login')}
-                >
-                  Ingresar
-                </button>
-                <button
-                  type="button"
-                  className={mode === 'register' ? 'active' : ''}
-                  onClick={() => setMode('register')}
-                >
-                  Crear cuenta
-                </button>
-              </div>
-              {mode === 'register' && (
-                <>
-                  <label>
-                    Nombre
-                    <input name="name" autoComplete="name" maxLength={80} required />
+              <form
+                onSubmit={updateProfile}
+                style={{ maxWidth: 680 }}
+                key={data.customer.id}
+              >
+                <div className="row">
+                  {field('NOMBRE', 'name', data.customer.name, {
+                    autoComplete: 'given-name',
+                    maxLength: 80,
+                  })}
+                  {field('APELLIDO', 'surname', data.customer.surname, {
+                    autoComplete: 'family-name',
+                    maxLength: 80,
+                  })}
+                </div>
+                {field('TELÉFONO', 'phone', data.customer.phone, {
+                  type: 'tel',
+                  autoComplete: 'tel',
+                  maxLength: 25,
+                })}
+                <input name="country" type="hidden" value="Argentina" />
+                {field(
+                  'CALLE Y NÚMERO',
+                  'address',
+                  primaryAddress?.address || '',
+                  { autoComplete: 'street-address' },
+                )}
+                {field(
+                  'PISO / DEPARTAMENTO (OPCIONAL)',
+                  'addressExtra',
+                  primaryAddress?.addressExtra || '',
+                  {
+                    required: false,
+                    autoComplete: 'address-line2',
+                    maxLength: 50,
+                  },
+                )}
+                <div className="row">
+                  {field('CIUDAD', 'city', primaryAddress?.city || '', {
+                    autoComplete: 'address-level2',
+                    maxLength: 60,
+                  })}
+                  <label className="fi">
+                    PROVINCIA
+                    <select
+                      name="province"
+                      defaultValue={primaryAddress?.province || 'Córdoba'}
+                      required
+                    >
+                      {ARGENTINA_PROVINCES.map((p) => (
+                        <option key={p}>{p}</option>
+                      ))}
+                    </select>
                   </label>
-                  <label>
-                    Apellido
-                    <input name="surname" autoComplete="name" maxLength={80} required />
-                  </label>
-                  <label>
-                    Teléfono
-                    <input name="phone" type="tel" autoComplete="tel" maxLength={25} required />
-                  </label>
-                </>
-              )}
-              <label>
-                Email
-                <input name="email" type="email" autoComplete="email" maxLength={200} required />
-              </label>
-              <label>
-                Contraseña
-                <input name="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={128} required />
-                <small>Mínimo 8 caracteres</small>
-              </label>
-              {mode === 'register' && (
-                <label className="store-consent">
-                  <input name="marketingConsent" type="checkbox" /> Quiero
-                  recibir novedades y beneficios.
+                  {field(
+                    'CÓD. POSTAL',
+                    'postalCode',
+                    primaryAddress?.postalCode || '',
+                    {
+                      pattern: '[0-9]{4}',
+                      maxLength: 4,
+                      inputMode: 'numeric',
+                      autoComplete: 'postal-code',
+                    },
+                  )}
+                </div>
+                <label className="design-consent">
+                  <input
+                    name="marketingConsent"
+                    type="checkbox"
+                    defaultChecked={data.customer.marketingConsent}
+                  />
+                  Quiero recibir novedades y beneficios.
                 </label>
+                {profileState && (
+                  <output className="err">{profileState}</output>
+                )}
+                <button className="btn a" disabled={busy}>
+                  {busy ? 'GUARDANDO…' : 'GUARDAR'}
+                </button>
+              </form>
+              <div className="design-benefits">
+                <b className="k">TUS BENEFICIOS</b>
+                <p>{data.customer.level || 'Club FRAGUAN'}</p>
+                {data.benefits?.map((b: string) => (
+                  <p key={b}>{b}</p>
+                ))}
+              </div>
+              {data.addresses?.length > 1 && (
+                <details>
+                  <summary>OTRAS DIRECCIONES</summary>
+                  {data.addresses.slice(1).map((a: any) => (
+                    <p key={a.id}>
+                      {a.address} · {a.city}, {a.province} ({a.postalCode})
+                    </p>
+                  ))}
+                </details>
               )}
-              {error && <p className="store-buy-error">{error}</p>}
-              <button className="store-auth-submit" disabled={busy}>
-                {busy
-                  ? 'Procesando…'
-                  : mode === 'login'
-                    ? 'Ingresar'
-                    : 'Crear mi cuenta'}
-                <ArrowRight />
-              </button>
-              <p className="store-auth-note">Al continuar aceptás los <a href="/informacion/terminos">Términos</a> y la <a href="/informacion/privacidad">Política de privacidad</a>.</p>
-              </>}
-            </form>
-          </section>
-        )}
-      </main>
-      <StoreFooter />
-    </div>
+            </>
+          )}
+          {panel === 'pedidos' &&
+            (data.orders.length ? (
+              data.orders.map((o: any) => (
+                <a
+                  className="ord design-order-link"
+                  key={o.id}
+                  href={'/pedido/' + o.id}
+                >
+                  <b>
+                    Pedido #{o.orderNumber} ·{' '}
+                    {new Date(o.createdAt).toLocaleDateString('es-AR')}
+                  </b>
+                  <p>
+                    {storeMoney(o.total)} ·{' '}
+                    {o.paymentStatus === 'paid'
+                      ? 'Pago confirmado'
+                      : 'Pago pendiente'}
+                  </p>
+                  <p>
+                    {o.fulfillmentStatus === 'shipped'
+                      ? 'Despachado'
+                      : o.fulfillmentStatus === 'preparing'
+                        ? 'Preparando'
+                        : 'Recibido'}
+                  </p>
+                  <span className="k">VER PEDIDO →</span>
+                </a>
+              ))
+            ) : (
+              <p className="em0">Todavía no hiciste pedidos.</p>
+            ))}
+          {panel === 'favoritos' && (
+            <DesignProductGrid products={savedProducts} />
+          )}
+        </>
+      ) : (
+        <>
+          <h1 className="d h1">Tu cuenta</h1>
+          <div className="pills">
+            <button
+              className={mode === 'login' ? 'on' : ''}
+              onClick={() => {
+                setMode('login');
+                setError('');
+              }}
+            >
+              INGRESAR
+            </button>
+            <button
+              className={mode === 'register' ? 'on' : ''}
+              onClick={() => {
+                setMode('register');
+                setError('');
+              }}
+            >
+              CREAR CUENTA
+            </button>
+          </div>
+          <form onSubmit={submit} style={{ maxWidth: 560 }} key={mode}>
+            {passwordAuthEnabled && (
+              <>
+                {mode === 'register' && (
+                  <>
+                    <div className="row">
+                      {field('NOMBRE', 'name', '', {
+                        autoComplete: 'given-name',
+                        maxLength: 80,
+                      })}
+                      {field('APELLIDO', 'surname', '', {
+                        autoComplete: 'family-name',
+                        maxLength: 80,
+                      })}
+                    </div>
+                    {field('TELÉFONO', 'phone', '', {
+                      type: 'tel',
+                      autoComplete: 'tel',
+                      maxLength: 25,
+                    })}
+                  </>
+                )}
+                {field('EMAIL', 'email', '', {
+                  type: 'email',
+                  autoComplete: 'email',
+                  maxLength: 200,
+                })}
+                {field(
+                  mode === 'register' ? 'CONTRASEÑA (8+)' : 'CONTRASEÑA',
+                  'password',
+                  '',
+                  {
+                    type: 'password',
+                    minLength: 8,
+                    maxLength: 128,
+                    autoComplete:
+                      mode === 'login' ? 'current-password' : 'new-password',
+                  },
+                )}
+                {mode === 'register' && (
+                  <label className="design-consent">
+                    <input name="marketingConsent" type="checkbox" />
+                    Quiero recibir novedades y beneficios.
+                  </label>
+                )}
+                {error && (
+                  <p className="err" role="alert">
+                    {error}
+                  </p>
+                )}
+                <button className="btn a" disabled={busy}>
+                  {busy
+                    ? 'PROCESANDO…'
+                    : mode === 'login'
+                      ? 'INGRESAR'
+                      : 'CREAR MI CUENTA'}
+                </button>
+              </>
+            )}
+            {googleClientId && (
+              <div style={{ marginTop: 24 }}>
+                <GoogleSignIn clientId={googleClientId} onError={setError} />
+              </div>
+            )}
+            {!passwordAuthEnabled && !googleClientId && (
+              <p className="err">
+                El acceso a cuentas todavía no está configurado.
+              </p>
+            )}
+            <p className="design-form-note">
+              Al continuar aceptás los{' '}
+              <a href="/informacion/terminos">Términos</a> y la{' '}
+              <a href="/informacion/privacidad">Política de privacidad</a>.
+            </p>
+          </form>
+        </>
+      )}
+    </section>
   );
 }

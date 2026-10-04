@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Indumentaria FRAGUAN. Comprá online por talle y color, con envíos a todo el país y beneficios del Club.">
+<meta property="og:title" content="FRAGUAN | Tienda oficial"><meta property="og:description" content="Indumentaria FRAGUAN con envíos a todo el país.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%2314110F%22/><text x=%2250%22 y=%2275%22 font-size=%2272%22 text-anchor=%22middle%22 fill=%22%2393A3FF%22 font-family=%22Impact,sans-serif%22>F</text></svg>">
+<title>FRAGUAN | Tienda oficial</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14110F;--ink-2:#221E1B;--acc:#2440FF;--acc-2:#1A2FCC;--acc-l:#93A3FF;--bone:#F2EEE6;--bone-2:#E4DED1;--sand:#CDC0A8;--fd:'Anton','Impact','Arial Narrow',sans-serif;--fb:'DM Sans',system-ui,sans-serif;--ease:cubic-bezier(.2,.8,.2,1);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}*{box-sizing:border-box;margin:0}
+body{background:var(--ink);color:var(--bone);font-family:var(--fb);overflow-x:hidden}
+a{color:inherit;text-decoration:none}button,input,select{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.d{font-family:var(--fd);text-transform:uppercase;line-height:.92;font-weight:400}
+.sec{background:var(--bg,var(--ink));color:var(--fg,var(--bone));padding:12vh 4vw}.pg{min-height:70vh;padding:8vh 4vw 12vh}
+.lt{--bg:var(--bone);--fg:var(--ink)}.lt2{--bg:var(--bone-2);--fg:var(--ink)}.em{--bg:var(--acc);--fg:var(--bone)}.dk{--bg:var(--ink-2)}
+.k{letter-spacing:.14em;font-size:12px;font-weight:700}.h1{font-size:clamp(44px,8vw,120px);margin-bottom:4vh}
+.rv{opacity:0;transform:translateY(40px);transition:opacity .8s var(--ease),transform .8s var(--ease)}.rv.in{opacity:1;transform:none}
+.mq{background:var(--acc);color:var(--bone);overflow:hidden;white-space:nowrap;font-weight:700;font-size:12px;letter-spacing:.14em}.mq div{display:inline-block;padding:10px 0;animation:mq 28s linear infinite}.mq span{margin:0 28px}@keyframes mq{to{transform:translateX(-50%)}}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:14px 4vw;gap:12px}
+nav .lg{font-size:30px}nav .ln{display:flex;gap:26px;font-size:14px;font-weight:500}nav .nr{display:flex;gap:18px;align-items:center;font-size:14px;font-weight:700}
+nav a:hover,.cb:hover{color:var(--acc-l)}.cb i{font-style:normal;background:var(--acc);color:var(--bone);padding:2px 8px;margin-left:6px}@media(max-width:800px){nav .ln{display:none}}
+.hero{padding:5vh 4vw 8vh}.tag{color:var(--acc-l);text-align:center;margin-bottom:2vh}
+.wm{font-size:clamp(64px,22.5vw,460px);display:flex;justify-content:center;overflow:hidden;padding-top:.04em}
+.wm span{display:inline-block;transform:translateY(108%);animation:up 1s var(--ease) forwards;animation-delay:calc(var(--i)*80ms)}@keyframes up{to{transform:none}}
+.sub{text-align:center;font-size:clamp(18px,2.4vw,30px);margin:3vh 0 6vh;opacity:0;animation:fi 1s .9s forwards}@keyframes fi{to{opacity:1}}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.tiles{grid-template-columns:1fr}}
+.tile{min-height:46vh;padding:26px;display:flex;flex-direction:column;justify-content:space-between;background:var(--acc);color:var(--bone);transition:background .4s,color .4s,transform .5s var(--ease)}
+.tile:nth-child(2){background:var(--bone);color:var(--ink)}.tile:hover{background:var(--ink-2);color:var(--acc-l);transform:translateY(-6px)}.tile .d{font-size:clamp(44px,8vw,120px)}
+.words{height:260vh}.words>div{position:sticky;top:0;height:100vh;display:flex;align-items:center;padding:0 4vw}.words p{font-size:clamp(44px,9.4vw,150px)}
+.words span{opacity:.16;transition:opacity .3s}.words span.on{opacity:1}.words span.hot{color:var(--acc-l)}
+.cats a{display:flex;align-items:baseline;justify-content:space-between;padding:12px 0;font-size:clamp(44px,9vw,140px);transition:padding .5s var(--ease),color .3s}
+.cats a small{font-family:var(--fb);font-size:14px;font-weight:700;letter-spacing:.1em}.cats a:hover{padding-left:3vw;color:var(--acc)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4vh;align-items:center}.pills a,.pills button{padding:10px 18px;background:var(--bone);font-weight:700;font-size:13px;transition:.25s}
+.pills .on,.pills a:hover{background:var(--acc);color:var(--bone)}.pills select{background:var(--bone);padding:10px 14px;font-weight:700;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:34px 14px}
+.m{aspect-ratio:3/4;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:14px}
+.t-bone{background:var(--bone);color:var(--ink)}.t-sand{background:var(--sand);color:var(--ink)}.t-ink{background:var(--ink-2);color:var(--bone)}.t-b2{background:var(--bone-2);color:var(--ink)}
+.m .big{font-size:clamp(70px,9vw,130px);transition:transform .6s var(--ease)}.card:hover .big{transform:translateY(-8px) scale(1.06)}
+.ml{position:absolute;inset:0;z-index:1}.m .ct,.m .lo{position:absolute;left:14px;font-size:11px;font-weight:700;letter-spacing:.14em}.ct{top:14px}.lo{top:34px;color:var(--acc)}
+.fv{position:absolute;top:8px;right:10px;z-index:3;font-size:20px;padding:4px}.fv:hover{color:var(--acc)}
+.qa{position:absolute;left:0;right:0;bottom:0;z-index:2;background:var(--ink);color:var(--bone);padding:12px;transform:translateY(101%);transition:transform .45s var(--ease)}
+.card:hover .qa,.card:focus-within .qa{transform:none}.qa p{font-size:11px;letter-spacing:.12em;margin-bottom:8px;font-weight:700}.qa div{display:flex;flex-wrap:wrap;gap:6px}
+.qa button{min-width:38px;padding:7px 8px;background:var(--ink-2);font-size:12px;font-weight:700}.qa button:hover{background:var(--acc)}
+@media(hover:none){.qa{transform:none;position:static}.m{flex-direction:column;justify-content:flex-end;padding-bottom:0}.m .big{margin-bottom:12px}}
+.nfo{display:flex;justify-content:space-between;gap:10px;margin-top:12px;font-weight:700}.nfo small{display:block;font-weight:400;opacity:.65;margin-top:3px}
+.hs{height:330vh;background:var(--acc);color:var(--bone)}.hs>div{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.hs h2{font-size:clamp(40px,7vw,100px);padding:0 4vw 4vh}.trk{display:flex;gap:14px;padding:0 4vw;will-change:transform}
+.hc{flex:0 0 min(78vw,440px);height:56vh;background:var(--ink);padding:24px;display:flex;flex-direction:column;justify-content:space-between}.hc:nth-child(even){background:var(--bone);color:var(--ink)}
+.hc .d{font-size:clamp(46px,6vw,84px)}.hc a{font-weight:700;font-size:13px;letter-spacing:.12em}.hc a:hover{color:var(--acc-l)}
+.ben{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:30px}.ben .d{font-size:clamp(90px,14vw,220px);color:var(--acc-l)}.ben p{font-weight:700;letter-spacing:.1em;font-size:13px}
+.club .d{font-size:clamp(46px,9vw,150px)}.club p{max-width:520px;margin:4vh 0;font-size:18px}
+.btn{display:inline-block;background:var(--ink);color:var(--bone);padding:18px 30px;font-weight:700;letter-spacing:.1em;font-size:13px;text-align:center;transition:transform .3s var(--ease),background .3s}.btn:hover{transform:translateX(8px);background:var(--acc)}
+.btn.a{background:var(--acc)}.btn.a:hover{background:var(--acc-2)}.btn.w{display:block;width:100%;margin-top:10px}.btn.g{background:var(--bone-2);color:var(--ink)}
+.nl form,.row{display:flex;flex-wrap:wrap;gap:12px}.nl form{margin-top:5vh;max-width:640px}
+.fi{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex:1 1 200px;margin-bottom:12px}
+input,select{background:var(--bone-2);color:var(--ink);padding:14px;font-size:15px;outline:0;cursor:text;width:100%;transition:box-shadow .2s}input:focus,select:focus{box-shadow:inset 0 -3px 0 var(--acc)}select{cursor:pointer}
+.nl input{flex:1 1 260px;background:var(--ink);color:var(--bone)}.nl input:focus{background:var(--bone);color:var(--ink)}
+.err{background:var(--ink);color:var(--bone);padding:12px 14px;margin:6px 0 14px;font-weight:700;font-size:14px}
+.pd{display:grid;grid-template-columns:1.1fr 1fr;gap:5vw}@media(max-width:800px){.pd{grid-template-columns:1fr}}.pd .m{aspect-ratio:4/5}.pd .big{font-size:clamp(120px,22vw,320px)}
+.pd h1{font-size:clamp(40px,6vw,88px)}.pd .pr{font-size:28px;font-weight:700;margin:14px 0}.pd .k{display:block;margin:22px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chips button{min-width:52px;padding:12px 16px;background:var(--bone-2);font-weight:700;font-size:14px;transition:.2s}.chips .on,.chips button:hover{background:var(--ink);color:var(--bone)}
+.qt{display:flex;gap:12px;align-items:center;margin-top:6px;font-weight:700}.qt button{font-size:12px;padding:2px 4px}.qt button:hover{color:var(--acc)}
+details{background:var(--bone-2);padding:14px 16px;margin-top:8px}summary{cursor:pointer;font-weight:700;font-size:13px;letter-spacing:.1em}details p{margin-top:10px;line-height:1.6;font-size:15px}
+.ck{display:grid;grid-template-columns:1.4fr 1fr;gap:5vw;align-items:start}@media(max-width:900px){.ck{grid-template-columns:1fr}}
+.sum{background:var(--bone-2);padding:24px;position:sticky;top:90px}.sum h3{font-size:34px;margin-bottom:10px}
+.ln2{display:flex;justify-content:space-between;gap:10px;padding:14px 0;background:linear-gradient(rgba(20,17,15,.14),rgba(20,17,15,.14)) bottom/100% 1px no-repeat}.ln2 small{display:block;opacity:.65;margin-top:3px}
+.tot{display:flex;justify-content:space-between;font-weight:700;padding:5px 0}.tot.g{font-size:24px;margin-top:6px}.em0{padding:30px 0;opacity:.6}
+.steps{display:flex;gap:8px;margin-bottom:5vh;font-size:12px;font-weight:700;letter-spacing:.1em;flex-wrap:wrap}.steps span{padding:10px 16px;background:var(--bone-2);opacity:.6}.steps .on{background:var(--ink);color:var(--bone);opacity:1}
+.rad{display:block;width:100%;text-align:left;background:var(--bone-2);padding:16px;margin-bottom:8px;transition:.2s}.rad small{display:block;opacity:.7;margin-top:4px}.rad.on{background:var(--ink);color:var(--bone)}.rad:disabled{opacity:.35;cursor:not-allowed}
+.ok{background:var(--acc);color:var(--bone);padding:30px;margin-bottom:24px}.ok .d{font-size:clamp(40px,7vw,90px)}
+.ord{background:var(--bone-2);padding:20px;margin-bottom:12px}.ord b{display:block;font-size:18px}.txt{max-width:720px;line-height:1.7;font-size:17px}.txt p{margin-bottom:16px}
+footer{background:var(--ink);padding:8vh 4vw 4vh;overflow:hidden}.fl{display:flex;flex-wrap:wrap;gap:50px;font-size:14px;margin-bottom:6vh}.fl div{display:flex;flex-direction:column;gap:8px}.fl b{color:var(--acc-l);letter-spacing:.14em;font-size:12px}.fl a:hover{color:var(--acc-l)}
+footer .wm{font-size:clamp(60px,23vw,460px);line-height:.8}footer .wm span{transform:none;animation:none;color:var(--ink-2);transition:color .4s}footer .wm span:hover{color:var(--acc-l)}
+.ov{position:fixed;inset:0;background:rgba(20,17,15,.7);opacity:0;pointer-events:none;transition:opacity .4s;z-index:90}.ov.on{opacity:1;pointer-events:auto}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);background:var(--bone);color:var(--ink);z-index:100;transform:translateX(102%);transition:transform .5s var(--ease);display:flex;flex-direction:column;padding:calc(22px + env(safe-area-inset-top,0px)) 22px calc(22px + env(safe-area-inset-bottom,0px))}.dr.on{transform:none}
+.dr header{display:flex;justify-content:space-between;align-items:center;font-size:34px}.dr header button{font-size:14px;font-weight:700;font-family:var(--fb)}.dr .it{flex:1;overflow:auto;margin:10px 0}
+.sb{background:var(--bone-2);height:8px;margin:18px 0 6px}.sb i{display:block;height:100%;background:var(--acc);transition:width .6s var(--ease)}.sn{font-size:13px;font-weight:700}
+.wa{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--acc);color:var(--bone);padding:14px 20px;font-weight:700;font-size:13px;letter-spacing:.08em;transition:transform .3s var(--ease)}.wa:hover{transform:scale(1.07)}
+.cur{display:none;position:fixed;top:0;left:0;width:16px;height:16px;margin:-8px;background:var(--acc-l);border-radius:50%;pointer-events:none;z-index:200;transition:width .25s,height .25s,margin .25s,opacity .25s;mix-blend-mode:difference}.cur.h{width:56px;height:56px;margin:-28px;opacity:.55}@media(hover:hover){.cur{display:block}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}.rv{opacity:1;transform:none}.wm span{transform:none}.sub{opacity:1}}
+.im{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+</style></head>
+<body><div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+const {useState,useEffect,useRef,useContext,createContext}=React,html=htm.bind(React.createElement),C=createContext(),useC=()=>useContext(C);
+const $=n=>'$ '+Math.round(n).toLocaleString('es-AR'),FREE=150000,SHIP=6500,TONE={Blanco:'bone',Arena:'sand',Negro:'ink',Celeste:'b2'},go=h=>{location.hash=h};
+const ls={g:(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},s:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const sha=async s=>{try{return[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('')}catch(e){return btoa(s)}};
+let RET='';
+/* CONFIGURACIÓN — LIVE=true activa el pago real con Mercado Pago (necesita /api/crear-pago). IMG: fotos por id de producto, ej: {0:'img/oxford.jpg'}. WAN: WhatsApp sin + ni espacios. */
+const LIVE=false,IMG={},WAN='5493510000000';
+const T=['S','M','L','XL','XXL'],B=['38','40','42','44','46','48'],CATS=['Camisas','Remeras','Jeans','Buzos','Pantalones','Camperas','Chombas'];
+const PROV='Buenos Aires,CABA,Catamarca,Chaco,Chubut,Córdoba,Corrientes,Entre Ríos,Formosa,Jujuy,La Pampa,La Rioja,Mendoza,Misiones,Neuquén,Río Negro,Salta,San Juan,San Luis,Santa Cruz,Santa Fe,Santiago del Estero,Tierra del Fuego,Tucumán'.split(',');
+const P=[['Camisa Oxford','Camisas','OX',59900,'Blanco · Celeste',T],['Remera Essential','Remeras','RE',29900,'Arena · Negro',T],['Jean Slim Fit','Jeans','JF',74900,'Arena · Negro',B],['Camisa de lino','Camisas','LI',69900,'Arena · Negro',T],['Buzo Half Zip','Buzos','HZ',64900,'Arena · Negro',T],['Pantalón Chino','Pantalones','CH',64900,'Arena · Negro',B],['Remera Pima','Remeras','PI',34900,'Arena · Negro',T],['Campera Urban','Camperas','UR',119900,'Arena · Negro',T],['Chomba Classic','Chombas','CC',44900,'Arena · Negro',T],['Jean Straight','Jeans','JS',79900,'Arena · Negro',B]].map(([n,c,k,p,col,z],id)=>({id,n,c,k,p,col,z,cols:col.split(' · '),low:id%3==0,img:IMG[id]}));
+const INFO={envios:['Envíos',['Enviamos a todo el país. Cuando se confirma el pago preparamos tu pedido y te avisamos por email con el seguimiento.','Envío gratis desde '+$(FREE)+'. Por debajo, el envío a domicilio cuesta '+$(SHIP)+'. También podés retirar sin cargo en el local.']],cambios:['Cambios y devoluciones',['Tenés 30 días desde que recibís tu pedido para pedir un cambio. La prenda debe estar sin uso y con etiquetas.','Escribinos por WhatsApp o desde Contacto con tu número de pedido y te indicamos los pasos.']],pagos:['Pagos',['Aceptamos transferencia (10% de descuento), tarjetas de crédito y débito, Mercado Pago y efectivo al retirar en el local.','Los pagos con tarjeta se procesan en un entorno seguro: FRAGUAN no guarda los datos de tu tarjeta.']],talles:['Guía de talles',['Camisas, remeras, buzos, camperas y chombas: talles S a XXL. Jeans y pantalones: talles 38 al 48.','Si dudás entre dos talles, elegí el mayor para un calce más cómodo o escribinos y te asesoramos.']],contacto:['Contacto',['WhatsApp: +54 351 000-0000 · Email: hola@fraguan.com','Lunes a sábados de 10 a 20 h.']],terminos:['Términos y condiciones',['Al comprar en FRAGUAN aceptás estas condiciones. Los precios incluyen IVA y pueden cambiar sin previo aviso. Texto legal a completar.']],privacidad:['Privacidad',['Usamos tus datos únicamente para procesar tus pedidos y comunicarnos con vos. No los compartimos con terceros ajenos a la operación.']],cookies:['Cookies',['Usamos almacenamiento local para recordar tu carrito, tu sesión y tus favoritos.']],arrepentimiento:['Botón de arrepentimiento',['Podés revocar tu compra dentro de los 10 días corridos de recibido el producto. Escribinos a hola@fraguan.com con tu número de pedido.']]};
+
+function useProg(ref){const[p,s]=useState(0);useEffect(()=>{let t;const f=()=>{cancelAnimationFrame(t);t=requestAnimationFrame(()=>{if(!ref.current)return;const r=ref.current.getBoundingClientRect();s(Math.min(1,Math.max(0,-r.top/(r.height-innerHeight))))})};addEventListener('scroll',f,{passive:true});addEventListener('resize',f);f();return()=>{removeEventListener('scroll',f);removeEventListener('resize',f)}},[]);return p}
+function useSeen(){const r=useRef(),[v,s]=useState(false);useEffect(()=>{const o=new IntersectionObserver(([e])=>{if(e.isIntersecting){s(true);o.disconnect()}},{threshold:.15});o.observe(r.current);return()=>o.disconnect()},[]);return[r,v]}
+function Rv({c='',d=0,children}){const[r,v]=useSeen();return html`<div ref=${r} class=${'rv '+(v?'in ':'')+c} style=${{transitionDelay:d+'ms'}}>${children}</div>`}
+function Count({to,suf=''}){const[r,v]=useSeen(),[n,s]=useState(0);useEffect(()=>{if(!v)return;let t0;const f=t=>{t0=t0||t;const k=Math.min(1,(t-t0)/1400);s(Math.round(to*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)},[v]);return html`<span ref=${r}>${n}${suf}</span>`}
+function Wm({t}){return html`<div class="wm d" aria-label=${t}>${t.split('').map((c,i)=>html`<span style=${{'--i':i}} key=${i}>${c}</span>`)}</div>`}
+function F({l,k,d,sd,t='text',ph=''}){return html`<label class="fi">${l}<input type=${t} value=${d[k]} placeholder=${ph} onChange=${e=>sd({...d,[k]:e.target.value})}/></label>`}
+function Sel({l,k,d,sd,o}){return html`<label class="fi">${l}<select value=${d[k]} onChange=${e=>sd({...d,[k]:e.target.value})}>${o.map(x=>html`<option key=${x}>${x}</option>`)}</select></label>`}
+const Err=({e})=>e?html`<div class="err">${e}</div>`:null;
+
+function Card({p,i=0}){const{add,favs,tf}=useC(),f=favs.includes(p.id);
+return html`<${Rv} c="card" d=${(i%4)*70}><div class=${'m t-'+TONE[p.cols[0]]}><a class="ml" href=${'#/p/'+p.id} aria-label=${p.n}></a>${p.img&&html`<img class="im" src=${p.img} alt=${p.n} loading="lazy"/>`}<span class="ct">${p.c.toUpperCase()}</span>${p.low&&html`<span class="lo">QUEDAN POCOS</span>`}
+<button class="fv" aria-label="Favorito" onClick=${()=>tf(p.id)}>${f?'♥':'♡'}</button>${!p.img&&html`<span class="big d">${p.k}</span>`}
+<div class="qa"><p>AGREGAR RÁPIDO · TALLE</p><div>${p.z.map(z=>html`<button key=${z} onClick=${()=>add(p,z,p.cols[0])}>${z}</button>`)}</div></div></div>
+<div class="nfo"><span>${p.n}<small>${p.col}</small></span><span>${$(p.p)}</span></div><//>`}
+const Grid=({L})=>L.length?html`<div class="grid">${L.map((p,i)=>html`<${Card} key=${p.id} p=${p} i=${i}/>`)}</div>`:html`<p class="em0">No hay prendas para mostrar.</p>`;
+
+function Words(){const r=useRef(),p=useProg(r),W='Forjá tu estilo. Todos los días. Menos vueltas. Más vos.'.split(' ');
+return html`<section class="words" ref=${r}><div><p class="d">${W.map((w,i)=>html`<span key=${i} class=${(i/W.length<p*1.12?'on ':'')+(/estilo|vos/i.test(w)?'hot':'')}>${w} </span>`)}</p></div></section>`}
+function HScroll(){const r=useRef(),t=useRef(),p=useProg(r),x=t.current?(t.current.scrollWidth-innerWidth)*p:0;
+return html`<section class="hs" ref=${r}><div><h2 class="d">Lo más vendido</h2><div class="trk" ref=${t} style=${{transform:`translateX(${-x}px)`}}>${[7,0,2,4,3,5].map(i=>{const q=P[i];return html`<div class="hc" key=${i}><b>${q.c.toUpperCase()} · ${q.col}</b><span class="d">${q.n}</span><div><b>${$(q.p)}</b><br/><br/><a href=${'#/p/'+q.id}>VER PRODUCTO →</a></div></div>`})}</div></div></section>`}
+
+function Home(){const{news}=useC();return html`<${React.Fragment}>
+<header class="hero"><p class="tag k">NUEVA TEMPORADA</p><${Wm} t="FRAGUAN"/><p class="sub">Lo nuevo. <b>A tu manera.</b></p>
+<div class="tiles"><a class="tile" href="#/c/nuevos"><b class="k">01 — NOVEDADES</b><span class="d">Ver lo<br/>nuevo →</span></a><a class="tile" href="#/c/remeras"><b class="k">02 — TU ESTILO, TODOS LOS DÍAS</b><span class="d">Elegir<br/>remeras →</span></a></div></header>
+<${Words}/>
+<section class="sec lt cats"><${Rv}><b class="k">COLECCIÓN</b><//>${CATS.map((c,i)=>html`<${Rv} key=${c} d=${i*50}><a href=${'#/c/'+c.toLowerCase()}><span class="d">${c}</span><small>${String(P.filter(p=>p.c==c).length).padStart(2,'0')} MODELOS</small></a><//>`)}</section>
+<section class="sec lt2"><${Rv}><h2 class="d h1">Lo nuevo</h2><//><${Grid} L=${P.slice(0,8)}/><p style=${{marginTop:'5vh'}}><a class="btn" href="#/c/todo">VER TODA LA COLECCIÓN →</a></p></section>
+<${HScroll}/>
+<section class="sec"><div class="ben"><div><div class="d"><${Count} to=${10} suf="%"/></div><p>OFF PAGANDO POR TRANSFERENCIA</p></div><div><div class="d"><${Count} to=${24}/></div><p>PROVINCIAS CON ENVÍO</p></div><div><div class="d"><${Count} to=${7}/></div><p>CATEGORÍAS PARA ARMAR TU LOOK</p></div></div></section>
+<section class="sec em club"><${Rv}><b class="k">CLUB FRAGUAN</b><h2 class="d">Comprás acá.<br/>Sumás en todos lados.</h2><p>Tu cuenta reúne las compras del local y de la tienda online, tus preferencias y beneficios. Y en el checkout, tus datos se completan solos.</p><a class="btn" href="#/cuenta">CREAR MI CUENTA →</a><//></section>
+<section class="sec dk nl"><${Rv}><b class="k" style=${{color:'var(--acc-l)'}}>FRAGUAN LETTER</b><h2 class="d h1">Ingresos, drops<br/>y beneficios.</h2>${news[0]?html`<p style=${{fontSize:20}}>Listo, ya sos parte. Sin ruido.</p>`:html`<form onSubmit=${e=>{e.preventDefault();news[1]()}}><input type="email" required placeholder="Tu email"/><button class="btn a">UNIRME</button></form>`}<//></section><//>`}
+
+function Coll({c}){const[so,sso]=useState('rec'),[z,sz]=useState(''),cat=CATS.find(x=>x.toLowerCase()==c);
+let L=P.filter(p=>c=='todo'||c=='nuevos'||p.c==cat);if(c=='nuevos')L=[...L].reverse();if(z)L=L.filter(p=>p.z.includes(z));
+if(so=='min')L=[...L].sort((a,b)=>a.p-b.p);if(so=='max')L=[...L].sort((a,b)=>b.p-a.p);if(so=='nom')L=[...L].sort((a,b)=>a.n.localeCompare(b.n));
+return html`<section class="sec lt2 pg"><b class="k">FRAGUAN / COLECCIÓN</b><h1 class="d h1">${c=='todo'?'Toda la colección':c=='nuevos'?'Nuevos':cat||'Colección'}</h1>
+<div class="pills">${['todo',...CATS.map(x=>x.toLowerCase())].map(s=>html`<a key=${s} class=${s==c?'on':''} href=${'#/c/'+s}>${s=='todo'?'Todo':s[0].toUpperCase()+s.slice(1)}</a>`)}</div>
+<div class="pills"><select value=${z} onChange=${e=>sz(e.target.value)}><option value="">Talle: todos</option>${[...T,...B].map(x=>html`<option key=${x}>${x}</option>`)}</select>
+<select value=${so} onChange=${e=>sso(e.target.value)}><option value="rec">Recomendados</option><option value="min">Menor precio</option><option value="max">Mayor precio</option><option value="nom">Nombre</option></select></div><${Grid} L=${L}/></section>`}
+
+function Prod({id}){const{add,favs,tf}=useC(),p=P[id],[s,ss]=useState(''),[c,sc]=useState(p?p.cols[0]:''),[q,sq]=useState(1),[e,se]=useState('');
+if(!p)return html`<${NF}/>`;const f=favs.includes(p.id);
+const ok=o=>{if(!s){se('Elegí un talle para continuar.');return}se('');add(p,s,c,q,o)};
+return html`<section class="sec lt pg"><p class="k" style=${{marginBottom:20}}><a href="#/">INICIO</a> / <a href=${'#/c/'+p.c.toLowerCase()}>${p.c.toUpperCase()}</a></p><div class="pd">
+<div class=${'m t-'+TONE[c]}>${p.img&&html`<img class="im" src=${p.img} alt=${p.n}/>`}<span class="ct">${p.c.toUpperCase()} · ${c.toUpperCase()}</span>${!p.img&&html`<span class="big d">${p.k}</span>`}</div>
+<div><h1 class="d">${p.n}</h1><div class="pr">${$(p.p)}</div><p style=${{fontSize:14}}>${$(p.p*.9)} pagando por transferencia · Envíos a todo el país</p>
+<span class="k">COLOR · ${c.toUpperCase()}</span><div class="chips">${p.cols.map(x=>html`<button key=${x} class=${x==c?'on':''} onClick=${()=>sc(x)}>${x}</button>`)}</div>
+<span class="k">TALLE</span><div class="chips">${p.z.map(x=>html`<button key=${x} class=${x==s?'on':''} onClick=${()=>ss(x)}>${x}</button>`)}</div>
+<span class="k">CANTIDAD</span><div class="qt"><button onClick=${()=>sq(Math.max(1,q-1))}>−</button>${q}<button onClick=${()=>sq(q+1)}>+</button></div>
+<div style=${{marginTop:22}}><${Err} e=${e}/><button class="btn a w" onClick=${()=>ok(true)}>AGREGAR AL CARRITO</button><button class="btn w" onClick=${()=>{if(!s){se('Elegí un talle para continuar.');return}add(p,s,c,q,false);go('#/checkout')}}>COMPRAR AHORA</button><button class="btn g w" onClick=${()=>tf(p.id)}>${f?'♥ EN FAVORITOS':'♡ GUARDAR EN FAVORITOS'}</button></div>
+<details><summary>ENVÍOS</summary><p>Enviamos a todo el país. Gratis desde ${$(FREE)}. Retiro sin cargo en el local.</p></details><details><summary>CAMBIOS Y DEVOLUCIONES</summary><p>30 días para cambiar tu prenda sin uso y con etiquetas.</p></details></div></div>
+<h2 class="d h1" style=${{marginTop:'10vh'}}>También te puede gustar</h2><${Grid} L=${P.filter(x=>x.c==p.c&&x.id!=p.id).concat(P.filter(x=>x.c!=p.c)).slice(0,4)}/></section>`}
+
+function Lines({ro}){const{cart,chg,rm}=useC();return cart.length?cart.map(i=>html`<div class="ln2" key=${i.k}><div><b>${i.n}</b><small>${i.col} · Talle ${i.s} · ${$(i.p)}</small>${ro?html`<small>Cantidad: ${i.q}</small>`:html`<div class="qt"><button onClick=${()=>chg(i.k,-1)}>−</button>${i.q}<button onClick=${()=>chg(i.k,1)}>+</button><button style=${{marginLeft:10}} onClick=${()=>rm(i.k)}>QUITAR</button></div>`}</div><b>${$(i.p*i.q)}</b></div>`):html`<p class="em0">Tu carrito está vacío.</p>`}
+function Sum({ship=0,disc=0,est}){const{sub}=useC();return html`<div class="sum"><h3 class="d">Resumen</h3><${Lines} ro=${true}/><div class="tot"><span>Subtotal</span><span>${$(sub)}</span></div><div class="tot"><span>Envío</span><span>${est?'Se calcula al pagar':ship?$(ship):'Gratis'}</span></div>${disc>0&&html`<div class="tot"><span>Descuento transferencia</span><span>− ${$(disc)}</span></div>`}<div class="tot g"><span>Total</span><span>${$(sub+ship-disc)}</span></div></div>`}
+function CartPage(){const{cart,sub}=useC();return html`<section class="sec lt pg"><h1 class="d h1">Tu carrito</h1>${cart.length?html`<div class="ck"><div><${Lines}/><p style=${{margin:'20px 0'}}><a href="#/c/todo" class="k">← SEGUIR COMPRANDO</a></p></div><div><${Sum} est=${true}/><div class="sb"><i style=${{width:Math.min(100,sub/FREE*100)+'%'}}></i></div><p class="sn">${sub>=FREE?'¡Tenés envío gratis!':`Te faltan ${$(FREE-sub)} para envío gratis`}</p><a class="btn a w" href="#/checkout">IR A PAGAR</a></div></div>`:html`<p class="em0">Todavía no agregaste nada. <a class="k" href="#/c/todo">VER COLECCIÓN →</a></p>`}</section>`}
+
+const Rad=({on,set,t,s,off})=>html`<button type="button" disabled=${off} class=${'rad '+(on?'on':'')} onClick=${set}><b>${t}</b><small>${s}</small></button>`;
+function Check(){const{cart,sub,user,reg,saveOrder}=useC(),u=user||{};
+const[d,sd]=useState({email:u.email||'',nom:u.nom||'',ape:u.ape||'',dni:u.dni||'',tel:u.tel||'',calle:u.calle||'',ciu:u.ciu||'',prov:u.prov||'Córdoba',cp:u.cp||'',env:'dom',met:'transf',num:'',vto:'',cvv:'',tit:'',cuo:'1 pago',pass:'',crear:false}),[st,ss]=useState(1),[e,se]=useState(''),[bz,sb]=useState(false);
+if(!cart.length)return html`<section class="sec lt pg"><h1 class="d h1">Checkout</h1><p class="em0">Tu carrito está vacío. <a class="k" href="#/c/todo">VER COLECCIÓN →</a></p></section>`;
+const ship=d.env=='ret'||sub>=FREE?0:SHIP,disc=d.met=='transf'?sub*.1:0,total=sub+ship-disc;
+const val=s=>{if(s>=1){if(!/^\S+@\S+\.\S+$/.test(d.email))return'Ingresá un email válido.';if(!d.nom||!d.ape)return'Completá nombre y apellido.';if(!/^\d{7,8}$/.test(d.dni))return'DNI inválido (7 u 8 números).';if(d.tel.replace(/\D/g,'').length<8)return'Ingresá un teléfono válido.'}if(s>=2&&d.env=='dom'){if(!d.calle||!d.ciu)return'Completá la dirección de entrega.';if(!/^\d{4}$/.test(d.cp))return'El código postal tiene 4 números.'}if(s>=3&&d.met=='tarj'&&!LIVE){if(d.num.replace(/\s/g,'').length<13)return'Número de tarjeta inválido.';if(!/^\d\d\/\d\d$/.test(d.vto))return'Vencimiento en formato MM/AA.';if(!/^\d{3,4}$/.test(d.cvv))return'Código de seguridad inválido.';if(!d.tit)return'Ingresá el titular de la tarjeta.'}if(s>=3&&d.crear&&!user&&d.pass.length<6)return'La contraseña debe tener 6 caracteres o más.';return''};
+const nx=n=>{const v=val(n-1);se(v);if(!v)ss(n)};
+const pay=async()=>{const v=val(3);if(v){se(v);return}sb(true);await new Promise(r=>setTimeout(r,1200));
+const id='FG-'+Date.now().toString().slice(-7),o={id,date:new Date().toLocaleDateString('es-AR'),email:d.email,nom:d.nom+' '+d.ape,items:cart,sub,ship,disc,total,met:d.met,env:d.env,dir:d.env=='dom'?`${d.calle}, ${d.ciu}, ${d.prov} (${d.cp})`:'Retiro en el local',st:d.met=='tarj'&&!LIVE?'Pagado':'Pendiente de pago'};
+if(d.crear&&!user)await reg({email:d.email,nom:d.nom,ape:d.ape,dni:d.dni,tel:d.tel,calle:d.calle,ciu:d.ciu,prov:d.prov,cp:d.cp},d.pass);if(LIVE&&(d.met=='tarj'||d.met=='mp')){let u='';try{const r=await fetch('/api/crear-pago',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,env:d.env,email:d.email,items:cart.map(i=>({id:i.id,s:i.s,q:i.q}))})}),j=await r.json();u=j.init_point||''}catch(x){}if(!u){se('No pudimos iniciar el pago. Probá de nuevo o elegí otro método.');sb(false);return}saveOrder(o);location.href=u;return}saveOrder(o);go('#/gracias/'+id)};
+const setEnv=v=>sd({...d,env:v,met:v=='dom'&&d.met=='efec'?'transf':d.met});
+return html`<section class="sec lt pg"><h1 class="d h1">Pagar</h1><div class="steps">${['1 · TUS DATOS','2 · ENVÍO','3 · PAGO'].map((x,i)=>html`<span key=${x} class=${st==i+1?'on':''}>${x}</span>`)}</div>
+<div class="ck"><div>
+${st==1&&html`<div>${user?html`<div class="ok" style=${{padding:18}}><b>Hola ${user.nom}, completamos tus datos con tu cuenta.</b></div>`:html`<p style=${{marginBottom:18}}>¿Ya tenés cuenta? <a class="k" href="#/cuenta" onClick=${()=>{RET='#/checkout'}}>INGRESÁ PARA AUTOCOMPLETAR →</a></p>`}
+<${F} l="EMAIL" k="email" d=${d} sd=${sd} t="email"/><div class="row"><${F} l="NOMBRE" k="nom" d=${d} sd=${sd}/><${F} l="APELLIDO" k="ape" d=${d} sd=${sd}/></div><div class="row"><${F} l="DNI" k="dni" d=${d} sd=${sd}/><${F} l="TELÉFONO" k="tel" d=${d} sd=${sd} t="tel"/></div></div>`}
+${st==2&&html`<div><${Rad} on=${d.env=='dom'} set=${()=>setEnv('dom')} t="Envío a domicilio" s=${ship||sub>=FREE?'Gratis':$(SHIP)+' · Todo el país'}/><${Rad} on=${d.env=='ret'} set=${()=>setEnv('ret')} t="Retiro en el local" s="Sin cargo"/>
+${d.env=='dom'&&html`<div style=${{marginTop:18}}><${F} l="CALLE Y NÚMERO" k="calle" d=${d} sd=${sd}/><div class="row"><${F} l="CIUDAD" k="ciu" d=${d} sd=${sd}/><${Sel} l="PROVINCIA" k="prov" d=${d} sd=${sd} o=${PROV}/><${F} l="CÓD. POSTAL" k="cp" d=${d} sd=${sd}/></div></div>`}</div>`}
+${st==3&&html`<div><${Rad} on=${d.met=='transf'} set=${()=>sd({...d,met:'transf'})} t="Transferencia bancaria · 10% OFF" s="Te mostramos los datos al confirmar"/><${Rad} on=${d.met=='tarj'} set=${()=>sd({...d,met:'tarj'})} t="Tarjeta de crédito o débito" s="Pago seguro"/><${Rad} on=${d.met=='mp'} set=${()=>sd({...d,met:'mp'})} t="Mercado Pago" s="Dinero en cuenta, tarjetas guardadas"/><${Rad} off=${d.env=='dom'} on=${d.met=='efec'} set=${()=>sd({...d,met:'efec'})} t="Efectivo en el local" s=${d.env=='dom'?'Solo con retiro en el local':'Pagás al retirar'}/>
+${d.met=='tarj'&&!LIVE&&html`<div style=${{marginTop:18}}><${F} l="NÚMERO DE TARJETA" k="num" d=${d} sd=${sd} ph="0000 0000 0000 0000"/><div class="row"><${F} l="VENCIMIENTO" k="vto" d=${d} sd=${sd} ph="MM/AA"/><${F} l="CÓD. SEGURIDAD" k="cvv" d=${d} sd=${sd} t="password"/></div><${F} l="TITULAR" k="tit" d=${d} sd=${sd}/><${Sel} l="CUOTAS" k="cuo" d=${d} sd=${sd} o=${['1 pago','3 cuotas','6 cuotas']}/></div>`}
+${!user&&html`<label style=${{display:'flex',gap:10,alignItems:'center',margin:'14px 0',fontWeight:700}}><input type="checkbox" style=${{width:20}} checked=${d.crear} onChange=${x=>sd({...d,crear:x.target.checked})}/>Crear mi cuenta con estos datos</label>`}
+${d.crear&&!user&&html`<${F} l="CONTRASEÑA (6+)" k="pass" d=${d} sd=${sd} t="password"/>`}</div>`}
+<${Err} e=${e}/><div class="row" style=${{marginTop:10}}>${st>1&&html`<button class="btn g" onClick=${()=>{se('');ss(st-1)}}>← VOLVER</button>`}${st<3?html`<button class="btn a" onClick=${()=>nx(st+1)}>CONTINUAR →</button>`:html`<button class="btn a" disabled=${bz} onClick=${pay}>${bz?'PROCESANDO…':'PAGAR '+$(total)}</button>`}</div></div>
+<${Sum} ship=${ship} disc=${disc}/></div></section>`}
+
+function Thanks({id}){const{orders}=useC(),o=orders.find(x=>x.id==id);if(!o)return html`<${NF}/>`;
+const M={transf:'Transferí '+$(o.total)+' al alias FRAGUAN.TIENDA y enviá el comprobante a hola@fraguan.com con tu número de pedido.',tarj:LIVE?'Si completaste el pago, te lo confirmamos por email.':'Tu pago con tarjeta fue aprobado.',mp:LIVE?'Si completaste el pago, te lo confirmamos por email.':'Te enviamos el link de pago de Mercado Pago a tu email.',efec:'Pagás en efectivo cuando retires tu pedido en el local.'};
+return html`<section class="sec lt pg"><div class="ok"><b class="k">PEDIDO ${o.id}</b><h1 class="d">¡Gracias por tu compra, ${o.nom.split(' ')[0]}!</h1></div><div class="txt"><p>${M[o.met]}</p><p><b>Entrega:</b> ${o.dir}<br/><b>Total:</b> ${$(o.total)} · <b>Estado:</b> ${o.st}</p><p>Te enviamos el detalle a ${o.email}.</p></div><p style=${{marginTop:20}}><a class="btn" href="#/c/todo">SEGUIR COMPRANDO</a></p></section>`}
+
+function Acc(){const{user,reg,login,logout,save,orders}=useC(),[tab,st]=useState('in'),[d,sd]=useState({email:'',pass:'',nom:'',ape:'',dni:'',tel:''}),[e,se]=useState(''),[pt,sp]=useState('datos'),[m,sm]=useState(''),[pf,spf]=useState(user||{});
+const done=r=>{se(r);if(!r){const t=RET||'#/cuenta';RET='';go(t);spf({})}};
+if(!user)return html`<section class="sec lt pg"><h1 class="d h1">Tu cuenta</h1><div class="pills"><button class=${tab=='in'?'on':''} onClick=${()=>{st('in');se('')}}>INGRESAR</button><button class=${tab=='up'?'on':''} onClick=${()=>{st('up');se('')}}>CREAR CUENTA</button></div>
+<div style=${{maxWidth:560}}>${tab=='up'&&html`<div class="row"><${F} l="NOMBRE" k="nom" d=${d} sd=${sd}/><${F} l="APELLIDO" k="ape" d=${d} sd=${sd}/></div>`}<${F} l="EMAIL" k="email" d=${d} sd=${sd} t="email"/><${F} l=${tab=='up'?'CONTRASEÑA (6+)':'CONTRASEÑA'} k="pass" d=${d} sd=${sd} t="password"/><${Err} e=${e}/>
+<button class="btn a" onClick=${async()=>{if(tab=='in')return done(await login(d.email,d.pass));if(!/^\S+@\S+\.\S+$/.test(d.email)||!d.nom||d.pass.length<6)return se('Completá nombre, un email válido y una contraseña de 6+ caracteres.');done(await reg({email:d.email,nom:d.nom,ape:d.ape,dni:'',tel:'',calle:'',ciu:'',prov:'Córdoba',cp:''},d.pass))}}>${tab=='in'?'INGRESAR':'CREAR MI CUENTA'}</button></div></section>`;
+const mine=orders.filter(o=>o.email.toLowerCase()==user.email.toLowerCase());
+return html`<section class="sec lt pg"><b class="k">CLUB FRAGUAN</b><h1 class="d h1">Hola, ${user.nom}</h1><div class="pills"><button class=${pt=='datos'?'on':''} onClick=${()=>sp('datos')}>MIS DATOS</button><button class=${pt=='ped'?'on':''} onClick=${()=>sp('ped')}>MIS PEDIDOS (${mine.length})</button><button onClick=${logout}>SALIR</button></div>
+${pt=='datos'?html`<div style=${{maxWidth:680}}><p style=${{marginBottom:16}}>Estos datos se completan solos cuando pagás.</p><div class="row"><${F} l="NOMBRE" k="nom" d=${pf} sd=${spf}/><${F} l="APELLIDO" k="ape" d=${pf} sd=${spf}/></div><div class="row"><${F} l="DNI" k="dni" d=${pf} sd=${spf}/><${F} l="TELÉFONO" k="tel" d=${pf} sd=${spf}/></div><${F} l="CALLE Y NÚMERO" k="calle" d=${pf} sd=${spf}/><div class="row"><${F} l="CIUDAD" k="ciu" d=${pf} sd=${spf}/><${Sel} l="PROVINCIA" k="prov" d=${pf} sd=${spf} o=${PROV}/><${F} l="CÓD. POSTAL" k="cp" d=${pf} sd=${spf}/></div>${m&&html`<div class="err">${m}</div>`}<button class="btn a" onClick=${()=>{save(pf);sm('Datos guardados.')}}>GUARDAR</button></div>`
+:mine.length?mine.map(o=>html`<div class="ord" key=${o.id}><b>${o.id} · ${o.date}</b>${o.items.map(i=>`${i.q}× ${i.n} (${i.s})`).join(' · ')}<br/><br/>Total ${$(o.total)} · ${o.st}</div>`):html`<p class="em0">Todavía no hiciste pedidos.</p>`}</section>`}
+
+function Info({k}){const x=INFO[k];if(!x)return html`<${NF}/>`;return html`<section class="sec lt pg"><b class="k">AYUDA</b><h1 class="d h1">${x[0]}</h1><div class="txt">${x[1].map((t,i)=>html`<p key=${i}>${t}</p>`)}</div></section>`}
+const NF=()=>html`<section class="sec lt pg"><h1 class="d h1">No encontrado</h1><a class="btn" href="#/">VOLVER AL INICIO</a></section>`;
+function Favs(){const{favs}=useC();return html`<section class="sec lt2 pg"><h1 class="d h1">Favoritos</h1><${Grid} L=${P.filter(p=>favs.includes(p.id))}/></section>`}
+function Cart({o,close}){const{cart,sub}=useC(),left=Math.max(0,FREE-sub);return html`<div class=${'ov '+(o?'on':'')} onClick=${close}></div><aside class=${'dr '+(o?'on':'')}><header class="d">Tu carrito<button onClick=${close}>CERRAR ✕</button></header><div class="sb"><i style=${{width:Math.min(100,sub/FREE*100)+'%'}}></i></div><div class="sn">${left?`Te faltan ${$(left)} para envío gratis`:'¡Tenés envío gratis!'}</div><div class="it"><${Lines}/></div><div class="tot g"><span>Subtotal</span><span>${$(sub)}</span></div>${cart.length>0&&html`<a class="btn a w" href="#/checkout">IR A PAGAR</a><a class="btn g w" href="#/carrito">VER CARRITO</a>`}</aside>`}
+function Cur(){const r=useRef();useEffect(()=>{const m=e=>{r.current.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;r.current.classList.toggle('h',!!e.target.closest('a,button,.card,input,select'))};addEventListener('mousemove',m);return()=>removeEventListener('mousemove',m)},[]);return html`<div class="cur" ref=${r}></div>`}
+
+function App(){const[h,sh]=useState(location.hash||'#/'),[o,so]=useState(false),[cart,sc]=useState(()=>ls.g('fg_cart',[])),[user,su]=useState(()=>ls.g('fg_me',null)),[favs,sf]=useState(()=>ls.g('fg_fav',[])),[orders,sord]=useState(()=>ls.g('fg_orders',[])),[nw,snw]=useState(false);
+useEffect(()=>{const f=()=>{sh(location.hash||'#/');scrollTo(0,0);so(false)};addEventListener('hashchange',f);return()=>removeEventListener('hashchange',f)},[]);
+useEffect(()=>ls.s('fg_cart',cart),[cart]);useEffect(()=>ls.s('fg_fav',favs),[favs]);useEffect(()=>ls.s('fg_me',user),[user]);useEffect(()=>ls.s('fg_orders',orders),[orders]);
+const add=(p,s,col,q=1,op=true)=>{sc(a=>{const k=p.id+s+col,e=a.find(x=>x.k==k);return e?a.map(x=>x.k==k?{...x,q:x.q+q}:x):[...a,{k,id:p.id,n:p.n,p:p.p,s,col,q}]});if(op)so(true)};
+const chg=(k,d)=>sc(a=>a.map(x=>x.k==k?{...x,q:x.q+d}:x).filter(x=>x.q>0)),rm=k=>sc(a=>a.filter(x=>x.k!=k)),tf=id=>sf(a=>a.includes(id)?a.filter(x=>x!=id):[...a,id]);
+const reg=async(p,pw)=>{const U=ls.g('fg_users',{}),k=p.email.toLowerCase();if(U[k])return'Ya existe una cuenta con ese email.';U[k]={...p,h:await sha(pw)};ls.s('fg_users',U);su(p);return''};
+const login=async(em,pw)=>{const U=ls.g('fg_users',{}),r=U[em.toLowerCase()];if(!r||r.h!=await sha(pw))return'Email o contraseña incorrectos.';const{h:_,...p}=r;su(p);return''};
+const save=p=>{const U=ls.g('fg_users',{}),k=p.email.toLowerCase();if(U[k])U[k]={...U[k],...p};ls.s('fg_users',U);su(p)};
+const saveOrder=x=>{sord(a=>[x,...a]);sc([])},n=cart.reduce((a,x)=>a+x.q,0),sub=cart.reduce((a,x)=>a+x.p*x.q,0);
+const[a,b]=h.replace('#/','').split('/');
+const pg=a==''?html`<${Home}/>`:a=='c'?html`<${Coll} c=${b||'todo'} key=${b}/>`:a=='p'?html`<${Prod} id=${+b} key=${b}/>`:a=='carrito'?html`<${CartPage}/>`:a=='checkout'?html`<${Check}/>`:a=='cuenta'?html`<${Acc} key=${user?'u':'g'}/>`:a=='gracias'?html`<${Thanks} id=${b}/>`:a=='favoritos'?html`<${Favs}/>`:a=='info'?html`<${Info} k=${b}/>`:html`<${NF}/>`;
+const M='10% OFF PAGANDO POR TRANSFERENCIA',E='ENVÍOS A TODO EL PAÍS';
+return html`<${C.Provider} value=${{cart,add,chg,rm,n,sub,favs,tf,user,reg,login,logout:()=>su(null),save,orders,saveOrder,so,news:[nw,()=>snw(true)]}}>
+<div class="mq"><div>${[0,1,2,3,4,5].map(i=>html`<span key=${i}>${M} ✦ ${E} ✦</span>`)}</div></div>
+<nav><a class="lg d" href="#/">Fraguan</a><div class="ln">${[['nuevos','Nuevos'],['camisas','Camisas'],['remeras','Remeras'],['pantalones','Pantalones'],['camperas','Abrigos']].map(([s,l])=>html`<a key=${s} href=${'#/c/'+s}>${l}</a>`)}</div><div class="nr"><a href="#/favoritos">♡ ${favs.length}</a><a href="#/cuenta">${user?user.nom:'Cuenta'}</a><button class="cb" onClick=${()=>so(true)}>CARRITO<i>${n}</i></button></div></nav>
+<main>${pg}</main>
+<footer><div class="fl"><div><b>AYUDA</b>${['envios','cambios','pagos','talles','contacto'].map(k=>html`<a key=${k} href=${'#/info/'+k}>${INFO[k][0]}</a>`)}<a href="#/cuenta">Mi cuenta</a></div><div><b>LEGAL</b>${['terminos','privacidad','cookies','arrepentimiento'].map(k=>html`<a key=${k} href=${'#/info/'+k}>${INFO[k][0]}</a>`)}</div></div><div class="wm d" aria-hidden="true">${'FRAGUAN'.split('').map((c,i)=>html`<span key=${i}>${c}</span>`)}</div></footer>
+<${Cart} o=${o} close=${()=>so(false)}/><a class="wa" target="_blank" rel="noopener" href=${'https://wa.me/'+WAN}>WHATSAPP</a><${Cur}/><//>`}
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
+</script></body></html>

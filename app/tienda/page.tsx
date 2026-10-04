@@ -6,7 +6,8 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'FRAGUAN | Tienda online',
-  description: 'Indumentaria masculina FRAGUAN por talle y color. Envíos, retiro y beneficios del Club.',
+  description:
+    'Indumentaria masculina FRAGUAN por talle y color. Envíos, retiro y beneficios del Club.',
   alternates: { canonical: '/' },
   robots: { index: false, follow: true },
 };
@@ -14,5 +15,5 @@ export const metadata: Metadata = {
 export default async function StorePreviewPage() {
   if (isProductionComingSoon()) return <ComingSoon />;
   const catalog = await storeCatalog();
-  return <Storefront initialCatalog={catalog} />;
+  return <Storefront initialCatalog={catalog} initialSection="todo" />;
 }

@@ -1,8 +1,6 @@
 'use client';
 import { ArrowLeft, Check, Clock, PackageCheck, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { StoreHeader } from '@/components/store-header';
-import { StoreFooter } from '@/components/store-footer';
 import { storeApi, storeMoney } from '@/lib/store-client';
 
 const fulfillment: Record<string, string> = {
@@ -21,24 +19,35 @@ const payment: Record<string, string> = {
   refunded: 'Pago reintegrado',
 };
 
-export default function OrderTracking({ orderId }: { orderId: string }) {
+export default function OrderTracking({
+  orderId,
+  thankYou = false,
+}: {
+  orderId: string;
+  thankYou?: boolean;
+}) {
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     const token = sessionStorage.getItem(`fraguan-order-${orderId}`) || '';
     storeApi(`store-order?id=${encodeURIComponent(orderId)}`, {
       headers: token ? { 'x-order-token': token } : undefined,
-    }).then(setOrder).catch((cause) => setError(cause.message));
+    })
+      .then(setOrder)
+      .catch((cause) => setError(cause.message));
   }, [orderId]);
   return (
     <div className="store-shell">
-      <StoreHeader />
-      <main className="store-tracking">
-        <a href="/" className="store-back"><ArrowLeft /> Volver a la tienda</a>
+      <section className="store-tracking" data-thank-you={thankYou}>
+        <a href="/" className="store-back">
+          <ArrowLeft /> Volver a la tienda
+        </a>
         {error ? (
           <section className="store-tracking-error">
             <h1>No pudimos abrir el pedido.</h1>
-            <p>{error} Ingresá a Mi FRAGUAN con la cuenta usada en la compra.</p>
+            <p>
+              {error} Ingresá a Mi FRAGUAN con la cuenta usada en la compra.
+            </p>
             <a href="/cuenta">Ir a Mi FRAGUAN</a>
           </section>
         ) : !order ? (
@@ -47,31 +56,90 @@ export default function OrderTracking({ orderId }: { orderId: string }) {
           <>
             <header>
               <span>PEDIDO #{order.orderNumber}</span>
-              <h1>{fulfillment[order.fulfillmentStatus] || 'Estamos con tu pedido'}</h1>
-              <p>Creado el {new Date(order.createdAt).toLocaleDateString('es-AR')} · {payment[order.paymentStatus] || order.paymentStatus}</p>
+              <h1>
+                {thankYou
+                  ? '¡Gracias por tu compra!'
+                  : fulfillment[order.fulfillmentStatus] ||
+                    'Estamos con tu pedido'}
+              </h1>
+              <p>
+                Creado el{' '}
+                {new Date(order.createdAt).toLocaleDateString('es-AR')} ·{' '}
+                {payment[order.paymentStatus] || order.paymentStatus}
+              </p>
             </header>
             <section className="store-tracking-steps">
-              <article className="done"><Check /><span>Recibido</span></article>
-              <article className={['preparing','ready','shipped','delivered'].includes(order.fulfillmentStatus) ? 'done' : ''}><PackageCheck /><span>Preparación</span></article>
-              <article className={['shipped','delivered'].includes(order.fulfillmentStatus) ? 'done' : ''}><Truck /><span>{order.shippingMethod === 'pickup' ? 'Retiro' : 'Envío'}</span></article>
-              <article className={order.fulfillmentStatus === 'delivered' ? 'done' : ''}><Clock /><span>Entregado</span></article>
+              <article className="done">
+                <Check />
+                <span>Recibido</span>
+              </article>
+              <article
+                className={
+                  ['preparing', 'ready', 'shipped', 'delivered'].includes(
+                    order.fulfillmentStatus,
+                  )
+                    ? 'done'
+                    : ''
+                }
+              >
+                <PackageCheck />
+                <span>Preparación</span>
+              </article>
+              <article
+                className={
+                  ['shipped', 'delivered'].includes(order.fulfillmentStatus)
+                    ? 'done'
+                    : ''
+                }
+              >
+                <Truck />
+                <span>
+                  {order.shippingMethod === 'pickup' ? 'Retiro' : 'Envío'}
+                </span>
+              </article>
+              <article
+                className={
+                  order.fulfillmentStatus === 'delivered' ? 'done' : ''
+                }
+              >
+                <Clock />
+                <span>Entregado</span>
+              </article>
             </section>
-            {order.trackingNumber && <p className="store-tracking-number">Código de seguimiento <strong>{order.trackingNumber}</strong></p>}
+            {order.trackingNumber && (
+              <p className="store-tracking-number">
+                Código de seguimiento <strong>{order.trackingNumber}</strong>
+              </p>
+            )}
             <section className="store-tracking-grid">
               <div>
                 <h2>Tu compra</h2>
                 {order.items.map((item: any) => (
                   <article key={`${item.sku}-${item.color}-${item.size}`}>
-                    <span><strong>{item.productName}</strong><small>{item.color} · Talle {item.size} · {item.quantity} u.</small></span>
+                    <span>
+                      <strong>{item.productName}</strong>
+                      <small>
+                        {item.color} · Talle {item.size} · {item.quantity} u.
+                      </small>
+                    </span>
                     <b>{storeMoney(item.lineTotal)}</b>
                   </article>
                 ))}
-                <div className="store-tracking-total"><span>Total</span><strong>{storeMoney(order.total)}</strong></div>
+                <div className="store-tracking-total">
+                  <span>Total</span>
+                  <strong>{storeMoney(order.total)}</strong>
+                </div>
               </div>
               <aside>
                 <h2>Entrega</h2>
-                <p>{order.shippingMethod === 'pickup' ? 'Retiro en FRAGUAN' : `${order.address}, ${order.city}, ${order.province}, ${order.country || 'Argentina'}`}</p>
-                <small>Te avisaremos por email cada vez que cambie el estado.</small>
+                <p>
+                  {order.shippingMethod === 'pickup'
+                    ? 'Retiro en FRAGUAN'
+                    : `${order.address}, ${order.city}, ${order.province}, ${order.country || 'Argentina'}`}
+                </p>
+                <small>
+                  Te avisaremos por email cada vez que cambie el estado.
+                </small>
               </aside>
             </section>
             <div className="store-tracking-help">
@@ -81,8 +149,7 @@ export default function OrderTracking({ orderId }: { orderId: string }) {
             </div>
           </>
         )}
-      </main>
-      <StoreFooter />
+      </section>
     </div>
   );
 }
