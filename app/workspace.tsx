@@ -80,6 +80,11 @@ export default function Workspace() {
     [refundItems, setRefundItems] = useState<Record<string, number>>({});
   const searchRef = useRef<HTMLInputElement>(null),
     requestKey = useRef('');
+  const focusScanner = useCallback(() => {
+    setCategory('Todos');
+    searchRef.current?.focus();
+    searchRef.current?.select();
+  }, []);
   const refresh = async () => {
     const [c, m, o] = await Promise.all([
       api('catalog'),
@@ -206,11 +211,11 @@ export default function Workspace() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
-        e.key === 'F2' ||
+        e.key === 'F2' || e.code === 'F2' ||
         ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')
       ) {
         e.preventDefault();
-        searchRef.current?.focus();
+        focusScanner();
       }
       if (e.key === 'F4') {
         e.preventDefault();
@@ -227,7 +232,7 @@ export default function Workspace() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [openPayment, session]);
+  }, [openPayment, session, focusScanner]);
   useEffect(() => {
     const context = (document as any).modelContext;
     if (!context?.registerTool) return;
@@ -557,16 +562,22 @@ export default function Workspace() {
               {error}
             </p>
           )}
+          <label className="pos-search-label" htmlFor="pos-product-search">
+            Buscar producto
+          </label>
           <div className="search-row">
             <Search />
             <Input
+              id="pos-product-search"
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const code = search.trim();
                   const v = catalog.find(
-                    (x) => x.barcode === search || x.sku === search,
+                    (x) => x.barcode === code || x.sku === code,
                   );
                   if (v) add(v);
                   else if (filtered.length === 1) {
@@ -576,14 +587,16 @@ export default function Workspace() {
                   }
                 }
               }}
-              placeholder="Buscar producto, código o escanear…"
-              aria-label="Buscar productos"
+              placeholder="Escribí un nombre, SKU o escaneá un código"
+              aria-describedby="pos-search-help"
               maxLength={100}
               autoFocus
             />
-            <kbd>F2</kbd>
-            <ScanBarcode />
+            <ScanBarcode aria-hidden="true" />
           </div>
+          <p className="pos-search-help" id="pos-search-help">
+            Hacé clic en el campo y escaneá con el lector. Enter agrega la prenda a la venta.
+          </p>
           <div className="chips">
             {['Todos', ...new Set(catalog.map((x) => x.category))].map((x) => (
               <Button

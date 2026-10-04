@@ -38,6 +38,7 @@ export default async function InternalAccessPage({
   const runtime = env as unknown as Record<string, string | undefined>;
   return (
     <InternalLogin
+      localAccess={import.meta.env.DEV}
       clientId={runtime.INTERNAL_GOOGLE_CLIENT_ID ?? ''}
       returnTo={returnTo}
     />

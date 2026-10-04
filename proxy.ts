@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isStoreOnlyDeployment, isStaffPath } from '@/lib/deployment-surface';
 
 const headers: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
@@ -16,6 +17,12 @@ const headers: Record<string, string> = {
 };
 
 export function proxy(request: NextRequest) {
+  if (isStoreOnlyDeployment() && isStaffPath(request.nextUrl.pathname)) {
+    return new NextResponse('Not Found', {
+      status: 404,
+      headers: { ...headers, 'Cache-Control': 'private, no-store' },
+    });
+  }
   if (['TRACE', 'CONNECT'].includes(request.method))
     return new NextResponse(null, {
       status: 405,

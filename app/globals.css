@@ -846,6 +846,22 @@ h1 span {
   height: 53px;
   color: #808775;
 }
+.pos-search-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: text;
+}
+.search-row:focus-within {
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 1px var(--foreground);
+}
+.pos-search-help {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
 .search-row input {
   border: 0;
   box-shadow: none !important;

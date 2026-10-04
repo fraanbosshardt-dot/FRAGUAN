@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { storeApiOrigin, publicStoreData } from './store-api';
 import { env } from 'cloudflare:workers';
 import { Actor, AppError, requirePermission } from './auth';
 import { currentStoreCustomer } from './online-store';
@@ -129,6 +130,10 @@ export async function requestBackInStock(req: Request, raw: unknown) {
 }
 
 export async function publicProductReviews(productId: string) {
+  if (storeApiOrigin())
+    return publicStoreData<{ average: number; total: number; reviews: Record<string, unknown>[] }>(
+      'store-reviews', { productId },
+    );
   const summary = await one<{ average: number; total: number }>(
     "SELECT COALESCE(AVG(rating),0) AS average,COUNT(*) AS total FROM product_reviews WHERE productId=? AND status='published'",
     productId,

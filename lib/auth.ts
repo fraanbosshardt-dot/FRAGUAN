@@ -124,7 +124,10 @@ export function requireJsonRequest(req: Request, maxBytes = 100000) {
 }
 export function protectWrite(req: Request, maxBytes = 100000) {
   const origin = req.headers.get('origin');
-  if (!origin || origin !== new URL(req.url).origin)
+  const publicStoreOrigin = process.env.SITE_ORIGIN?.trim();
+  const storeRequest = new URL(req.url).pathname.startsWith('/api/store-');
+  if (!origin || (origin !== new URL(req.url).origin &&
+    !(storeRequest && process.env.FRAGUAN_SURFACE === 'store' && origin === publicStoreOrigin)))
     throw new AppError(403, 'Origen no autorizado.');
   requireJsonRequest(req, maxBytes);
 }

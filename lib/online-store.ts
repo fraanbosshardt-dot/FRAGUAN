@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { storeApiOrigin, publicStoreData } from './store-api';
 import { env } from 'cloudflare:workers';
 import {
   db,
@@ -311,6 +312,8 @@ export async function storeCatalog(
   query = '',
   section = '',
 ): Promise<StoreCatalog> {
+  if (storeApiOrigin())
+    return publicStoreData<StoreCatalog>('store-catalog', { q: query, section });
   await ensureOnlineProfiles();
   const q = `%${query.slice(0, 100)}%`;
   const products = await rows<Record<string, any>>(
@@ -380,6 +383,8 @@ export async function storeCatalog(
 export async function storeProduct(
   slug: string,
 ): Promise<{ product: StoreProduct; related: StoreProduct[] }> {
+  if (storeApiOrigin())
+    return publicStoreData('store-product', { slug });
   const catalog = await storeCatalog();
   const product = catalog.products.find((item) => item.slug === slug);
   if (!product) throw new AppError(404, 'Producto no encontrado.');

@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import { forwardStoreApi } from '@/lib/store-api';
 import { z } from 'zod';
 import {
   AppError,
@@ -94,6 +95,8 @@ export async function POST(
   { params }: { params: Promise<{ provider: string }> },
 ) {
   try {
+    const forwarded = await forwardStoreApi(req);
+    if (forwarded) return forwarded;
     requireJsonRequest(req, 65536);
     enforceRateLimit(req, 'payment-webhook', 300, 60_000);
     const provider = (await params).provider.slice(0, 30).toLowerCase();

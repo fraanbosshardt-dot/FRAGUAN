@@ -9,6 +9,7 @@ import {
   fail,
   AppError,
 } from '@/lib/auth';
+import { forwardStoreApi } from '@/lib/store-api';
 import {
   one,
   rows,
@@ -239,8 +240,14 @@ export async function GET(
   { params }: { params: Promise<{ resource: string }> },
 ) {
   try {
+    const forwarded = await forwardStoreApi(req);
+    if (forwarded) return forwarded;
     const { resource } = await params;
     const url = new URL(req.url);
+    if (resource === 'store-health') {
+      await one('SELECT 1 AS ok');
+      return reply({ ok: true });
+    }
     if (resource === 'store-order' || resource === 'store-recover-cart')
       enforceRateLimit(req, resource, 120, 60_000);
     if (resource === 'store-catalog')
@@ -741,6 +748,8 @@ export async function POST(
   { params }: { params: Promise<{ resource: string }> },
 ) {
   try {
+    const forwarded = await forwardStoreApi(req);
+    if (forwarded) return forwarded;
     const { resource } = await params;
     const publicResource = resource.startsWith('store-');
     const maxBytes = publicResource ? 32768 : 100000;
