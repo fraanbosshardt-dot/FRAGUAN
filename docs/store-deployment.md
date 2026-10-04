@@ -24,7 +24,7 @@ Configurar el servicio en su panel (los servicios nuevos ya no admiten
 - Compilación: `npm run build:store-api`.
 - Inicio: `npm run start:store-api`.
 - Comprobación de disponibilidad: `/api/store-health` (ejecuta `SELECT 1`).
-- `DATABASE_URL`: `${{Postgres.DATABASE_PRIVATE_URL}}`.
+- `DATABASE_URL`: `${{Postgres.DATABASE_URL}}` (variable existente de este Postgres).
 - `DATABASE_POOL_SIZE`: `5`.
 - `HOST`: `0.0.0.0`; Railway asigna `PORT`.
 - `FRAGUAN_SURFACE`: `store`.
