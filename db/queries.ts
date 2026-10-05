@@ -71,7 +71,15 @@ function quoteCamelCaseIdentifiers(sql: string) {
       let end = index + 1;
       while (end < sql.length && /[A-Za-z0-9_$]/.test(sql[end])) end += 1;
       const word = sql.slice(index, end);
-      output += /[a-z][A-Z]/.test(word) ? `"${word}"` : word;
+      // Legacy staff queries use SQLite's hidden rowid only to break ordering
+      // ties. PostgreSQL tables have an explicit unique id instead. Preserve
+      // quoted strings and the SQLite path while giving Postgres a stable key.
+      output +=
+        word.toLowerCase() === 'rowid'
+          ? 'id'
+          : /[a-z][A-Z]/.test(word)
+            ? `"${word}"`
+            : word;
       index = end;
       continue;
     }

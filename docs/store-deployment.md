@@ -26,6 +26,10 @@ apartado siguiente. Las cuentas de clientes no se alteran.
 Vercel no necesita PostgreSQL ni secretos de personal: las páginas internas y
 sus APIs se reenvían a Railway conservando cookies HttpOnly y el Origin.
 Se eliminan los encabezados de identidad/proxy enviados desde el navegador.
+Las páginas internas usan `/staff-assets/_next/static/` para cargar también su
+JavaScript y CSS desde Railway: los hashes del build Node pueden diferir de los
+de Vercel. El proxy conserva esa misma procedencia en HTML, RSC y referencias de
+los archivos; los recursos de la tienda continúan en Vercel.
 
 ## Railway: accomplished-adaptation / fraguan-store-api
 

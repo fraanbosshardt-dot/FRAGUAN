@@ -32,7 +32,10 @@ export async function proxy(request: NextRequest) {
   // Staff SSR and APIs run beside PostgreSQL on Railway. The browser keeps
   // the public domain and host-only session cookies throughout the flow.
   const backend = storeApiOrigin();
-  const staff = isStaffPath(request.nextUrl.pathname);
+  const staffAsset = request.nextUrl.pathname.startsWith(
+    '/staff-assets/_next/static/',
+  );
+  const staff = staffAsset || isStaffPath(request.nextUrl.pathname);
   const forwardedHeaders = new Headers(request.headers);
   for (const name of Array.from(forwardedHeaders.keys())) {
     if (
@@ -50,7 +53,12 @@ export async function proxy(request: NextRequest) {
     forwardedHeaders.delete('content-length');
     try {
       const upstream = await fetch(
-        new URL(request.nextUrl.pathname + request.nextUrl.search, backend),
+        new URL(
+          (staffAsset
+            ? request.nextUrl.pathname.slice('/staff-assets'.length)
+            : request.nextUrl.pathname) + request.nextUrl.search,
+          backend,
+        ),
         {
           method: request.method,
           headers: forwardedHeaders,
@@ -68,7 +76,22 @@ export async function proxy(request: NextRequest) {
       outgoing.delete('set-cookie');
       for (const cookie of upstream.headers.getSetCookie())
         outgoing.append('Set-Cookie', cookie);
-      response = new NextResponse(upstream.body, {
+      const type = upstream.headers.get('content-type') ?? '';
+      const rewriteAssets =
+        /text\/html|text\/x-component/.test(type) ||
+        (staffAsset && /javascript|text\/css/.test(type));
+      // Railway's Node build and Vercel's build can emit different chunk hashes.
+      // Keep the staff document, RSC payload and asset graph on the same build.
+      const body =
+        request.method === 'HEAD' || [204, 205, 304].includes(upstream.status)
+          ? null
+          : rewriteAssets
+            ? (await upstream.text()).replaceAll(
+                '/_next/static/',
+                '/staff-assets/_next/static/',
+              )
+            : upstream.body;
+      response = new NextResponse(body, {
         status: upstream.status,
         headers: outgoing,
       });

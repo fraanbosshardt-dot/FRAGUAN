@@ -39,11 +39,15 @@ import {
   useClock,
   Row,
 } from '@/lib/client';
+import './pos/pos-proposal.css';
 import { InternalSignOut } from '@/components/internal-sign-out';
 export default function Workspace() {
   const { session, error: sessionError, reload } = useSession(),
     clock = useClock();
-  const [catalog, setCatalog] = useState<Row[]>([]),
+  const [view, setView] = useState<'sale' | 'today'>('sale'),
+    [cartOpen, setCartOpen] = useState(false),
+    [dayPayments, setDayPayments] = useState<Row[]>([]),
+    [catalog, setCatalog] = useState<Row[]>([]),
     [catalogLoading, setCatalogLoading] = useState(true),
     [methods, setMethods] = useState<Row[]>([]),
     [offers, setOffers] = useState<Row[]>([]),
@@ -220,7 +224,7 @@ export default function Workspace() {
       }
       if (e.key === 'F4') {
         e.preventDefault();
-        setModal('customer');
+        openPayment();
       }
       if (e.key === 'F8') {
         e.preventDefault();
@@ -499,15 +503,82 @@ export default function Workspace() {
       </main>
     );
   return (
-    <div className="pos-shell">
+    <div
+      className={`pos-shell pos-proposal ${view === 'today' ? 'pos-history' : ''}`}
+    >
       <header className="topbar">
         <a className="wordmark" href="/pos">
-          FRAGUAN<span>EST. ARGENTINA</span>
+          FRAGUAN<span>POS</span>
         </a>
-        <div className="top-label">
-          Punto de venta{' '}
-          {session?.demo && <span className="demo-pill">DEMOSTRACIÓN</span>}
+        <div className="pos-header-search">
+          {' '}
+          <label className="pos-search-label" htmlFor="pos-product-search">
+            Buscar producto
+          </label>
+          <div className="search-row">
+            <Search />
+            <Input
+              id="pos-product-search"
+              ref={searchRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const code = search.trim();
+                  const v = catalog.find(
+                    (x) => x.barcode === code || x.sku === code,
+                  );
+                  if (v) add(v);
+                  else if (filtered.length === 1) {
+                    setSelected(filtered[0]);
+                    setColor(filtered[0].variants[0].color);
+                    setSize('');
+                  }
+                }
+              }}
+              placeholder="Buscar producto (F2)"
+              aria-describedby="pos-search-help"
+              maxLength={100}
+              autoFocus
+            />
+            <ScanBarcode aria-hidden="true" />
+          </div>
+          <p className="pos-search-help sr-only" id="pos-search-help">
+            Hacé clic en el campo y escaneá con el lector. Enter agrega la
+            prenda a la venta.
+          </p>
         </div>
+        <nav className="pos-tabs" aria-label="Pantalla del POS">
+          <Button
+            className={view === 'sale' ? 'selected' : ''}
+            variant="outline"
+            onClick={() => setView('sale')}
+          >
+            Venta
+          </Button>
+          <Button
+            className={view === 'today' ? 'selected' : ''}
+            variant="outline"
+            disabled={busy}
+            onClick={async () => {
+              setError('');
+              setBusy(true);
+              try {
+                const day = await api('sales?scope=pos&today=1');
+                setRecent(day.sales);
+                setDayPayments(day.payments);
+                setView('today');
+              } catch (e: any) {
+                setError(e.message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Hoy
+          </Button>
+        </nav>{' '}
         <div className="user-chip">
           {session?.permissions?.includes('dashboard') && (
             <a className="admin-entry" title="Administración" href="/admin">
@@ -560,42 +631,6 @@ export default function Workspace() {
               {error}
             </p>
           )}
-          <label className="pos-search-label" htmlFor="pos-product-search">
-            Buscar producto
-          </label>
-          <div className="search-row">
-            <Search />
-            <Input
-              id="pos-product-search"
-              ref={searchRef}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const code = search.trim();
-                  const v = catalog.find(
-                    (x) => x.barcode === code || x.sku === code,
-                  );
-                  if (v) add(v);
-                  else if (filtered.length === 1) {
-                    setSelected(filtered[0]);
-                    setColor(filtered[0].variants[0].color);
-                    setSize('');
-                  }
-                }
-              }}
-              placeholder="Escribí un nombre, SKU o escaneá un código"
-              aria-describedby="pos-search-help"
-              maxLength={100}
-              autoFocus
-            />
-            <ScanBarcode aria-hidden="true" />
-          </div>
-          <p className="pos-search-help" id="pos-search-help">
-            Hacé clic en el campo y escaneá con el lector. Enter agrega la
-            prenda a la venta.
-          </p>
           <div className="chips">
             {['Todos', ...new Set(catalog.map((x) => x.category))].map((x) => (
               <Button
@@ -663,100 +698,132 @@ export default function Workspace() {
           )}
           <footer className="catalog-footer">
             <ScanBarcode size={15} /> Listo para escanear{' '}
-            <span>F2 Buscar · F4 Cliente · F6 Pedidos · F8 Cobrar</span>
+            <span>F2 Buscar · F4 Cobrar · F6 Pedidos</span>
           </footer>
         </main>
-        <aside className="cart" id="current-cart">
-          <div className="cart-heading">
+        <aside className={`cart ${cartOpen ? 'open' : ''}`} id="current-cart">
+          <button
+            type="button"
+            className="cart-heading"
+            aria-expanded={cartOpen}
+            aria-controls="pos-cart-details"
+            onClick={() => setCartOpen(!cartOpen)}
+          >
             <h2>Venta actual</h2>
             <span className="count">
               {cart.reduce((n, i) => n + i.quantity, 0)}
             </span>
-          </div>
-          <button
-            className="customer-line"
-            onClick={() => setModal('customer')}
-          >
-            <span className="customer-icon">
-              <UserRound size={18} />
+            <span className="cart-toggle" aria-hidden="true">
+              {cartOpen ? '▾' : '▴'}
             </span>
-            <span>
-              {customer
-                ? `${customer.name} ${customer.surname}`
-                : 'Cliente ocasional'}
-              <small>
-                {customer ? 'Cambiar cliente' : 'Agregar cliente a la venta'}
-              </small>
-            </span>
-            <Plus size={18} />
           </button>
-          {cart.length ? (
-            <div className="cart-items">
-              {cart.map((i) => (
-                <div className="cart-item" key={i.id}>
-                  <div>
-                    <h3>{i.name}</h3>
-                    <p>
-                      {i.color} · {i.size}
-                    </p>
-                    <div className="quantity">
+          <div id="pos-cart-details" className="pos-cart-details">
+            <button
+              className="customer-line"
+              onClick={() => setModal('customer')}
+            >
+              <span className="customer-icon">
+                <UserRound size={18} />
+              </span>
+              <span>
+                {customer
+                  ? `${customer.name} ${customer.surname}`
+                  : 'Cliente ocasional'}
+                <small>
+                  {customer ? 'Cambiar cliente' : 'Agregar cliente a la venta'}
+                </small>
+              </span>
+              <Plus size={18} />
+            </button>
+            {cart.length ? (
+              <div className="cart-items">
+                {cart.map((i) => (
+                  <div className="cart-item" key={i.id}>
+                    <div>
+                      <h3>{i.name}</h3>
+                      <p>
+                        {i.color} · {i.size}
+                      </p>
+                      <div className="quantity">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Disminuir cantidad"
+                          onClick={() => {
+                            setCart(
+                              cart.flatMap((x) =>
+                                x.id === i.id
+                                  ? x.quantity > 1
+                                    ? [{ ...x, quantity: x.quantity - 1 }]
+                                    : []
+                                  : [x],
+                              ),
+                            );
+                            requestKey.current = '';
+                          }}
+                        >
+                          <Minus size={12} />
+                        </Button>
+                        <span>{i.quantity}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Aumentar cantidad"
+                          onClick={() => add(i)}
+                        >
+                          <Plus size={12} />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="item-price">
+                      <strong>{money(i.price * i.quantity)}</strong>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        aria-label="Disminuir cantidad"
+                        aria-label="Quitar producto"
                         onClick={() => {
-                          setCart(
-                            cart.flatMap((x) =>
-                              x.id === i.id
-                                ? x.quantity > 1
-                                  ? [{ ...x, quantity: x.quantity - 1 }]
-                                  : []
-                                : [x],
-                            ),
-                          );
+                          setCart(cart.filter((x) => x.id !== i.id));
                           requestKey.current = '';
                         }}
                       >
-                        <Minus size={12} />
-                      </Button>
-                      <span>{i.quantity}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Aumentar cantidad"
-                        onClick={() => add(i)}
-                      >
-                        <Plus size={12} />
+                        <Trash2 size={13} />
                       </Button>
                     </div>
                   </div>
-                  <div className="item-price">
-                    <strong>{money(i.price * i.quantity)}</strong>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Quitar producto"
-                      onClick={() => {
-                        setCart(cart.filter((x) => x.id !== i.id));
-                        requestKey.current = '';
-                      }}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="cart-empty">
-              <div className="bag-circle">
-                <ShoppingBag size={34} strokeWidth={1.2} />
+                ))}
               </div>
-              <h3>La venta está vacía</h3>
-              <p>Buscá o escaneá un producto para agregarlo.</p>
-            </div>
-          )}
+            ) : (
+              <div className="cart-empty">
+                <div className="bag-circle">
+                  <ShoppingBag size={34} strokeWidth={1.2} />
+                </div>
+                <h3>La venta está vacía</h3>
+                <p>Buscá o escaneá un producto para agregarlo.</p>
+              </div>
+            )}
+          </div>
           <div className="cart-bottom">
+            <label className="pos-cart-promotion">
+              Descuento autorizado
+              <select
+                aria-label="Descuento autorizado"
+                value={offerIds.length === 1 ? offerIds[0] : ''}
+                onChange={(event) => {
+                  setOfferIds(event.target.value ? [event.target.value] : []);
+                  setQuote(null);
+                  requestKey.current = '';
+                }}
+              >
+                <option value="">Sin descuento</option>
+                {offers
+                  .filter((offer) => !offer.kind || offer.kind === 'percentage')
+                  .map((offer) => (
+                    <option key={offer.id} value={offer.id}>
+                      {offer.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
             <div className="summary-line">
               <span>Subtotal</span>
               <span>{money(subtotal)}</span>
@@ -769,16 +836,105 @@ export default function Workspace() {
               <span>Total</span>
               <strong>{money(base)}</strong>
             </div>
-            <Button
-              className="checkout"
-              disabled={!cart.length || busy}
-              onClick={openPayment}
-            >
-              Cobrar <ArrowUpRight size={20} />
-            </Button>
-            <p className="quiet">F8 para cobrar</p>
+            <div className="pos-sale-actions">
+              <Button
+                variant="outline"
+                disabled={!cart.length || busy}
+                onClick={() => {
+                  setCart([]);
+                  setOfferIds([]);
+                  setCouponCode('');
+                  setQuote(null);
+                  requestKey.current = '';
+                }}
+              >
+                Vaciar
+              </Button>
+              <Button
+                className="checkout"
+                disabled={!cart.length || busy}
+                onClick={openPayment}
+              >
+                Cobrar <kbd>F4</kbd>
+              </Button>
+            </div>
           </div>
         </aside>
+        {view === 'today' && (
+          <section className="pos-day">
+            <Button
+              className="no-print"
+              variant="outline"
+              onClick={() => printCommerce('pos-day')}
+            >
+              <Printer /> Imprimir resumen del día
+            </Button>
+            <div className="pos-day-report">
+              <h1>Ventas de hoy</h1>
+              <p className="quiet">
+                Ventas de {session?.user?.name}. Los tickets devueltos están
+                identificados.
+              </p>
+              <div className="pos-day-stats">
+                <article>
+                  <span>Ventas</span>
+                  <b>{recent.length}</b>
+                </article>
+                <article>
+                  <span>Total vendido · antes de devoluciones</span>
+                  <b>
+                    {money(recent.reduce((sum, sale) => sum + sale.total, 0))}
+                  </b>
+                </article>
+              </div>
+              <div className="pos-day-stats">
+                {dayPayments.map((payment, index) => (
+                  <article key={index}>
+                    <span>{payment.name}</span>
+                    <b>{money(payment.amount)}</b>
+                  </article>
+                ))}
+              </div>
+              <div className="recent-list">
+                {recent.map((sale) => (
+                  <button
+                    key={sale.id}
+                    onClick={async () => {
+                      try {
+                        setReceipt(await api('sales?scope=pos&id=' + sale.id));
+                        setModal('receipt');
+                      } catch (e: any) {
+                        setError(e.message);
+                      }
+                    }}
+                  >
+                    <span>
+                      #{String(sale.ticket).padStart(6, '0')}
+                      <small>
+                        {date(sale.createdAt)} ·{' '}
+                        {sale.status === 'refunded'
+                          ? 'Devuelta'
+                          : sale.status === 'partially_refunded'
+                            ? 'Devuelta parcialmente'
+                            : 'Completada'}
+                      </small>
+                    </span>
+                    <strong>{money(sale.total)}</strong>
+                    <Printer size={18} />
+                  </button>
+                ))}
+                {!recent.length && (
+                  <p className="empty-state">Todavía no hay ventas hoy.</p>
+                )}
+              </div>
+              {error && (
+                <p className="notice" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          </section>
+        )}
       </div>
       {cart.length > 0 && (
         <a className="mobile-cart" href="#current-cart">
@@ -787,7 +943,7 @@ export default function Workspace() {
         </a>
       )}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="fraguan-modal">
+        <DialogContent className="fraguan-modal pos-proposal-dialog">
           <DialogTitle>{selected?.name}</DialogTitle>
           <DialogDescription>
             Elegí la combinación para esta venta.
@@ -866,10 +1022,10 @@ export default function Workspace() {
         <DialogContent
           className={
             modal === 'receipt'
-              ? 'fraguan-modal receipt-modal'
+              ? 'fraguan-modal pos-proposal-dialog receipt-modal'
               : modal === 'online-orders' || modal === 'online-order'
-                ? 'fraguan-modal pos-online-modal'
-                : 'fraguan-modal'
+                ? 'fraguan-modal pos-proposal-dialog pos-online-modal'
+                : 'fraguan-modal pos-proposal-dialog'
           }
         >
           <DialogTitle>
@@ -1189,38 +1345,55 @@ export default function Workspace() {
           )}
           {modal === 'receipt' && receipt && (
             <>
-              <div className="receipt">
-                <div className="receipt-check">
-                  <Check />
-                </div>
-                <h2>FRAGUAN</h2>
-                <p>
-                  Ticket #{String(receipt.ticket).padStart(6, '0')} ·{' '}
-                  {date(receipt.createdAt)}
-                </p>
-                <p>
-                  {receipt.customerName
-                    ? `${receipt.customerName} ${receipt.customerSurname}`
-                    : 'Cliente ocasional'}
-                </p>
-                {receipt.items.map((i: Row) => (
-                  <div className="receipt-line" key={i.id}>
-                    <span>
-                      {i.name}
-                      <small>
-                        {i.color} · {i.size} · {i.quantity} × {money(i.price)}
-                      </small>
-                    </span>
-                    <strong>{money(i.quantity * i.price)}</strong>
+              <div className="pos-printer-slot" aria-hidden="true" />
+              <div className="pos-ticket-feed">
+                <div className="receipt">
+                  <div className="receipt-check">
+                    <Check />
                   </div>
-                ))}
-                <div className="total-line">
-                  <span>Total</span>
-                  <strong>{money(receipt.total)}</strong>
+                  <h2>FRAGUAN</h2>
+                  <p>
+                    Ticket #{String(receipt.ticket).padStart(6, '0')} ·{' '}
+                    {date(receipt.createdAt)}
+                  </p>
+                  <p>
+                    {receipt.customerName
+                      ? `${receipt.customerName} ${receipt.customerSurname}`
+                      : 'Cliente ocasional'}
+                  </p>
+                  {receipt.items.map((i: Row) => (
+                    <div className="receipt-line" key={i.id}>
+                      <span>
+                        {i.name}
+                        <small>
+                          {i.color} · {i.size} · {i.quantity} × {money(i.price)}
+                        </small>
+                      </span>
+                      <strong>{money(i.quantity * i.price)}</strong>
+                    </div>
+                  ))}
+                  <div className="summary-line">
+                    <span>Subtotal</span>
+                    <span>{money(receipt.subtotal)}</span>
+                  </div>
+                  <div className="summary-line">
+                    <span>Descuento</span>
+                    <span>−{money(receipt.discount)}</span>
+                  </div>
+                  <div className="total-line">
+                    <span>Total</span>
+                    <strong>{money(receipt.total)}</strong>
+                  </div>
+                  {receipt.payments?.map((payment: Row, index: number) => (
+                    <div className="summary-line" key={index}>
+                      <span>{payment.name}</span>
+                      <span>{money(payment.amount)}</span>
+                    </div>
+                  ))}
+                  <p className="quiet">
+                    Comprobante interno · No válido como factura fiscal.
+                  </p>
                 </div>
-                <p className="quiet">
-                  Comprobante interno · No válido como factura fiscal.
-                </p>
               </div>
               <Button
                 className="activate no-print"

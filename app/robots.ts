@@ -7,6 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: ['/', '/producto/', '/coleccion/', '/informacion/'],
       disallow: [
         '/api/',
+        '/staff-assets/',
         '/admin',
         '/admin-access',
         '/acceso',

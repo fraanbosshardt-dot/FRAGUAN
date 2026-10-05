@@ -390,7 +390,7 @@ export async function GET(
       requirePermission(a, 'pos');
       return reply(
         await rows(
-          'SELECT v.id,v.productId,p.name,p.category,p.brand,v.sku,v.barcode,v.color,v.size,v.price,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE p.active=1 ORDER BY p.rowid,v.rowid',
+          'SELECT v.id,v.productId,p.name,p.category,p.brand,v.sku,v.barcode,v.color,v.size,v.price,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE p.active=1 ORDER BY p.name,p.id,v.sku',
         ),
       );
     }
@@ -506,6 +506,26 @@ export async function GET(
           if (!ownSale) throw new AppError(403, 'Acceso denegado.');
         }
         return reply(await saleDetail(a, saleId));
+      }
+      if (posScope && url.searchParams.get('today') === '1') {
+        const day = new Date(Date.now() - 3 * 3600000)
+          .toISOString()
+          .slice(0, 10);
+        const from = day + 'T03:00:00.000Z',
+          to = new Date(Date.parse(from) + 86400000).toISOString();
+        const sales = await rows(
+          'SELECT id,ticket,total,createdAt,status FROM sales WHERE sellerId=? AND createdAt>=? AND createdAt<? ORDER BY createdAt DESC',
+          a.id,
+          from,
+          to,
+        );
+        const payments = await rows(
+          'SELECT m.name,SUM(p.amount) AS amount FROM payments p JOIN sales s ON s.id=p.saleId JOIN payment_methods m ON m.id=p.methodId WHERE s.sellerId=? AND s.createdAt>=? AND s.createdAt<? GROUP BY m.name',
+          a.id,
+          from,
+          to,
+        );
+        return reply({ sales, payments });
       }
       if (posScope) {
         const days = Number(
