@@ -5,7 +5,16 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: ['/', '/producto/', '/coleccion/', '/informacion/'],
-      disallow: ['/api/', '/admin', '/admin-access', '/pos', '/checkout', '/cuenta', '/pedido/'],
+      disallow: [
+        '/api/',
+        '/admin',
+        '/admin-access',
+        '/acceso',
+        '/pos',
+        '/checkout',
+        '/cuenta',
+        '/pedido/',
+      ],
     },
     sitemap: 'https://fraguan.com/sitemap.xml',
   };

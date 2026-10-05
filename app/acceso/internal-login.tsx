@@ -4,17 +4,45 @@ import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export function InternalLogin({
   clientId,
   returnTo,
   localAccess,
+  passwordAccess,
 }: {
   clientId: string;
   returnTo: string;
   localAccess: boolean;
+  passwordAccess: boolean;
 }) {
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function submit(event: React.SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget);
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/internal-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'password',
+          email: values.get('email'),
+          password: values.get('password'),
+        }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error || 'No se pudo ingresar.');
+      window.location.assign(returnTo);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo ingresar.');
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <main className="admin-access-page">
       <section className="admin-access-card">
@@ -23,13 +51,40 @@ export function InternalLogin({
           <ShieldCheck size={25} />
         </div>
         <p className="eyebrow">ACCESO DEL PERSONAL</p>
-        <h1>{localAccess ? 'Ingresá a FRAGUAN' : 'Ingresá con Google'}</h1>
+        <h1>Ingresá a FRAGUAN</h1>
         <p className="admin-access-copy">
           {localAccess
             ? 'Entrá al POS o a Administración con la cuenta local. Administración conserva su PIN de acceso.'
-            : 'Usá una cuenta habilitada por FRAGUAN. El acceso y cada operación quedarán asociados a tu usuario.'}
+            : 'Usá tu email y contraseña para entrar al POS. Administración conserva su PIN adicional de acceso.'}
         </p>
-        {localAccess ? (
+        {passwordAccess ? (
+          <form onSubmit={submit}>
+            <label htmlFor="staff-email">Email del propietario</label>
+            <Input
+              id="staff-email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              maxLength={254}
+              required
+              disabled={busy}
+            />
+            <label htmlFor="staff-password">Contraseña</label>
+            <Input
+              id="staff-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              minLength={12}
+              maxLength={128}
+              required
+              disabled={busy}
+            />
+            <Button type="submit" disabled={busy}>
+              {busy ? 'Verificando…' : 'Ingresar'}
+            </Button>
+          </form>
+        ) : localAccess ? (
           <Button
             onClick={() =>
               window.location.assign(
@@ -39,13 +94,18 @@ export function InternalLogin({
           >
             Ingresar
           </Button>
-        ) : (
+        ) : clientId ? (
           <GoogleSignIn
             clientId={clientId}
             resource="internal-auth"
             successPath={returnTo}
             onError={setError}
           />
+        ) : (
+          <output className="notice">
+            El acceso del personal está protegido. Falta configurar las
+            credenciales de producción.
+          </output>
         )}
         {error && (
           <p className="notice" role="alert">

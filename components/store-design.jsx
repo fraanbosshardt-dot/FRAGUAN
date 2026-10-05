@@ -870,7 +870,13 @@ function PublicStore({ children }) {
   };
   return (
     <C.Provider value={value}>
-      <div className="fraguan-design" ref={root}>
+      <div
+        className={
+          'fraguan-design' +
+          (pathname === '/checkout' ? ' checkout-surface' : '')
+        }
+        ref={root}
+      >
         <a className="design-skip" href="#store-content">
           Saltar al contenido
         </a>
@@ -881,86 +887,110 @@ function PublicStore({ children }) {
             </span>
           ))}
         </ScrollMarquee>
-        <nav inert={open} aria-label="Navegación principal">
-          <a className="lg d" href="/">
-            Fraguan
-          </a>
-          <div className="ln">
-            {[
-              ['nuevos', 'Nuevos'],
-              ['camisas', 'Camisas'],
-              ['remeras', 'Remeras'],
-              ['pantalones', 'Pantalones'],
-              ['camperas', 'Abrigos'],
-            ].map(([s, l]) => (
-              <a key={s} href={'/coleccion/' + s}>
-                {l}
+        {pathname === '/checkout' ? (
+          <nav className="cp-nav" aria-label="Navegación de compra">
+            <a href="/carrito">← VOLVER AL CARRITO</a>
+            <a className="lg d" href="/">
+              FRAGUAN
+            </a>
+            <span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                aria-hidden="true"
+              >
+                <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7z" />
+                <path d="m8 12 3 3 5-6" />
+              </svg>
+              Compra segura
+            </span>
+          </nav>
+        ) : (
+          <nav inert={open} aria-label="Navegación principal">
+            <a className="lg d" href="/">
+              Fraguan
+            </a>
+            <div className="ln">
+              {[
+                ['nuevos', 'Nuevos'],
+                ['camisas', 'Camisas'],
+                ['remeras', 'Remeras'],
+                ['pantalones', 'Pantalones'],
+                ['camperas', 'Abrigos'],
+              ].map(([s, l]) => (
+                <a key={s} href={'/coleccion/' + s}>
+                  {l}
+                </a>
+              ))}
+            </div>
+            <div className="nr">
+              <button
+                className="mobile-menu"
+                aria-label="Abrir categorías"
+                aria-expanded={menu}
+                aria-controls="store-mobile-menu"
+                onClick={() => setMenu(!menu)}
+              >
+                ☰
+              </button>
+              <a
+                href="/favoritos"
+                aria-label={'Favoritos: ' + saved.favorites.length}
+              >
+                ♡ {saved.favorites.length}
               </a>
-            ))}
-          </div>
-          <div className="nr">
-            <button
-              className="mobile-menu"
-              aria-label="Abrir categorías"
-              aria-expanded={menu}
-              aria-controls="store-mobile-menu"
-              onClick={() => setMenu(!menu)}
-            >
-              ☰
-            </button>
-            <a
-              href="/favoritos"
-              aria-label={'Favoritos: ' + saved.favorites.length}
-            >
-              ♡ {saved.favorites.length}
-            </a>
-            <a
-              href="/cuenta"
-              aria-label={user?.name ? 'Cuenta de ' + user.name : 'Mi cuenta'}
-            >
-              <span className="design-nav-label">{user?.name || 'Cuenta'}</span>
-              <svg
-                className="design-nav-icon"
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                aria-hidden="true"
+              <a
+                href="/cuenta"
+                aria-label={user?.name ? 'Cuenta de ' + user.name : 'Mi cuenta'}
               >
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
-              </svg>
-            </a>
-            <button
-              className="cb"
-              ref={trigger}
-              onClick={() => setOpen(true)}
-              aria-haspopup="dialog"
-              aria-label={'Carrito, ' + basket.count + ' productos'}
-            >
-              <span className="design-nav-label">CARRITO</span>
-              <svg
-                className="design-nav-icon"
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                aria-hidden="true"
+                <span className="design-nav-label">
+                  {user?.name || 'Cuenta'}
+                </span>
+                <svg
+                  className="design-nav-icon"
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+                </svg>
+              </a>
+              <button
+                className="cb"
+                ref={trigger}
+                onClick={() => setOpen(true)}
+                aria-haspopup="dialog"
+                aria-label={'Carrito, ' + basket.count + ' productos'}
               >
-                <path
-                  d="M3 5h2l3 12h11l2-9H6M9 21h.01M18 21h.01"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <i>{basket.count}</i>
-            </button>
-          </div>
-        </nav>
-        {menu && (
+                <span className="design-nav-label">CARRITO</span>
+                <svg
+                  className="design-nav-icon"
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 5h2l3 12h11l2-9H6M9 21h.01M18 21h.01"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <i>{basket.count}</i>
+              </button>
+            </div>
+          </nav>
+        )}
+        {menu && pathname !== '/checkout' && (
           <div className="design-mobile-links" id="store-mobile-menu">
             {[
               ['todo', 'Toda la colección'],

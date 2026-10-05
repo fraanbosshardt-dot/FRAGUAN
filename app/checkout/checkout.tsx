@@ -1,4 +1,7 @@
 'use client';
+import './checkout-proposal.css';
+import { CheckoutPanel } from '@/components/checkout-panel';
+import BarraEnvioGratis from '@/components/fraguan-animaciones/BarraEnvioGratis';
 import TarjetaClub from '@/components/fraguan-animaciones/TarjetaClub';
 import {
   ArrowLeft,
@@ -6,9 +9,7 @@ import {
   Check,
   Copy,
   CreditCard,
-  Landmark,
   PackageCheck,
-  ShieldCheck,
   Truck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -35,6 +36,10 @@ import {
 } from '@/lib/store-client';
 
 const STORE_PICKUP_POSTAL_CODE = '2661';
+const recipientAutocomplete = {
+  firstName: 'given-name',
+  surname: 'family-name',
+};
 
 type Order = ReceiptOrder & Record<string, any>;
 type CheckoutQuote = {
@@ -57,7 +62,17 @@ export default function Checkout({
   useEffect(() => setHydrated(true), []);
   const [createAccount, setCreateAccount] = useState(false);
   const [createdCustomer, setCreatedCustomer] = useState<any>(null);
-  const [cardChoice, setCardChoice] = useState<'card' | 'mp'>('card');
+  const [completed, setCompleted] = useState([false, false, false]);
+  const [contactSummary, setContactSummary] = useState('');
+  const [deliverySummary, setDeliverySummary] = useState('');
+  const [summaryOpen, setSummaryOpen] = useState(true);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 860px)');
+    const resize = () => setSummaryOpen(!media.matches);
+    resize();
+    media.addEventListener('change', resize);
+    return () => media.removeEventListener('change', resize);
+  }, []);
   const [payment, setPayment] = useState<'transfer' | 'card'>('transfer');
   const [shippingMethod, setShippingMethod] = useState<
     'correo-argentino-home' | 'pickup'
@@ -111,7 +126,6 @@ export default function Checkout({
   }
   useEffect(() => {
     if (shippingMethod !== 'correo-argentino-home') {
-      addressAutoFilled.current = false;
       return;
     }
     if (addressAutoFilled.current || !session?.addresses?.length) return;
@@ -150,6 +164,7 @@ export default function Checkout({
       return;
     }
     setPricingBusy(true);
+    setPricing(null);
     const controller = new AbortController();
     const t = setTimeout(
       () =>
@@ -171,6 +186,7 @@ export default function Checkout({
           }),
         })
           .then((result) => {
+            if (controller.signal.aborted) return;
             setPricing(result);
             setError('');
           })
@@ -198,6 +214,8 @@ export default function Checkout({
   const total = pricing?.total ?? subtotal - discount;
   async function submit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || pricingBusy || !pricing) return;
+    for (const number of [1, 2, 3]) if (!validateStep(number)) return;
     setConfirmingPayment(true);
     setBusy(true);
     setError('');
@@ -393,33 +411,65 @@ export default function Checkout({
       setBusy(false);
     }
   }
-  function advance() {
+  function openStep(number: number) {
+    setStep(number);
+    requestAnimationFrame(() => {
+      const panel = checkoutForm.current?.querySelector<HTMLElement>(
+        '[data-checkout-step="' + number + '"]',
+      );
+      panel?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+      panel?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'start',
+      });
+    });
+  }
+  function validateStep(number: number) {
     const section = checkoutForm.current?.querySelector(
-      '[data-checkout-step="' + step + '"]',
+      '[data-checkout-step="' + number + '"]',
     );
     for (const field of Array.from(
-      section?.querySelectorAll('input,select') || [],
+      section?.querySelectorAll('input,select,textarea') || [],
     )) {
-      if (!(field as HTMLInputElement).reportValidity()) return;
+      const input = field as HTMLInputElement;
+      if (input.willValidate && !input.checkValidity()) {
+        openStep(number);
+        requestAnimationFrame(() => input.reportValidity());
+        return false;
+      }
     }
-    setError('');
-    setStep(step + 1);
+    return true;
   }
-  if (confirmingPayment && !order)
-    return (
-      <div className="store-shell">
-        <section className="sec pg">
-          <PagoAprobado status="processing" />
-          {createdCustomer && (
-            <TarjetaClub
-              nombre={[createdCustomer.name, createdCustomer.surname]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          )}
-        </section>
-      </div>
+  function advance() {
+    if (!validateStep(step)) return;
+    const form = new FormData(checkoutForm.current!);
+    const value = (key: string) => {
+      const entry = form.get(key);
+      return typeof entry === 'string' ? entry : '';
+    };
+    setContactSummary(value('email'));
+    setDeliverySummary(
+      [
+        value('firstName') + ' ' + value('surname'),
+        shippingMethod === 'pickup'
+          ? 'Retiro en el local'
+          : value('address') + ', ' + value('city') + ' (' + postalCode + ')',
+      ].join(' · '),
     );
+    setCompleted((current) =>
+      current.map((done, index) => (index === step - 1 ? true : done)),
+    );
+    openStep(Math.min(3, step + 1));
+  }
+  function choosePayment(method: 'transfer' | 'card') {
+    setPayment(method);
+    setAppliedCouponCode('');
+    setCouponCode('');
+    setCouponMessage('');
+    trackStore('add_payment_info', { metadata: { method } });
+  }
   if (order)
     return (
       <div className="store-shell">
@@ -549,476 +599,475 @@ export default function Checkout({
       </div>
     );
   return (
-    <div className="store-shell">
-      <section className="store-checkout sec lt pg">
-        <a href="/">
-          <ArrowLeft /> Seguir comprando
-        </a>
-        <h1 className="d h1">Pagar</h1>
-        {createdCustomer && (
-          <TarjetaClub
-            nombre={[createdCustomer.name, createdCustomer.surname]
-              .filter(Boolean)
-              .join(' ')}
-          />
-        )}
-        <CheckoutSteps step={step} />
-        <div className="store-checkout-grid">
-          <form
-            ref={checkoutForm}
-            onSubmit={(event) => {
-              if (step < 3) {
-                event.preventDefault();
-                advance();
-              } else void submit(event);
-            }}
-            noValidate={step < 3}
-            className="store-checkout-form"
-            data-step={step}
+    <section className="checkout-proposal">
+      <h1 className="fg-sr-only">Finalizar tu compra</h1>
+      {confirmingPayment && (
+        <section
+          className="cp-processing"
+          aria-label="Procesando tu pedido"
+          aria-live="polite"
+        >
+          <PagoAprobado status="processing" />
+          {createdCustomer && (
+            <TarjetaClub
+              nombre={[createdCustomer.name, createdCustomer.surname]
+                .filter(Boolean)
+                .join(' ')}
+            />
+          )}
+        </section>
+      )}
+      <div className="cp-layout" hidden={confirmingPayment}>
+        <form
+          ref={checkoutForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (step < 3) advance();
+            else void submit(event);
+          }}
+          noValidate
+          className="cp-form"
+        >
+          <CheckoutSteps step={step} labels={['Contacto', 'Entrega', 'Pago']} />
+          <CheckoutPanel
+            number={1}
+            title="CONTACTO"
+            open={step === 1}
+            completed={completed[0]}
+            summary={contactSummary}
+            onEdit={() => openStep(1)}
           >
-            <section
-              data-checkout-step={1}
-              hidden={step !== 1}
-              className={step === 1 ? 'store-step-enter' : undefined}
-            >
-              <div className="store-form-step">
-                <span>01</span>
-                <div>
-                  <h2>Tus datos</h2>
-                  <p>
-                    {session?.customer
-                      ? 'Usamos los datos de tu cuenta.'
-                      : 'Podés comprar sin cuenta y registrarte después.'}
-                  </p>
-                  {!session?.customer && (
-                    <a className="store-checkout-login" href="/cuenta">
-                      Ingresar para completar más rápido
-                    </a>
-                  )}
-                </div>
-              </div>
-              <div className="store-fields">
+            <div className="cp-email">
+              <div className="cp-email-row">
                 <AnimatedLabel>
-                  NOMBRE
-                  <input
-                    name="firstName"
-                    autoComplete="name"
-                    defaultValue={session?.customer?.name || ''}
-                    maxLength={80}
-                    required
-                  />
-                </AnimatedLabel>
-                <AnimatedLabel>
-                  APELLIDO
-                  <input
-                    name="surname"
-                    autoComplete="name"
-                    defaultValue={session?.customer?.surname || ''}
-                    maxLength={80}
-                    required
-                  />
-                </AnimatedLabel>
-                <AnimatedLabel className="store-email-control">
                   Email
-                  <span>
-                    <input
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      defaultValue={session?.customer?.email || ''}
-                      maxLength={120}
-                      onChange={() => {
-                        setEmailChallenge('');
-                        setEmailVerificationToken('');
-                        setVerificationCode('');
-                        setVerificationMessage('');
-                      }}
-                      required
-                    />
-                    {!session?.customer && (
-                      <button
-                        type="button"
-                        onClick={requestEmailCode}
-                        disabled={verificationBusy}
-                      >
-                        {emailVerificationToken
-                          ? 'Verificado'
-                          : 'Enviar código'}
-                      </button>
-                    )}
-                  </span>
-                  {!session?.customer &&
-                    emailChallenge &&
-                    !emailVerificationToken && (
-                      <span className="store-email-code">
-                        <input
-                          aria-label="Código de verificación"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          value={verificationCode}
-                          onChange={(event) =>
-                            setVerificationCode(
-                              event.target.value.replace(/\D/g, '').slice(0, 6),
-                            )
-                          }
-                          maxLength={6}
-                          placeholder="Código de 6 dígitos"
-                        />
-                        <button
-                          type="button"
-                          onClick={verifyEmailCode}
-                          disabled={
-                            verificationBusy || verificationCode.length !== 6
-                          }
-                        >
-                          Verificar
-                        </button>
-                      </span>
-                    )}
-                  {!session?.customer && verificationMessage && (
-                    <small className={emailVerificationToken ? 'verified' : ''}>
-                      {verificationMessage}
-                    </small>
-                  )}
-                </AnimatedLabel>
-                <AnimatedLabel>
-                  Teléfono
                   <input
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    defaultValue={session?.customer?.phone || ''}
-                    maxLength={25}
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    defaultValue={session?.customer?.email || ''}
+                    maxLength={120}
+                    onChange={() => {
+                      setEmailChallenge('');
+                      setEmailVerificationToken('');
+                      setVerificationCode('');
+                      setVerificationMessage('');
+                    }}
                     required
                   />
                 </AnimatedLabel>
-                <AnimatedLabel>
-                  DNI <small>Para identificar la entrega</small>
-                  <input
-                    name="document"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    pattern="[0-9]{7,11}"
-                    maxLength={11}
-                    onInput={(event) => {
-                      event.currentTarget.value = event.currentTarget.value
-                        .replace(/\D/g, '')
-                        .slice(0, 11);
-                    }}
-                  />
-                </AnimatedLabel>
+                {!session?.customer && (
+                  <button
+                    type="button"
+                    onClick={requestEmailCode}
+                    disabled={verificationBusy}
+                  >
+                    {emailVerificationToken ? 'Verificado' : 'Enviar código'}
+                  </button>
+                )}
               </div>
-            </section>
-            <section
-              data-checkout-step={2}
-              hidden={step !== 2}
-              className={step === 2 ? 'store-step-enter' : undefined}
-            >
-              <div className="store-form-step">
-                <span>02</span>
-                <div>
-                  <h2>Entrega</h2>
-                  <p>Elegí envío o retiro.</p>
-                </div>
-              </div>
-              <div className="store-choice-row">
-                <button
-                  type="button"
-                  className={
-                    shippingMethod === 'correo-argentino-home' ? 'active' : ''
-                  }
-                  onClick={() => {
-                    setShippingMethod('correo-argentino-home');
-                    trackStore('add_shipping_info', {
-                      metadata: { method: 'correo-argentino-home' },
-                    });
-                  }}
-                >
-                  <Truck />
-                  <strong>Envío a domicilio</strong>
-                  <small>A domicilio</small>
-                </button>
-                <button
-                  type="button"
-                  className={shippingMethod === 'pickup' ? 'active' : ''}
-                  onClick={() => {
-                    setShippingMethod('pickup');
-                    trackStore('add_shipping_info', {
-                      metadata: { method: 'pickup' },
-                    });
-                  }}
-                >
-                  <PackageCheck />
-                  <strong>Retiro en el local</strong>
-                  <small>Sin costo</small>
-                </button>
-              </div>
-              {shippingMethod !== 'pickup' && (
-                <div className="store-fields">
-                  {!!session?.addresses?.length && (
-                    <AnimatedLabel className="wide">
-                      Dirección guardada
-                      <select
-                        value={selectedAddressId}
-                        onChange={(event) => {
-                          setSelectedAddressId(event.target.value);
-                          const address = session.addresses.find(
-                            (item: any) => item.id === event.target.value,
-                          );
-                          fillShippingAddress(address);
-                        }}
-                      >
-                        <option value="">Usar otra dirección</option>
-                        {session.addresses.map((item: any) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label} · {item.address}, {item.city}
-                          </option>
-                        ))}
-                      </select>
-                      <small>
-                        Podés modificar estos datos solo para esta compra.
-                      </small>
-                    </AnimatedLabel>
-                  )}
-                  <AnimatedLabel>
-                    País
-                    <select
-                      name="country"
-                      autoComplete="country-name"
-                      defaultValue="Argentina"
-                      required
-                    >
-                      <option>Argentina</option>
-                    </select>
-                  </AnimatedLabel>
-                  <AnimatedLabel>
-                    Código postal
+              {!session?.customer &&
+                emailChallenge &&
+                !emailVerificationToken && (
+                  <span className="store-email-code">
                     <input
-                      value={postalCode}
-                      onChange={(e) =>
-                        setPostalCode(
-                          e.target.value.replace(/\D/g, '').slice(0, 4),
+                      aria-label="Código de verificación"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={verificationCode}
+                      onChange={(event) =>
+                        setVerificationCode(
+                          event.target.value.replace(/\D/g, '').slice(0, 6),
                         )
                       }
-                      inputMode="numeric"
-                      autoComplete="postal-code"
-                      pattern="[0-9]{4}"
-                      maxLength={4}
-                      required
+                      maxLength={6}
+                      placeholder="Código de 6 dígitos"
                     />
-                  </AnimatedLabel>
-                  <AnimatedLabel>
-                    Dirección
-                    <input
-                      name="address"
-                      autoComplete="street-address"
-                      placeholder="Calle y número"
-                      maxLength={100}
-                      required
-                    />
-                  </AnimatedLabel>
-                  <AnimatedLabel>
-                    Piso / departamento <small>Opcional</small>
-                    <input
-                      name="addressExtra"
-                      autoComplete="address-line2"
-                      maxLength={50}
-                    />
-                  </AnimatedLabel>
-                  <AnimatedLabel>
-                    Ciudad
-                    <input
-                      name="city"
-                      autoComplete="address-level2"
-                      maxLength={60}
-                      required
-                    />
-                  </AnimatedLabel>
-                  <AnimatedLabel>
-                    Provincia
-                    <select
-                      name="province"
-                      autoComplete="address-level1"
-                      required
-                      defaultValue=""
+                    <button
+                      type="button"
+                      onClick={verifyEmailCode}
+                      disabled={
+                        verificationBusy || verificationCode.length !== 6
+                      }
                     >
-                      <option value="" disabled>
-                        Seleccionar
-                      </option>
-                      {[
-                        'Buenos Aires',
-                        'CABA',
-                        'Catamarca',
-                        'Chaco',
-                        'Chubut',
-                        'Córdoba',
-                        'Corrientes',
-                        'Entre Ríos',
-                        'Formosa',
-                        'Jujuy',
-                        'La Pampa',
-                        'La Rioja',
-                        'Mendoza',
-                        'Misiones',
-                        'Neuquén',
-                        'Río Negro',
-                        'Salta',
-                        'San Juan',
-                        'San Luis',
-                        'Santa Cruz',
-                        'Santa Fe',
-                        'Santiago del Estero',
-                        'Tierra del Fuego',
-                        'Tucumán',
-                      ].map((province) => (
-                        <option key={province}>{province}</option>
-                      ))}
-                    </select>
-                  </AnimatedLabel>
-                </div>
-              )}
-              {shipping && (
-                <p className="store-shipping-result">
-                  <Truck />
-                  {shipping.name} · {shipping.days}
-                  <strong>
-                    {shipping.amount ? storeMoney(shipping.amount) : 'Gratis'}
-                  </strong>
-                </p>
-              )}
-              {session?.customer && shippingMethod !== 'pickup' && (
-                <AnimatedLabel className="store-checkout-consent">
-                  <input name="saveAddress" type="checkbox" defaultChecked />
-                  <span>Guardar esta dirección en Mi FRAGUAN.</span>
-                </AnimatedLabel>
-              )}
-            </section>
-            <section
-              data-checkout-step={3}
-              hidden={step !== 3}
-              className={step === 3 ? 'store-step-enter' : undefined}
-            >
-              <div className="store-form-step">
-                <span>03</span>
-                <div>
-                  <h2>Pago</h2>
-                  <p>El total se recalcula automáticamente.</p>
-                </div>
-              </div>
-              <div className="store-payment-choice">
-                <button
-                  type="button"
-                  className={payment === 'transfer' ? 'active' : ''}
-                  onClick={() => {
-                    setPayment('transfer');
-                    setAppliedCouponCode('');
-                    setCouponCode('');
-                    setCouponMessage('');
-                    trackStore('add_payment_info', {
-                      metadata: { method: 'transfer' },
-                    });
-                  }}
-                >
-                  <Landmark />
-                  <span>
-                    <strong>Transferencia bancaria · 10% OFF</strong>
-                    <small>10% OFF automático</small>
+                      Verificar
+                    </button>
                   </span>
-                  <b>{storeMoney(subtotal - discount)}</b>
-                </button>
-                <button
-                  type="button"
-                  className={
-                    payment === 'card' && cardChoice === 'card' ? 'active' : ''
-                  }
-                  onClick={() => {
-                    setPayment('card');
-                    setCardChoice('card');
-                    setAppliedCouponCode('');
-                    setCouponCode('');
-                    setCouponMessage('');
-                    trackStore('add_payment_info', {
-                      metadata: { method: 'card' },
-                    });
-                  }}
-                >
-                  <CreditCard />
-                  <span>
-                    <strong>Tarjeta de crédito o débito</strong>
-                    <small>Crédito o débito</small>
-                  </span>
-                  <b>{storeMoney(subtotal)}</b>
-                </button>
+                )}
+              {!session?.customer && verificationMessage && (
+                <small className={emailVerificationToken ? 'verified' : ''}>
+                  {verificationMessage}
+                </small>
+              )}
+            </div>
 
-                <button
-                  type="button"
-                  className={
-                    payment === 'card' && cardChoice === 'mp' ? 'active' : ''
-                  }
-                  onClick={() => {
-                    setPayment('card');
-                    setCardChoice('mp');
-                    setAppliedCouponCode('');
-                    setCouponCode('');
-                    setCouponMessage('');
-                  }}
-                >
-                  <CreditCard />
-                  <span>
-                    <strong>Mercado Pago</strong>
-                    <small>Dinero en cuenta, tarjetas guardadas</small>
-                  </span>
-                </button>
-                <button type="button" disabled>
-                  <Landmark />
-                  <span>
-                    <strong>Efectivo en el local</strong>
-                    <small>
-                      {shippingMethod === 'pickup'
-                        ? 'Próximamente'
-                        : 'Solo con retiro en el local'}
-                    </small>
-                  </span>
-                </button>
-              </div>
-              {!session?.customer && (
+            <p className="cp-muted cp-contact-note">
+              {session?.customer ? (
+                'Usamos los datos de tu cuenta.'
+              ) : (
                 <>
-                  <AnimatedLabel className="design-consent">
-                    <input
-                      type="checkbox"
-                      checked={createAccount}
-                      disabled={!passwordAuthEnabled}
-                      onChange={(e) => setCreateAccount(e.target.checked)}
-                    />
-                    Crear mi cuenta con estos datos
-                  </AnimatedLabel>
-                  {createAccount && (
-                    <AnimatedLabel className="fi">
-                      CONTRASEÑA (8+)
-                      <input
-                        name="accountPassword"
-                        type="password"
-                        autoComplete="new-password"
-                        minLength={8}
-                        maxLength={128}
-                        required
-                      />
-                    </AnimatedLabel>
-                  )}
+                  Comprás sin crear cuenta. ¿Ya tenés una?{' '}
+                  <a href="/cuenta">Ingresar →</a> y tus datos se completan
+                  solos.
                 </>
               )}
-            </section>
-            <AnimatedLabel className="store-notes">
-              Notas para el pedido
+            </p>
+            <button type="button" className="cp-go" onClick={advance}>
+              <RollingText>CONTINUAR</RollingText>
+            </button>
+          </CheckoutPanel>
+          <CheckoutPanel
+            number={2}
+            title="ENTREGA"
+            open={step === 2}
+            completed={completed[1]}
+            summary={deliverySummary}
+            onEdit={() => openStep(2)}
+          >
+            <fieldset className="cp-options">
+              <legend className="fg-sr-only">Método de entrega</legend>
+              {(['correo-argentino-home', 'pickup'] as const).map((method) => (
+                <label className="cp-option" key={method}>
+                  <input
+                    type="radio"
+                    name="deliveryChoice"
+                    value={method}
+                    checked={shippingMethod === method}
+                    onChange={() => {
+                      setShippingMethod(method);
+                      trackStore('add_shipping_info', { metadata: { method } });
+                    }}
+                  />
+                  <span className="cp-dot" aria-hidden="true" />
+                  <span>
+                    <strong>
+                      {method === 'pickup'
+                        ? 'Retiro en el local'
+                        : 'Envío a domicilio'}
+                    </strong>
+                    <small>
+                      {method === 'pickup' ? 'Sin cargo' : 'A todo el país'}
+                    </small>
+                  </span>
+                  <b>
+                    {method === 'pickup'
+                      ? 'Gratis'
+                      : shippingMethod === method && shipping
+                        ? shipping.amount
+                          ? storeMoney(shipping.amount)
+                          : 'Gratis'
+                        : 'A calcular'}
+                  </b>
+                </label>
+              ))}
+            </fieldset>
+            <div className="store-fields cp-recipient">
+              <AnimatedLabel>
+                NOMBRE
+                <input
+                  name="firstName"
+                  type="text"
+                  autoComplete={recipientAutocomplete.firstName}
+                  defaultValue={session?.customer?.name || ''}
+                  maxLength={80}
+                  required
+                />
+              </AnimatedLabel>
+              <AnimatedLabel>
+                APELLIDO
+                <input
+                  name="surname"
+                  type="text"
+                  autoComplete={recipientAutocomplete.surname}
+                  defaultValue={session?.customer?.surname || ''}
+                  maxLength={80}
+                  required
+                />
+              </AnimatedLabel>
+
+              <AnimatedLabel>
+                Teléfono
+                <input
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  defaultValue={session?.customer?.phone || ''}
+                  maxLength={25}
+                  required
+                />
+              </AnimatedLabel>
+              <AnimatedLabel>
+                DNI <small>Para identificar la entrega</small>
+                <input
+                  name="document"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  pattern="[0-9]{7,11}"
+                  maxLength={11}
+                  onInput={(event) => {
+                    event.currentTarget.value = event.currentTarget.value
+                      .replace(/\D/g, '')
+                      .slice(0, 11);
+                  }}
+                />
+              </AnimatedLabel>
+            </div>
+            <fieldset
+              className="store-fields cp-address"
+              hidden={shippingMethod === 'pickup'}
+              disabled={shippingMethod === 'pickup'}
+            >
+              {!!session?.addresses?.length && (
+                <AnimatedLabel className="wide">
+                  Dirección guardada
+                  <select
+                    value={selectedAddressId}
+                    onChange={(event) => {
+                      setSelectedAddressId(event.target.value);
+                      const address = session.addresses.find(
+                        (item: any) => item.id === event.target.value,
+                      );
+                      fillShippingAddress(address);
+                    }}
+                  >
+                    <option value="">Usar otra dirección</option>
+                    {session.addresses.map((item: any) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label} · {item.address}, {item.city}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Podés modificar estos datos solo para esta compra.
+                  </small>
+                </AnimatedLabel>
+              )}
+              <input type="hidden" name="country" value="Argentina" />
+              <AnimatedLabel>
+                Código postal
+                <input
+                  name="postalCode"
+                  value={postalCode}
+                  onChange={(e) =>
+                    setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 4))
+                  }
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  pattern="[0-9]{4}"
+                  maxLength={4}
+                  required
+                />
+              </AnimatedLabel>
+              <AnimatedLabel>
+                Dirección
+                <input
+                  name="address"
+                  autoComplete="street-address"
+                  placeholder="Calle y número"
+                  maxLength={100}
+                  required
+                />
+              </AnimatedLabel>
+              <AnimatedLabel>
+                Piso / departamento <small>Opcional</small>
+                <input
+                  name="addressExtra"
+                  autoComplete="address-line2"
+                  maxLength={50}
+                />
+              </AnimatedLabel>
+              <AnimatedLabel>
+                Ciudad
+                <input
+                  name="city"
+                  autoComplete="address-level2"
+                  maxLength={60}
+                  required
+                />
+              </AnimatedLabel>
+              <AnimatedLabel>
+                Provincia
+                <select
+                  name="province"
+                  autoComplete="address-level1"
+                  required
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Seleccionar
+                  </option>
+                  {[
+                    'Buenos Aires',
+                    'CABA',
+                    'Catamarca',
+                    'Chaco',
+                    'Chubut',
+                    'Córdoba',
+                    'Corrientes',
+                    'Entre Ríos',
+                    'Formosa',
+                    'Jujuy',
+                    'La Pampa',
+                    'La Rioja',
+                    'Mendoza',
+                    'Misiones',
+                    'Neuquén',
+                    'Río Negro',
+                    'Salta',
+                    'San Juan',
+                    'San Luis',
+                    'Santa Cruz',
+                    'Santa Fe',
+                    'Santiago del Estero',
+                    'Tierra del Fuego',
+                    'Tucumán',
+                  ].map((province) => (
+                    <option key={province}>{province}</option>
+                  ))}
+                </select>
+              </AnimatedLabel>
+            </fieldset>
+            {shipping && (
+              <p className="store-shipping-result">
+                <Truck />
+                {shipping.name} · {shipping.days}
+                <strong>
+                  {shipping.amount ? storeMoney(shipping.amount) : 'Gratis'}
+                </strong>
+              </p>
+            )}
+            {session?.customer && shippingMethod !== 'pickup' && (
+              <AnimatedLabel className="store-checkout-consent">
+                <input name="saveAddress" type="checkbox" defaultChecked />
+                <span>Guardar esta dirección en Mi FRAGUAN.</span>
+              </AnimatedLabel>
+            )}
+            <button type="button" className="cp-go" onClick={advance}>
+              <RollingText>CONTINUAR AL PAGO</RollingText>
+            </button>
+          </CheckoutPanel>
+          <CheckoutPanel
+            number={3}
+            title="PAGO"
+            open={step === 3}
+            completed={false}
+            summary=""
+            onEdit={() => openStep(3)}
+          >
+            <p className="cp-muted">
+              Tus prendas se reservan al crear el pedido.
+            </p>
+            <fieldset className="cp-options">
+              <legend className="fg-sr-only">Medio de pago</legend>
+              <label className="cp-option">
+                <input
+                  type="radio"
+                  name="paymentChoice"
+                  value="transfer"
+                  checked={payment === 'transfer'}
+                  onChange={() => choosePayment('transfer')}
+                />
+                <span className="cp-dot" aria-hidden="true" />
+                <span>
+                  <strong>Transferencia bancaria</strong>
+                  <small>
+                    10% OFF automático · ahorrás{' '}
+                    {storeMoney(Math.floor(subtotal * 0.1))}
+                  </small>
+                </span>
+                <span className="cp-tag">10% OFF</span>
+              </label>
+              <label className="cp-option">
+                <input
+                  type="radio"
+                  name="paymentChoice"
+                  value="card"
+                  checked={payment === 'card'}
+                  onChange={() => choosePayment('card')}
+                />
+                <span className="cp-dot" aria-hidden="true" />
+                <span>
+                  <strong>Tarjeta de crédito o débito</strong>
+                  <small>Continuás en el pago seguro de Mercado Pago.</small>
+                </span>
+              </label>
+            </fieldset>
+            <details className="cp-optional">
+              <summary>¿Tenés un código de descuento?</summary>{' '}
+              <div className="store-coupon">
+                <AnimatedLabel htmlFor="coupon">¿Tenés un cupón?</AnimatedLabel>
+                <div>
+                  <input
+                    id="coupon"
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setAppliedCouponCode('');
+                      setCouponMessage('');
+                    }}
+                    placeholder="CÓDIGO"
+                    maxLength={30}
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={
+                      !couponCode ||
+                      (shippingMethod !== 'pickup' &&
+                        postalCode.replace(/\D/g, '').length !== 4)
+                    }
+                  >
+                    Aplicar
+                  </button>
+                </div>
+                {couponMessage && <small>{couponMessage}</small>}
+              </div>
+            </details>
+            <details className="cp-optional">
+              <summary>Agregar notas al pedido (opcional)</summary>
               <textarea
                 name="notes"
-                rows={2}
+                rows={3}
                 maxLength={240}
-                placeholder="Opcional · máximo 240 caracteres"
+                aria-label="Notas para el pedido"
+                placeholder="Máximo 240 caracteres"
               />
-            </AnimatedLabel>
-            <AnimatedLabel className="store-checkout-consent">
-              <input type="checkbox" required />
+            </details>
+            {!session?.customer && (
+              <>
+                <AnimatedLabel className="design-consent">
+                  <input
+                    type="checkbox"
+                    checked={createAccount}
+                    disabled={!passwordAuthEnabled}
+                    onChange={(e) => setCreateAccount(e.target.checked)}
+                  />
+                  <span>
+                    <strong>Crear mi cuenta con estos datos</strong>
+                    <small className="cp-account-help">
+                      {passwordAuthEnabled
+                        ? 'Sumás tus compras del local y online, preferencias y beneficios del Club.'
+                        : 'El registro todavía no está habilitado. Podés continuar como invitado.'}
+                    </small>
+                  </span>
+                </AnimatedLabel>
+                {createAccount && (
+                  <AnimatedLabel className="fi">
+                    CONTRASEÑA (8+)
+                    <input
+                      name="accountPassword"
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={8}
+                      maxLength={128}
+                      required
+                    />
+                  </AnimatedLabel>
+                )}
+              </>
+            )}
+            <AnimatedLabel className="store-checkout-consent cp-terms">
+              <input name="termsConsent" type="checkbox" required />
               <span>
                 Confirmo que los datos son correctos y acepto los{' '}
                 <a
@@ -1083,13 +1132,29 @@ export default function Checkout({
                 Quiero recibir ayuda por email si dejo esta compra sin terminar.
               </span>
             </AnimatedLabel>
+            {!session?.customer &&
+              !emailVerificationToken &&
+              !createAccount && (
+                <p className="cp-muted">
+                  Para confirmar el pedido,{' '}
+                  <button
+                    type="button"
+                    className="cp-edit"
+                    onClick={() => openStep(1)}
+                  >
+                    verificá tu email en Contacto
+                  </button>
+                  .
+                </p>
+              )}
             {error && (
-              <p className="store-buy-error" role="alert">
+              <p className="cp-error" role="alert">
                 {error}
               </p>
             )}
             <button
-              className="store-confirm-order"
+              type="submit"
+              className="cp-go"
               disabled={
                 busy ||
                 pricingBusy ||
@@ -1099,137 +1164,129 @@ export default function Checkout({
                   !createAccount)
               }
             >
-              {busy
-                ? 'Reservando stock…'
-                : payment === 'transfer'
-                  ? 'Crear pedido y ver datos'
-                  : 'Continuar al pago'}
-              <ArrowRight />
+              <RollingText>
+                {busy
+                  ? 'RESERVANDO STOCK…'
+                  : payment === 'transfer'
+                    ? 'CONFIRMAR PEDIDO'
+                    : 'CONTINUAR AL PAGO'}
+              </RollingText>
             </button>
-            <div className="row design-checkout-actions">
-              {step > 1 && (
-                <button
-                  type="button"
-                  className="btn g"
-                  onClick={() => {
-                    setStep(step - 1);
-                    setError('');
-                  }}
-                >
-                  <RollingText>← VOLVER</RollingText>
-                </button>
-              )}
-              {step < 3 && (
-                <button type="button" className="btn a" onClick={advance}>
-                  <RollingText>CONTINUAR →</RollingText>
-                </button>
-              )}
-            </div>
-            <p className="store-secure">
-              <ShieldCheck /> Tus prendas se reservan al crear el pedido.
+            <p className="cp-confirm-total">
+              {pricing ? 'Total' : 'Total estimado'}{' '}
+              <b>
+                <Odometer value={total / 100} />
+              </b>
             </p>
-          </form>
-          <aside className="store-order-summary">
-            <h2 className="d">Resumen</h2>
-            {cart.map((item) => (
-              <div className="store-summary-item" key={item.id}>
-                <span>
-                  <strong>{item.productName}</strong>
-                  <small>
-                    {item.color} · {item.size}
-                  </small>
+          </CheckoutPanel>
+          {error && step < 3 && (
+            <p className="cp-error" role="alert">
+              {error}
+            </p>
+          )}
+        </form>
+        <aside className="cp-aside" aria-label="Resumen del pedido">
+          <details
+            open={summaryOpen}
+            onToggle={(event) => setSummaryOpen(event.currentTarget.open)}
+          >
+            <summary>
+              <span>TU PEDIDO</span>
+              <span>
+                <Odometer value={total / 100} />
+                <span className="cp-summary-chevron" aria-hidden="true">
+                  ⌄
                 </span>
-                <span className="store-summary-edit">
+              </span>
+            </summary>
+            <div className="cp-summary-content">
+              {cart.map((item) => (
+                <div className="cp-item" key={item.id}>
+                  <span className="cp-thumbnail" aria-hidden="true">
+                    {item.productName
+                      .split(' ')
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((word) => word[0])
+                      .join('')
+                      .toUpperCase()}
+                  </span>
+                  <div>
+                    <strong>{item.productName}</strong>
+                    <small>
+                      {item.color} · {item.size} · ×{item.quantity}
+                    </small>
+                    <div className="cp-quantity">
+                      <button
+                        type="button"
+                        onClick={() => update(item.id, item.quantity - 1)}
+                        aria-label={'Quitar una unidad de ' + item.productName}
+                      >
+                        −
+                      </button>
+                      <span>{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => update(item.id, item.quantity + 1)}
+                        aria-label={'Agregar una unidad de ' + item.productName}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                   <b>
                     <Odometer value={(item.price * item.quantity) / 100} />
                   </b>
-                  <span className="store-summary-quantity">
-                    <button
-                      type="button"
-                      onClick={() => update(item.id, item.quantity - 1)}
-                      aria-label="Quitar una unidad"
-                    >
-                      −
-                    </button>
-                    <strong>{item.quantity}</strong>
-                    <button
-                      type="button"
-                      onClick={() => update(item.id, item.quantity + 1)}
-                      aria-label="Agregar una unidad"
-                    >
-                      +
-                    </button>
-                  </span>
-                </span>
-              </div>
-            ))}
-            <div className="store-coupon">
-              <AnimatedLabel htmlFor="coupon">¿Tenés un cupón?</AnimatedLabel>
-              <div>
-                <input
-                  id="coupon"
-                  value={couponCode}
-                  onChange={(e) => {
-                    setCouponCode(e.target.value.toUpperCase());
-                    setAppliedCouponCode('');
-                    setCouponMessage('');
-                  }}
-                  placeholder="CÓDIGO"
-                  maxLength={30}
-                />
-                <button
-                  type="button"
-                  onClick={applyCoupon}
-                  disabled={
-                    !couponCode ||
-                    (shippingMethod !== 'pickup' &&
-                      postalCode.replace(/\D/g, '').length !== 4)
-                  }
-                >
-                  Aplicar
-                </button>
-              </div>
-              {couponMessage && <small>{couponMessage}</small>}
+                </div>
+              ))}
+              <dl>
+                <div>
+                  <dt>Subtotal</dt>
+                  <dd>
+                    <Odometer value={subtotal / 100} />
+                  </dd>
+                </div>
+                {transferDiscount > 0 && (
+                  <div className="discount">
+                    <dt>10% transferencia</dt>
+                    <dd>−{storeMoney(transferDiscount)}</dd>
+                  </div>
+                )}
+                {couponDiscount > 0 && (
+                  <div className="discount">
+                    <dt>Cupón</dt>
+                    <dd>−{storeMoney(couponDiscount)}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt>Envío</dt>
+                  <dd>
+                    {shipping
+                      ? shipping.amount
+                        ? storeMoney(shipping.amount)
+                        : 'Gratis'
+                      : 'A calcular'}
+                  </dd>
+                </div>
+                <div className="total">
+                  <dt>{pricing ? 'Total' : 'Total estimado'}</dt>
+                  <dd>
+                    <Odometer value={total / 100} />
+                  </dd>
+                </div>
+              </dl>
+              <BarraEnvioGratis
+                subtotal={subtotal / 100}
+                meta={150000}
+                ready={hydrated}
+              />
+              <a className="cp-edit cp-back-cart" href="/carrito">
+                Modificar carrito →
+              </a>
             </div>
-            <dl>
-              <div>
-                <dt>Subtotal</dt>
-                <dd>
-                  <Odometer value={subtotal / 100} />
-                </dd>
-              </div>
-              {transferDiscount > 0 && (
-                <div className="discount">
-                  <dt>10% transferencia</dt>
-                  <dd>−{storeMoney(transferDiscount)}</dd>
-                </div>
-              )}
-              {couponDiscount > 0 && (
-                <div className="discount">
-                  <dt>Cupón</dt>
-                  <dd>−{storeMoney(couponDiscount)}</dd>
-                </div>
-              )}
-              <div>
-                <dt>Envío</dt>
-                <dd>
-                  {shipping
-                    ? shipping.amount
-                      ? storeMoney(shipping.amount)
-                      : 'Gratis'
-                    : 'A calcular'}
-                </dd>
-              </div>
-              <div className="total">
-                <dt>Total</dt>
-                <dd>
-                  <Odometer value={total / 100} />
-                </dd>
-              </div>
-            </dl>
-          </aside>
-        </div>
-      </section>
-    </div>
+          </details>
+        </aside>
+      </div>
+    </section>
   );
 }

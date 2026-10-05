@@ -5,6 +5,8 @@ import { InternalLogin } from './internal-login';
 import type { Metadata } from 'next';
 import { getChatGPTUser } from '../chatgpt-auth';
 import { redirect } from 'next/navigation';
+import { internalPasswordConfigured } from '@/lib/internal-password';
+import { internalSessionsConfigured } from '@/lib/internal-session';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -39,6 +41,9 @@ export default async function InternalAccessPage({
   return (
     <InternalLogin
       localAccess={import.meta.env.DEV}
+      passwordAccess={
+        internalPasswordConfigured() && internalSessionsConfigured()
+      }
       clientId={runtime.INTERNAL_GOOGLE_CLIENT_ID ?? ''}
       returnTo={returnTo}
     />

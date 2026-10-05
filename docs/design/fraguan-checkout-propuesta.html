@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FRAGUAN · checkout (propuesta)</title>
+<style>
+/* Fraguan · animaciones (8) · sin dependencias */
+:root {
+  --fg-ease: cubic-bezier(.22, 1, .36, 1);
+  --fg-line: #cfcac2;
+  --fg-ink: #1a1a1a;
+  --fg-accent: #1a1a1a;
+  --fg-error: #b3261e;
+}
+
+/* 2 · Botones con texto que rueda ------------------------------------- */
+.fg-roll { cursor: pointer; }
+.fg-roll__txt { position: relative; display: inline-block; overflow: hidden; vertical-align: middle; line-height: 1.25; }
+.fg-roll__a, .fg-roll__b { display: block; transition: transform .5s var(--fg-ease); }
+.fg-roll__b { position: absolute; left: 0; top: 100%; width: 100%; white-space: nowrap; }
+.fg-roll:hover .fg-roll__a, .fg-roll:hover .fg-roll__b,
+.fg-roll:focus-visible .fg-roll__a, .fg-roll:focus-visible .fg-roll__b { transform: translateY(-100%); }
+
+/* 3 · Total tipo odómetro --------------------------------------------- */
+.fg-odo { display: inline-flex; height: 1.15em; line-height: 1.15em; overflow: hidden; font-variant-numeric: tabular-nums; vertical-align: bottom; }
+.fg-odo__col { display: inline-block; height: 1.15em; overflow: hidden; }
+.fg-odo__strip { display: flex; flex-direction: column; transition: transform .9s var(--fg-ease); }
+.fg-odo__strip span, .fg-odo__sep { display: block; height: 1.15em; line-height: 1.15em; }
+
+/* 4 · Cambio de color con cortina ------------------------------------- */
+.fg-swipe { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
+/* 5 · Formularios con etiqueta flotante ------------------------------- */
+.fg-field { position: relative; margin-top: 1rem; }
+.fg-field input, .fg-field select, .fg-field textarea {
+  width: 100%; box-sizing: border-box; padding: 1.4rem .9rem .5rem; font: inherit; color: inherit;
+  background: transparent; border: 1px solid var(--fg-line); border-radius: 2px; outline: none;
+  transition: border-color .25s var(--fg-ease), box-shadow .25s var(--fg-ease);
+}
+.fg-field label {
+  position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); transform-origin: left top;
+  color: #6f6a62; pointer-events: none; transition: top .25s var(--fg-ease), transform .25s var(--fg-ease), color .25s;
+}
+.fg-field input:focus + label, .fg-field input:not(:placeholder-shown) + label,
+.fg-field textarea:focus + label, .fg-field textarea:not(:placeholder-shown) + label {
+  top: .5rem; transform: translateY(0) scale(.75);
+}
+.fg-field input:focus, .fg-field textarea:focus { border-color: var(--fg-ink); box-shadow: 0 0 0 3px rgba(0, 0, 0, .08); }
+.fg-field__msg { display: block; min-height: 1.1em; margin-top: .25rem; font-size: .8rem; color: var(--fg-error); opacity: 0; transform: translateY(-4px); transition: all .3s var(--fg-ease); }
+.fg-field.is-error input, .fg-field.is-error textarea { border-color: var(--fg-error); }
+.fg-field.is-error label { color: var(--fg-error); }
+.fg-field.is-error .fg-field__msg { opacity: 1; transform: none; }
+.fg-field.is-shake { animation: fg-shake .45s var(--fg-ease); }
+@keyframes fg-shake {
+  15% { transform: translateX(-7px); } 35% { transform: translateX(6px); }
+  55% { transform: translateX(-4px); } 75% { transform: translateX(2px); } 100% { transform: none; }
+}
+
+/* 6 · Banda de texto que acelera con el scroll ------------------------ */
+.fg-marquee { overflow: hidden; white-space: nowrap; }
+.fg-marquee__track { display: inline-flex; will-change: transform; }
+.fg-marquee__item { flex: none; padding-right: 2.5rem; }
+
+/* 7 · Pasos del checkout ---------------------------------------------- */
+.fg-steps { display: flex; align-items: center; list-style: none; margin: 0; padding: 0; }
+.fg-step { display: flex; align-items: center; flex: 1; gap: .6rem; min-width: 0; }
+.fg-step:last-child { flex: none; }
+.fg-step__dot {
+  position: relative; flex: none; width: 1.9rem; height: 1.9rem; border-radius: 50%; display: grid; place-items: center;
+  border: 1.5px solid var(--fg-line); font-size: .8rem; transition: background .4s var(--fg-ease), border-color .4s var(--fg-ease), color .4s;
+}
+.fg-step__dot svg { position: absolute; width: 60%; height: 60%; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.fg-step__dot path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .5s var(--fg-ease) .15s; }
+.fg-step__num { transition: opacity .2s; }
+.fg-step__label { font-size: .9rem; color: #6f6a62; white-space: nowrap; transition: color .3s; }
+.fg-step__line { position: relative; flex: 1; height: 2px; min-width: 1.5rem; background: var(--fg-line); overflow: hidden; }
+.fg-step__line::after { content: ""; position: absolute; inset: 0; background: var(--fg-accent); transform: scaleX(0); transform-origin: left; transition: transform .7s var(--fg-ease) .35s; }
+.fg-step.is-current .fg-step__dot { border-color: var(--fg-accent); }
+.fg-step.is-current .fg-step__label { color: var(--fg-ink); }
+.fg-step.is-done .fg-step__dot { background: var(--fg-accent); border-color: var(--fg-accent); }
+.fg-step.is-done .fg-step__dot path { stroke-dashoffset: 0; }
+.fg-step.is-done .fg-step__num { opacity: 0; }
+.fg-step.is-done .fg-step__label { color: var(--fg-ink); }
+.fg-step.is-done .fg-step__line::after { transform: scaleX(1); }
+
+/* 8 · Fotos que se revelan con cortina (activar con Fraguan.init) ----- */
+.fg-js [data-reveal] { overflow: hidden; clip-path: inset(0 0 100% 0); transition: clip-path 1.1s var(--fg-ease); }
+.fg-js [data-reveal] > * { transform: scale(1.18); transition: transform 1.5s var(--fg-ease); }
+.fg-js [data-reveal].is-in { clip-path: inset(0 0 0 0); }
+.fg-js [data-reveal].is-in > * { transform: none; }
+
+/* Accesibilidad: sin movimiento si el usuario lo pide ------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .fg-roll__a, .fg-roll__b, .fg-odo__strip, .fg-field, .fg-field *, .fg-step *, .fg-step__line::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  .fg-js [data-reveal], .fg-js [data-reveal] > * { transition-duration: .01ms !important; }
+}
+
+:root{color-scheme:light;--ink:#111;--paper:#f7f6f3;--card:#fff;--line:#d6d3cc;--mut:#67635c;--fg-accent:#111;--fg-ink:#111;--fg-line:#d6d3cc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "Helvetica Neue",Arial,sans-serif}
+button{font:inherit;cursor:pointer}a{color:inherit}
+.ann{background:var(--ink);color:#f7f6f3;font-size:.75rem;letter-spacing:.08em;padding:.5rem 0}
+.hdr{display:flex;justify-content:space-between;align-items:center;max-width:1040px;margin:0 auto;padding:1rem 1.25rem}
+.hdr b{font-size:1.3rem;letter-spacing:.16em}
+.lnk{background:none;border:0;padding:0;font-size:.8rem;letter-spacing:.06em;text-decoration:underline;text-underline-offset:3px}
+.lay{max-width:1040px;margin:0 auto;padding:.5rem 1.25rem 3rem;display:grid;grid-template-columns:1fr 340px;gap:2.5rem;align-items:start}
+.lay aside{grid-column:2;grid-row:1}
+@media(max-width:860px){.lay{grid-template-columns:1fr;gap:1rem}.lay aside{grid-column:1;grid-row:auto;order:-1}}
+.mut{color:var(--mut);font-size:.85rem}
+.sec{background:var(--card);border:1px solid var(--line);margin-bottom:.8rem}
+.hd{display:flex;align-items:center;gap:.8rem;padding:1rem 1.1rem}
+.hd h2{margin:0;font-size:.85rem;letter-spacing:.1em;flex:1}
+.n{width:1.6rem;height:1.6rem;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:.75rem;transition:all .3s var(--fg-ease)}
+.sec.open .n{border-color:var(--ink)}.sec.done:not(.open) .n{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ed{display:none}.sec.done:not(.open) .ed{display:inline}
+.sm{display:none;padding:0 1.1rem 1rem 3.5rem;margin-top:-.5rem;color:var(--mut);font-size:.88rem}.sec.done:not(.open) .sm{display:block}
+.bd{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s var(--fg-ease)}
+.sec.open .bd{grid-template-rows:1fr}
+.bd>div{overflow:hidden;visibility:hidden;transition:visibility 0s .55s}.sec.open .bd>div{visibility:visible;transition-delay:0s}
+.in{padding:.2rem 1.1rem 1.2rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 .8rem}@media(max-width:520px){.g2{grid-template-columns:1fr}}
+.go{background:var(--ink);color:#fff;border:0;padding:1rem 1.4rem;letter-spacing:.07em;font-size:.82rem;border-radius:0;width:100%;margin-top:1.1rem}
+.alt{width:100%;background:transparent;color:var(--ink);border:1.5px solid var(--ink);padding:.9rem;letter-spacing:.07em;font-size:.82rem}
+.or{display:flex;align-items:center;gap:.8rem;color:var(--mut);font-size:.75rem;letter-spacing:.1em;margin:1rem 0 .2rem}.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.opts{display:grid;gap:.6rem;margin-top:.4rem}
+.opt{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:.9rem;align-items:center;padding:1rem 1.1rem;border:1.5px solid var(--line);background:var(--card);cursor:pointer;transition:border-color .25s var(--fg-ease),box-shadow .25s var(--fg-ease),opacity .25s}
+.opt input{position:absolute;inset:0;opacity:0;margin:0;cursor:inherit}
+.dot{width:1.3rem;height:1.3rem;border-radius:50%;border:1.5px solid #8a867e;display:grid;place-items:center}
+.dot::after{content:"";width:.65rem;height:.65rem;border-radius:50%;background:var(--ink);transform:scale(0);transition:transform .35s var(--fg-ease)}
+.opt:has(input:checked){border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}.opt:has(input:checked) .dot{border-color:var(--ink)}.opt:has(input:checked) .dot::after{transform:scale(1)}
+.opt:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:3px}
+.opt.off{opacity:.5;cursor:not-allowed;background:transparent}.opt b{display:block}
+.tag{font-size:.75rem;font-weight:700;background:var(--ink);color:#fff;padding:.25rem .55rem}
+.hint{grid-column:2/4;font-size:.82rem;color:var(--mut);margin-top:-.4rem}.hint button{position:relative;z-index:1}
+.chk{display:flex;gap:.7rem;align-items:flex-start;padding:.8rem 0}
+.chk input{width:1.2rem;height:1.2rem;margin:.15rem 0 0;accent-color:var(--ink);flex:none}.chk label{cursor:pointer}
+.terms{border:1px solid var(--line);padding:.8rem 1rem;margin-top:.8rem}.terms.is-shake{animation:fg-shake .45s var(--fg-ease)}.terms.is-error{border-color:var(--fg-error)}.terms.is-error .fg-field__msg{opacity:1;transform:none}
+details.p{border-top:1px solid var(--line);padding:.7rem 0;font-size:.88rem}details.p summary{cursor:pointer}
+details.p textarea,details.p input{width:100%;margin-top:.6rem;padding:.7rem;font:inherit;border:1px solid var(--line);background:transparent}
+aside{background:var(--card);border:1px solid var(--line);padding:1.1rem}
+aside summary{display:flex;justify-content:space-between;cursor:pointer;list-style:none;font-size:.85rem;letter-spacing:.1em;font-weight:700}
+aside summary::-webkit-details-marker{display:none}
+.it,.ln{display:flex;justify-content:space-between;gap:1rem;font-size:.9rem;padding:.3rem 0}.ln.s{color:var(--mut)}.ln.t{border-top:1px solid var(--line);margin-top:.5rem;padding-top:.8rem;font-weight:700;font-size:1.05rem}
+.ph{width:3.2rem;height:4rem;background:#e7e2d8;display:grid;place-items:center;font-size:.8rem;letter-spacing:.1em;color:var(--mut);flex:none}
+.it{align-items:center}.it>div{flex:1}
+.bar{height:4px;background:var(--line);margin:.5rem 0 .2rem}.bar i{display:block;height:100%;background:var(--ink);transition:width .6s var(--fg-ease)}
+.ok{display:none;background:var(--ink);color:#fff;padding:1.2rem;margin-top:1rem}.ok.on{display:block}
+.fg-steps{margin-bottom:1rem}
+</style>
+</head>
+<body>
+<div class="ann fg-marquee" data-fg-marquee data-speed="40"><div class="fg-marquee__track"><span class="fg-marquee__item">10% OFF PAGANDO POR TRANSFERENCIA ✦ ENVÍOS A TODO EL PAÍS ✦</span></div></div>
+<div class="hdr"><button class="lnk">← VOLVER AL CARRITO</button><b>FRAGUAN</b><span class="mut">Compra segura</span></div>
+
+<main class="lay">
+<form id="f" novalidate>
+  <ol class="fg-steps" id="steps">
+    <li class="fg-step"><span class="fg-step__dot"><span class="fg-step__num">1</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="fg-step__label">Contacto</span><span class="fg-step__line"></span></li>
+    <li class="fg-step"><span class="fg-step__dot"><span class="fg-step__num">2</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="fg-step__label">Entrega</span><span class="fg-step__line"></span></li>
+    <li class="fg-step"><span class="fg-step__dot"><span class="fg-step__num">3</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="fg-step__label">Pago</span></li>
+  </ol>
+
+  <section class="sec open" id="s0">
+    <div class="hd"><span class="n">1</span><h2>01 — CONTACTO</h2><button type="button" class="lnk ed" data-ed="0">Editar</button></div>
+    <div class="sm"></div>
+    <div class="bd"><div><div class="in">
+      <div class="fg-field" data-r="email" data-m="Ingresá un email válido"><input id="em" type="email" placeholder=" " autocomplete="email"><label for="em">Email</label><span class="fg-field__msg"></span></div>
+      <p class="mut" style="margin:.6rem 0 0">Comprás sin crear cuenta. ¿Ya tenés una? <a href="#">Ingresar →</a> y tus datos se completan solos.</p>
+      <button type="button" class="go next" data-n="0">CONTINUAR</button>
+    </div></div></div>
+  </section>
+
+  <section class="sec" id="s1">
+    <div class="hd"><span class="n">2</span><h2>02 — ENTREGA</h2><button type="button" class="lnk ed" data-ed="1">Editar</button></div>
+    <div class="sm"></div>
+    <div class="bd"><div><div class="in">
+      <div class="opts">
+        <label class="opt"><input type="radio" name="e" value="dm" checked><span class="dot"></span><span><b>Envío a domicilio</b><span class="mut">A todo el país</span></span><b id="shp"></b></label>
+        <label class="opt"><input type="radio" name="e" value="pk"><span class="dot"></span><span><b>Retiro en el local</b><span class="mut">Sin cargo</span></span><b>Gratis</b></label>
+      </div>
+      <div class="g2" style="margin-top:.4rem">
+        <div class="fg-field" data-r="req" data-m="Ingresá tu nombre"><input id="nm" placeholder=" " autocomplete="given-name"><label for="nm">Nombre</label><span class="fg-field__msg"></span></div>
+        <div class="fg-field" data-r="req" data-m="Ingresá tu apellido"><input id="ap" placeholder=" " autocomplete="family-name"><label for="ap">Apellido</label><span class="fg-field__msg"></span></div>
+      </div>
+      <div class="fg-field" data-r="tel" data-m="Ingresá un teléfono de contacto"><input id="tl" type="tel" placeholder=" " autocomplete="tel"><label for="tl">Teléfono</label><span class="fg-field__msg"></span></div>
+      <div id="addr">
+        <div class="fg-field" data-r="req" data-m="Ingresá calle y número"><input id="ca" placeholder=" " autocomplete="address-line1"><label for="ca">Calle y número</label><span class="fg-field__msg"></span></div>
+        <div class="g2">
+          <div class="fg-field"><input id="pd" placeholder=" "><label for="pd">Piso / Depto (opcional)</label><span class="fg-field__msg"></span></div>
+          <div class="fg-field" data-r="cp" data-m="El código postal tiene 4 números"><input id="cp" inputmode="numeric" maxlength="4" placeholder=" " autocomplete="postal-code"><label for="cp">Código postal</label><span class="fg-field__msg"></span></div>
+          <div class="fg-field" data-r="req" data-m="Ingresá la localidad"><input id="lo" placeholder=" "><label for="lo">Localidad</label><span class="fg-field__msg"></span></div>
+          <div class="fg-field" data-r="req" data-m="Ingresá la provincia"><input id="pr" placeholder=" "><label for="pr">Provincia</label><span class="fg-field__msg"></span></div>
+        </div>
+      </div>
+      <button type="button" class="go next" data-n="1">CONTINUAR AL PAGO</button>
+    </div></div></div>
+  </section>
+
+  <section class="sec" id="s2">
+    <div class="hd"><span class="n">3</span><h2>03 — PAGO</h2></div>
+    <div class="bd"><div><div class="in">
+      <p class="mut" style="margin:0 0 .6rem">Tus prendas se reservan al crear el pedido.</p>
+      <fieldset style="border:0;padding:0;margin:0"><legend style="position:absolute;left:-9999px">Medio de pago</legend><div class="opts" id="pay">
+        <label class="opt"><input type="radio" name="m" value="tr" checked><span class="dot"></span><span><b>Transferencia bancaria</b><span class="mut" id="trsub">10% OFF automático</span></span><span class="tag">10% OFF</span></label>
+        <label class="opt"><input type="radio" name="m" value="cd"><span class="dot"></span><span><b>Tarjeta de crédito o débito</b><span class="mut">Crédito o débito</span></span><span></span></label>
+      </div></fieldset>
+      <details class="p"><summary>¿Tenés un código de descuento?</summary><div class="g2" style="grid-template-columns:1fr auto;gap:.5rem"><input id="cd" placeholder="Código" aria-label="Código de descuento"><button type="button" class="alt" style="width:auto;padding:.7rem 1.1rem;margin-top:.6rem" id="ap2">APLICAR</button></div><span class="mut" id="cdm"></span></details>
+      <details class="p"><summary>Agregar notas al pedido (opcional)</summary><textarea rows="3" aria-label="Notas para el pedido"></textarea></details>
+      <div class="chk" style="padding-top:.6rem"><input type="checkbox" id="acc"><label for="acc"><b>Crear mi cuenta con estos datos</b><span class="mut" style="display:block">Sumás tus compras del local y online, preferencias y beneficios del Club.</span></label></div>
+      <div class="terms" id="terms"><div class="chk" style="padding:0"><input type="checkbox" id="tc"><label for="tc">Confirmo que los datos son correctos y acepto los <a href="#">Términos y condiciones</a> y la <a href="#">Política de privacidad</a>.<span class="fg-field__msg" style="margin-top:.3rem"></span></label></div></div>
+      <div class="chk"><input type="checkbox" id="rm"><label for="rm">Quiero recibir ayuda por email si dejo esta compra sin terminar.</label></div>
+      <button class="go fg-roll" id="go" type="submit">CONFIRMAR PEDIDO</button>
+      <p class="mut" style="text-align:center;margin:.7rem 0 0">Total <b id="tot" style="color:var(--ink);font-size:1rem"></b></p>
+    </div></div></div>
+  </section>
+  <div class="ok" id="ok"></div>
+</form>
+
+<aside><details id="sm" open>
+  <summary><span>TU PEDIDO</span><span id="tot3"></span></summary>
+  <div style="margin-top:.8rem">
+    <div class="it"><span class="ph">LI</span><div>Camisa de lino<br><span class="mut">Arena · M · x1</span></div><span>$ 69.900</span></div>
+    <div class="it"><span class="ph">RE</span><div>Remera Essential<br><span class="mut">Negro · L · x1</span></div><span>$ 29.900</span></div>
+    <div class="ln s" style="margin-top:.6rem"><span>Subtotal</span><span id="sub"></span></div>
+    <div class="ln s" id="dl"><span>Transferencia 10% OFF</span><span id="dsc"></span></div>
+    <div class="ln s"><span>Envío</span><span id="env"></span></div>
+    <div class="ln t"><span>Total</span><span id="tot2"></span></div>
+    <div class="bar"><i id="bar"></i></div><p class="mut" style="margin:0;font-size:.78rem" id="free"></p>
+    <p class="mut" style="font-size:.72rem;margin:.8rem 0 0">Productos, envío y códigos postales son de ejemplo.</p>
+  </div>
+</details></aside>
+</main>
+<script>
+/* Fraguan · animaciones (8) · JS puro, sin dependencias.
+   Uso: <script src="fraguan-animaciones.js" defer></script>  y se auto-inicia. */
+(function () {
+  'use strict';
+
+  var EASE = 'cubic-bezier(.22,1,.36,1)';
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dur = function (ms) { return reduce ? 0 : ms; };
+  var visible = function (el) { return el.getClientRects().length > 0; };
+
+  /* 1 · Reordenamiento fluido (FLIP) ---------------------------------
+     Fraguan.flip(contenedor, function () { ...filtrar / ordenar / mover nodos... }) */
+  function flip(container, mutate) {
+    var first = new Map();
+    Array.prototype.forEach.call(container.children, function (k) {
+      if (visible(k)) first.set(k, k.getBoundingClientRect());
+    });
+    mutate();
+    Array.prototype.forEach.call(container.children, function (k) {
+      if (!visible(k)) return;
+      var f = first.get(k);
+      if (!f) {
+        k.animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: dur(500), easing: EASE });
+        return;
+      }
+      var l = k.getBoundingClientRect(), dx = f.left - l.left, dy = f.top - l.top;
+      if (dx || dy) k.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: dur(650), easing: EASE });
+    });
+  }
+
+  /* 2 · Botones con texto que rueda: clase .fg-roll ------------------- */
+  function wrapRoll(root) {
+    (root || document).querySelectorAll('.fg-roll').forEach(function (b) {
+      if (b.querySelector('.fg-roll__txt')) return;
+      var t = b.textContent.trim();
+      b.setAttribute('aria-label', t);
+      b.innerHTML = '<span class="fg-roll__txt" aria-hidden="true"><span class="fg-roll__a">' + t + '</span><span class="fg-roll__b">' + t + '</span></span>';
+    });
+  }
+
+  /* 3 · Total tipo odómetro ------------------------------------------
+     Fraguan.odometer(elemento, 125000)  ·  opcional: { format: function (n) { return '...'; } } */
+  var ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+  function odometer(el, value, opts) {
+    var fmt = (opts && opts.format) || function (n) { return ars.format(n); };
+    var str = fmt(value).replace(/\u00a0/g, ' ');
+    var chars = Array.from(str), prev = el._fgChars;
+    var same = prev && prev.length === chars.length && chars.every(function (c, i) { return /\d/.test(c) === /\d/.test(prev[i]); });
+    el.classList.add('fg-odo');
+    el.setAttribute('role', 'text');
+    el.setAttribute('aria-label', str);
+    if (!same) {
+      el.innerHTML = '';
+      chars.forEach(function (c) {
+        if (/\d/.test(c)) {
+          var col = document.createElement('span'), strip = document.createElement('span');
+          col.className = 'fg-odo__col'; col.setAttribute('aria-hidden', 'true');
+          strip.className = 'fg-odo__strip';
+          for (var d = 0; d < 10; d++) { var s = document.createElement('span'); s.textContent = d; strip.appendChild(s); }
+          col.appendChild(strip); el.appendChild(col);
+        } else {
+          var sep = document.createElement('span');
+          sep.className = 'fg-odo__sep'; sep.setAttribute('aria-hidden', 'true');
+          el.appendChild(sep);
+        }
+      });
+    }
+    var first = !same;
+    var apply = function () {
+      chars.forEach(function (c, i) {
+        var node = el.children[i];
+        if (/\d/.test(c)) node.firstChild.style.transform = 'translateY(' + (-Number(c) * 10) + '%)';
+        else node.textContent = c === ' ' ? '\u00a0' : c;
+      });
+    };
+    if (first && !reduce) requestAnimationFrame(function () { requestAnimationFrame(apply); }); else apply();
+    el._fgChars = chars;
+  }
+
+  /* 4 · Cambio de color con cortina -----------------------------------
+     Fraguan.colorSwipe(bloque, '#d8c3a5', { label: elNombre, name: 'Arena', curtain: '#1a1a1a', swap: fn }) */
+  function colorSwipe(block, color, opts) {
+    opts = opts || {};
+    if (getComputedStyle(block).position === 'static') block.style.position = 'relative';
+    block.style.overflow = 'hidden';
+    var apply = function () { block.style.background = color; if (opts.swap) opts.swap(); };
+    if (opts.label && opts.name) labelSlide(opts.label, opts.name);
+    if (reduce) { apply(); return; }
+    var ov = document.createElement('div');
+    ov.className = 'fg-swipe';
+    ov.style.background = opts.curtain || '#1a1a1a';
+    block.appendChild(ov);
+    var inn = ov.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 450, easing: EASE, fill: 'forwards' });
+    inn.finished.then(function () {
+      apply();
+      return ov.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 0 100%)' }], { duration: 550, easing: EASE, fill: 'forwards' }).finished;
+    }).then(function () { ov.remove(); });
+  }
+  function labelSlide(el, text) {
+    if (reduce) { el.textContent = text; return; }
+    el.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-60%)', opacity: 0 }], { duration: 220, easing: 'ease-in' }).finished.then(function () {
+      el.textContent = text;
+      el.animate([{ transform: 'translateY(60%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 400, easing: EASE });
+    });
+  }
+
+  /* 5 · Formularios: error con sacudida ------------------------------
+     Fraguan.shake(campo, 'Ingresá un email válido')   ·   Fraguan.clearError(campo) */
+  function shake(field, message) {
+    field.classList.add('is-error');
+    var msg = field.querySelector('.fg-field__msg');
+    if (msg && message) msg.textContent = message;
+    if (reduce) return;
+    field.classList.remove('is-shake');
+    void field.offsetWidth;
+    field.classList.add('is-shake');
+    field.addEventListener('animationend', function h() { field.classList.remove('is-shake'); field.removeEventListener('animationend', h); });
+  }
+  function clearError(field) { field.classList.remove('is-error'); }
+
+  /* 6 · Banda de texto que acelera con el scroll ----------------------
+     Markup: <div class="fg-marquee" data-fg-marquee data-speed="70"><div class="fg-marquee__track"><span class="fg-marquee__item">FORJÁ TU ESTILO ✦</span></div></div> */
+  function marquee(root) {
+    var track = root.querySelector('.fg-marquee__track');
+    if (!track || root._fgMarquee) return;
+    root._fgMarquee = true;
+    var base = Number(root.dataset.speed) || 70;
+    var boost = Number(root.dataset.boost) || 1;
+    var setW = track.scrollWidth, html = track.innerHTML, guard = 0;
+    while (track.scrollWidth < root.offsetWidth + setW && guard++ < 20) track.insertAdjacentHTML('beforeend', html);
+    if (reduce) return;
+    var x = 0, vel = 0, lastY = window.scrollY, last = performance.now(), on = true;
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (e) { on = e[0].isIntersecting; }).observe(root);
+    (function tick(t) {
+      var dt = Math.min((t - last) / 1000, .05); last = t;
+      var y = window.scrollY, dy = Math.abs(y - lastY); lastY = y;
+      var target = Math.min(dy / Math.max(dt, .001) / 250, 10) * boost;
+      vel += (target - vel) * Math.min(1, dt * 5);
+      if (on) {
+        x -= base * (1 + vel) * dt;
+        if (x <= -setW) x += setW;
+        track.style.transform = 'translate3d(' + x + 'px,0,0)';
+      }
+      requestAnimationFrame(tick);
+    })(last);
+  }
+
+  /* 7 · Pasos del checkout --------------------------------------------
+     Fraguan.setStep(document.querySelector('.fg-steps'), 1)   // paso actual, empieza en 0 */
+  function setStep(list, n) {
+    Array.prototype.forEach.call(list.querySelectorAll('.fg-step'), function (li, i) {
+      li.classList.toggle('is-done', i < n);
+      li.classList.toggle('is-current', i === n);
+      if (i === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+  }
+
+  /* 8 · Fotos que se revelan al hacer scroll: atributo data-reveal ---- */
+  function reveal(root) {
+    var els = (root || document).querySelectorAll('[data-reveal]:not(.is-in)');
+    if (!('IntersectionObserver' in window) || reduce) { els.forEach(function (e) { e.classList.add('is-in'); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add('is-in');
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+    els.forEach(function (e) { io.observe(e); });
+  }
+
+  /* Inicialización ---------------------------------------------------- */
+  function init(root) {
+    document.documentElement.classList.add('fg-js');
+    wrapRoll(root);
+    (root || document).querySelectorAll('[data-fg-marquee]').forEach(marquee);
+    (root || document).querySelectorAll('[data-odometer]').forEach(function (el) { odometer(el, Number(el.dataset.odometer)); });
+    (root || document).querySelectorAll('.fg-field input, .fg-field textarea').forEach(function (i) {
+      if (!i._fgBound) { i._fgBound = true; i.addEventListener('input', function () { clearError(i.closest('.fg-field')); }); }
+    });
+    reveal(root);
+  }
+
+  window.Fraguan = { init: init, flip: flip, odometer: odometer, colorSwipe: colorSwipe, shake: shake, clearError: clearError, marquee: marquee, setStep: setStep, reveal: reveal };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { init(); });
+  else init();
+})();
+
+</script>
+<script>
+var ars=new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}),SUB=99800,FREE=150000,SHIP=6500,pick=false,done=[0,0,0],cur=0;
+var $=function(i){return document.getElementById(i)},mval=function(){return document.querySelector('[name=m]:checked').value};
+var secs=[$('s0'),$('s1'),$('s2')],L={tr:'CONFIRMAR PEDIDO',cd:'CONTINUAR AL PAGO'};
+var CP={'5000':['Córdoba','Córdoba'],'1000':['Ciudad de Buenos Aires','CABA'],'2000':['Rosario','Santa Fe'],'5500':['Mendoza','Mendoza']};
+function setLabel(t){var b=$('go');b.querySelector('.fg-roll__a').textContent=t;b.querySelector('.fg-roll__b').textContent=t}
+function calc(){
+ var tr=mval()==='tr',d=tr?Math.round(SUB*.1):0,s=pick||SUB>=FREE?0:SHIP,t=SUB-d+s;
+ $('sub').textContent=ars.format(SUB);$('dl').style.display=tr?'flex':'none';$('dsc').textContent='− '+ars.format(d);
+ $('env').textContent=pick?'Retiro sin cargo':(s?ars.format(s):'Gratis');$('shp').textContent=SUB>=FREE?'Gratis':ars.format(SHIP);
+ $('trsub').textContent='10% OFF automático · ahorrás '+ars.format(Math.round(SUB*.1));
+ ['tot','tot2','tot3'].forEach(function(i){Fraguan.odometer($(i),t)});
+ $('bar').style.width=Math.min(100,SUB/FREE*100)+'%';$('free').textContent=pick?'':(SUB>=FREE?'Tenés envío gratis.':'Te faltan '+ars.format(FREE-SUB)+' para envío gratis');
+ setLabel(L[mval()]);}
+function show(i,scroll){cur=i;secs.forEach(function(s,k){s.classList.toggle('open',k===i);s.querySelector('.n').textContent=(done[k]&&k!==i)?'✓':k+1});
+ Fraguan.setStep($('steps'),i);if(scroll)secs[i].scrollIntoView({behavior:'smooth',block:'start'})}
+function rule(f){var v=f.querySelector('input').value,r=f.dataset.r;
+ return r==='email'?/^\S+@\S+\.\S+$/.test(v):r==='tel'?v.replace(/\D/g,'').length>=8:r==='cp'?/^\d{4}$/.test(v):v.trim().length>1}
+function check(sec,loud){var bad=null;sec.querySelectorAll('.fg-field[data-r]').forEach(function(f){
+ if(!f.getClientRects().length)return;
+ if(!rule(f)){if(!bad)bad=f;if(loud)Fraguan.shake(f,f.dataset.m);else{f.classList.add('is-error');f.querySelector('.fg-field__msg').textContent=f.dataset.m}}});
+ if(bad&&loud)bad.querySelector('input').focus({preventScroll:false});return !bad}
+document.querySelectorAll('.fg-field[data-r] input').forEach(function(i){i.addEventListener('blur',function(){if(i.value)check(i.closest('.fg-field'),false)})});
+$('cp').addEventListener('input',function(){var m=CP[this.value];if(m){$('lo').value=m[0];$('pr').value=m[1];$('lo').closest('.fg-field').classList.remove('is-error');$('pr').closest('.fg-field').classList.remove('is-error')}});
+document.querySelectorAll('.next').forEach(function(b){b.onclick=function(){var i=+b.dataset.n;if(!check(secs[i],true))return;done[i]=1;
+ secs[0].querySelector('.sm').textContent=$('em').value;
+ secs[1].querySelector('.sm').textContent=$('nm').value+' '+$('ap').value+' · '+(pick?'Retiro en el local':$('ca').value+', '+$('lo').value+' ('+$('cp').value+')');
+ show(i+1,true)}});
+document.querySelectorAll('[data-ed]').forEach(function(b){b.onclick=function(){show(+b.dataset.ed,true)}});
+document.querySelectorAll('[name=e]').forEach(function(r){r.onchange=function(){pick=this.value==='pk';$('addr').style.display=pick?'none':'';calc()}});
+$('pay').onchange=calc;
+$('tc').onchange=function(){$('terms').classList.remove('is-error')};
+$('ap2').onclick=function(){var f=$('cd');$('cdm').textContent='';if(!f.value.trim()){$('cdm').textContent='Escribí un código.';return}$('cdm').textContent='Ese código no es válido. (En la demo ninguno lo es.)'};
+$('f').onsubmit=function(e){e.preventDefault();
+ if(!$('tc').checked){Fraguan.shake($('terms'),'Aceptá los términos y la política de privacidad para continuar.');$('terms').scrollIntoView({block:'center',behavior:'smooth'});return}
+ done[2]=1;Fraguan.setStep($('steps'),3);$('ok').innerHTML='<b>Pedido en camino.</b> Acá seguiría el flujo real. Esto es solo la propuesta del checkout.';$('ok').classList.add('on');$('ok').scrollIntoView({behavior:'smooth',block:'center'})};
+if(matchMedia('(max-width:860px)').matches)$('sm').removeAttribute('open');
+Fraguan.init();show(0,false);calc();
+</script>
+</body>
+</html>

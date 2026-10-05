@@ -283,10 +283,13 @@ export function AnimatedForm({ children, ...props }) {
   );
 }
 
-export function CheckoutSteps({ step }) {
+export function CheckoutSteps({
+  step,
+  labels = ['Tus datos', 'Envío', 'Pago'],
+}) {
   return (
     <ol className="fg-steps" aria-label="Pasos de compra">
-      {['Tus datos', 'Envío', 'Pago'].map((title, i) => (
+      {labels.map((title, i) => (
         <li
           key={title}
           className={

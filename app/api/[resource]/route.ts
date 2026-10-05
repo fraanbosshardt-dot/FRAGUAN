@@ -140,6 +140,10 @@ import {
 import { env } from 'cloudflare:workers';
 import { verifyGoogleIdToken } from '@/lib/google-token';
 import {
+  internalPasswordConfigured,
+  verifyInternalPassword,
+} from '@/lib/internal-password';
+import {
   createInternalSession,
   internalSessionClearCookie,
   internalSessionSetCookie,
@@ -802,8 +806,10 @@ export async function POST(
       const secure = new URL(req.url).protocol === 'https:';
       const input = z
         .object({
-          action: z.enum(['google', 'logout']),
+          action: z.enum(['google', 'password', 'logout']),
           credential: z.string().min(100).max(10000).optional(),
+          email: z.email().max(254).optional(),
+          password: z.string().min(12).max(128).optional(),
         })
         .strict()
         .parse(body);
@@ -812,6 +818,62 @@ export async function POST(
         response.headers.append(
           'Set-Cookie',
           internalSessionClearCookie(secure),
+        );
+        response.headers.append(
+          'Set-Cookie',
+          `fraguan_admin_access=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict${secure ? '; Secure' : ''}`,
+        );
+        return response;
+      }
+      if (input.action === 'password') {
+        enforceRateLimit(req, 'internal-password-login', 8, 15 * 60_000);
+        const email = input.email?.toLowerCase() ?? '';
+        enforceGlobalRateLimit(
+          'internal-password-account',
+          email,
+          20,
+          15 * 60_000,
+        );
+        if (!internalPasswordConfigured() || !internalSessionsConfigured())
+          throw new AppError(
+            503,
+            'El acceso del personal todavía no está configurado.',
+          );
+        const passwordValid = await verifyInternalPassword(
+          input.password ?? '',
+        );
+        if (!passwordValid)
+          throw new AppError(401, 'Email o contraseña incorrectos.');
+        const owner = await one<{ value: string }>(
+          'SELECT value FROM settings WHERE key=?',
+          'owner',
+        );
+        const user = await one<{
+          id: string;
+          email: string;
+          name: string;
+          role: string;
+          active: number;
+        }>('SELECT id,email,name,role,active FROM users WHERE email=?', email);
+        if (
+          !owner ||
+          owner.value.toLowerCase() !== email ||
+          !user?.active ||
+          user.role !== 'ADMIN'
+        )
+          throw new AppError(401, 'Email o contraseña incorrectos.');
+        const token = await createInternalSession({
+          userId: user.id,
+          email: user.email,
+          displayName: user.name,
+          fullName: user.name,
+        });
+        clearGlobalRateLimit('internal-password-account', email);
+        clearRateLimit(req, 'internal-password-login');
+        const response = reply({ ok: true });
+        response.headers.append(
+          'Set-Cookie',
+          internalSessionSetCookie(token, secure),
         );
         return response;
       }

@@ -1,7 +1,9 @@
-# Tienda pública
+# Tienda, POS y Administración
 
-La tienda usa dos servicios del mismo repositorio. Administración y POS siguen
-fuera del despliegue público: el proxy devuelve 404 para sus páginas y APIs.
+La aplicación usa dos servicios del mismo repositorio en el dominio existente
+`https://www.fraguan.com`. El build publica la superficie `business`: tienda,
+`/pos`, `/admin-access` y `/admin/dashboard`. Los datos internos siguen protegidos
+por identidad, roles y PIN administrativo; publicar las rutas no habilita acceso anónimo.
 
 ## Vercel: fraguan-store
 
@@ -13,8 +15,9 @@ fuera del despliegue público: el proxy devuelve 404 para sus páginas y APIs.
 - Variables públicas de acceso a clientes: `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
   y/o `STORE_PASSWORD_AUTH_ENABLED`, coherentes con la API.
 
-Vercel no necesita la URL de PostgreSQL: las lecturas y operaciones de clientes
-se reenvían a Railway conservando las cookies de sesión y el Origin.
+Vercel no necesita PostgreSQL ni secretos de personal: las páginas internas y
+sus APIs se reenvían a Railway conservando cookies HttpOnly y el Origin.
+Se eliminan los encabezados de identidad/proxy enviados desde el navegador.
 
 ## Railway: accomplished-adaptation / fraguan-store-api
 
@@ -27,7 +30,7 @@ Configurar el servicio en su panel (los servicios nuevos ya no admiten
 - `DATABASE_URL`: `${{Postgres.DATABASE_URL}}` (variable existente de este Postgres).
 - `DATABASE_POOL_SIZE`: `5`.
 - `HOST`: `0.0.0.0`; Railway asigna `PORT`.
-- `FRAGUAN_SURFACE`: `store`.
+- `FRAGUAN_SURFACE`: `business` (también fijado por el build de producción).
 - `SITE_ORIGIN`: `https://www.fraguan.com`.
 - No configurar `FRAGUAN_API_ORIGIN` en Railway para evitar un ciclo de reenvíos.
 
@@ -36,9 +39,29 @@ los datos de transferencia y `STORE_EMAIL_VERIFICATION_SECRET` antes de validar
 el checkout completo. Consultar `.env.example`. No guardar secretos en Git.
 El despliegue no ejecuta migraciones ni importa datos de demostración.
 
+## Acceso del propietario sin Google
+
+Ejecutar localmente `powershell -ExecutionPolicy Bypass -File scripts/configure-staff-access.ps1`.
+El propietario elige una contraseña de 12 a 128 caracteres y un PIN de 6 dígitos
+diferente del PIN local. El script genera `outputs/staff-access.env`, ignorado por Git:
+hash PBKDF2-SHA256 con 600.000 iteraciones, dos secretos aleatorios de sesión y PIN.
+Agregar esas variables en Railway, servicio `fraguan-store-api`, sin borrar las
+variables existentes. No pegarlas en el chat ni en el repositorio.
+
+El login acepta únicamente el email del propietario **existente** en `settings.owner`
+y un usuario ADMIN activo. No crea cuentas ni concede permisos. POS requiere esa
+sesión; Administración además conserva su PIN. Las sesiones son firmadas, HttpOnly,
+Secure y SameSite=Strict. No configurar `INTERNAL_AUTH_TRUST_PROXY=true` ni usar
+credenciales de desarrollo en producción. Sin configuración el sistema falla cerrado.
+
+Google continúa disponible solo si se configura expresamente su cliente interno;
+el flujo con contraseña no necesita Google. La autenticación pública de clientes
+es independiente y no se habilita con estas variables.
+
 ## Validación
 
-Ejecutar TypeScript y ambas compilaciones. Luego verificar catálogo, producto,
-cuenta, checkout y seguimiento, más el 404 de `/pos`, `/admin/dashboard`,
-`/admin-access`, `/acceso` y `/api/session`. No generar pagos reales para probar
-la publicación.
+Ejecutar TypeScript, `node scripts/test-staff-auth.mjs` y ambas compilaciones.
+Verificar tienda y checkout; sin sesión, `/pos` y `/admin-access` llevan a `/acceso`,
+las APIs internas rechazan consultas, los encabezados falsos no autentican y
+las escrituras desde otro Origin se rechazan. Con credenciales reales comprobar
+ingreso, roles, PIN y salida. No generar ventas ni pagos reales para probar.

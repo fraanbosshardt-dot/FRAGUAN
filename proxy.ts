@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { isStoreOnlyDeployment, isStaffPath } from '@/lib/deployment-surface';
+import { storeApiOrigin } from '@/lib/store-api';
 
 const headers: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
@@ -16,7 +17,7 @@ const headers: Record<string, string> = {
     "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://*.mercadopago.com; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: https://*.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://accounts.google.com ws: wss:; frame-src https://accounts.google.com",
 };
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (isStoreOnlyDeployment() && isStaffPath(request.nextUrl.pathname)) {
     return new NextResponse('Not Found', {
       status: 404,
@@ -28,7 +29,56 @@ export function proxy(request: NextRequest) {
       status: 405,
       headers: { Allow: 'GET, HEAD, POST, OPTIONS' },
     });
-  const response = NextResponse.next();
+  // Staff SSR and APIs run beside PostgreSQL on Railway. The browser keeps
+  // the public domain and host-only session cookies throughout the flow.
+  const backend = storeApiOrigin();
+  const staff = isStaffPath(request.nextUrl.pathname);
+  const forwardedHeaders = new Headers(request.headers);
+  for (const name of Array.from(forwardedHeaders.keys())) {
+    if (
+      name.startsWith('oai-') ||
+      name.startsWith('x-forwarded-') ||
+      name === 'forwarded' ||
+      name === 'cf-connecting-ip' ||
+      name === 'x-real-ip'
+    )
+      forwardedHeaders.delete(name);
+  }
+  let response: NextResponse;
+  if (backend && staff) {
+    forwardedHeaders.delete('host');
+    forwardedHeaders.delete('content-length');
+    try {
+      const upstream = await fetch(
+        new URL(request.nextUrl.pathname + request.nextUrl.search, backend),
+        {
+          method: request.method,
+          headers: forwardedHeaders,
+          body: ['GET', 'HEAD'].includes(request.method)
+            ? undefined
+            : await request.arrayBuffer(),
+          redirect: 'manual',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(30_000),
+        },
+      );
+      const outgoing = new Headers(upstream.headers);
+      outgoing.delete('content-encoding');
+      outgoing.delete('content-length');
+      outgoing.delete('set-cookie');
+      for (const cookie of upstream.headers.getSetCookie())
+        outgoing.append('Set-Cookie', cookie);
+      response = new NextResponse(upstream.body, {
+        status: upstream.status,
+        headers: outgoing,
+      });
+    } catch {
+      response = new NextResponse(
+        'El sistema interno no está disponible. Intentá nuevamente en unos minutos.',
+        { status: 503 },
+      );
+    }
+  } else response = NextResponse.next();
   for (const [key, value] of Object.entries(headers))
     response.headers.set(key, value);
   if (request.nextUrl.protocol === 'https:')

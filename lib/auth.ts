@@ -118,16 +118,20 @@ export function requireJsonRequest(req: Request, maxBytes = 100000) {
     const size = Number(rawSize);
     if (!Number.isSafeInteger(size) || size < 0)
       throw new AppError(400, 'Tamaño de solicitud inválido.');
-    if (size > maxBytes)
-      throw new AppError(413, 'Solicitud demasiado grande.');
+    if (size > maxBytes) throw new AppError(413, 'Solicitud demasiado grande.');
   }
 }
 export function protectWrite(req: Request, maxBytes = 100000) {
   const origin = req.headers.get('origin');
   const publicStoreOrigin = process.env.SITE_ORIGIN?.trim();
-  const storeRequest = new URL(req.url).pathname.startsWith('/api/store-');
-  if (!origin || (origin !== new URL(req.url).origin &&
-    !(storeRequest && process.env.FRAGUAN_SURFACE === 'store' && origin === publicStoreOrigin)))
+  if (
+    !origin ||
+    (origin !== new URL(req.url).origin &&
+      !(
+        ['store', 'business'].includes(process.env.FRAGUAN_SURFACE ?? '') &&
+        origin === publicStoreOrigin
+      ))
+  )
     throw new AppError(403, 'Origen no autorizado.');
   requireJsonRequest(req, maxBytes);
 }

@@ -1,5 +1,5 @@
-// The public store deployment shares business logic with the local workspace,
-// but does not serve staff pages or staff API endpoints.
+// Store-only deployments can still hide staff routes. The business build
+// publishes staff entry pages, with identity, roles and admin PIN enforced.
 export function isStoreOnlyDeployment() {
   return process.env.FRAGUAN_SURFACE === 'store';
 }
@@ -13,9 +13,17 @@ export function isStaffPath(pathname: string) {
   }
   const firstSegment = path.split('/')[1];
   if (
-    ['pos', 'admin', 'admin-access', 'acceso', 'signin-with-chatgpt',
-      'signout-with-chatgpt', 'callback'].includes(firstSegment)
-  ) return true;
+    [
+      'pos',
+      'admin',
+      'admin-access',
+      'acceso',
+      'signin-with-chatgpt',
+      'signout-with-chatgpt',
+      'callback',
+    ].includes(firstSegment)
+  )
+    return true;
   if (firstSegment === 'api') {
     const resource = path.split('/')[2] ?? '';
     return !resource.startsWith('store-') && resource !== 'webhooks';
