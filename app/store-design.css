@@ -1511,16 +1511,12 @@
       transform: none;
     }
     .words {
-      height: auto;
-      padding: 48px 0;
+      height: 200vh;
     }
     .words > div {
-      position: static;
-      height: auto;
+      position: sticky;
+      height: 100svh;
       padding: 0 16px;
-    }
-    .words span {
-      opacity: 1;
     }
     .cats a {
       font-size: clamp(36px, 10vw, 68px);
@@ -1625,13 +1621,12 @@
       flex-basis: 100%;
     }
     .hs {
-      height: auto;
-      padding: 48px 0;
+      height: 260vh;
     }
     .hs > div {
-      position: static;
-      height: auto;
-      overflow: visible;
+      position: sticky;
+      height: 100svh;
+      overflow: hidden;
     }
     .hs h2 {
       padding: 0 16px 16px;
@@ -1644,21 +1639,15 @@
       font-weight: 700;
     }
     .trk {
-      transform: none !important;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scroll-padding-inline: 16px;
       padding: 0 16px 16px;
-      will-change: auto;
     }
     .hc {
-      scroll-snap-align: start;
       flex-basis: 82%;
-      height: 360px;
+      height: clamp(280px, 52svh, 440px);
       padding: 20px;
     }
     .hc .d {
-      font-size: 46px;
+      font-size: clamp(36px, 10vw, 46px);
     }
     .hc a {
       display: inline-flex;

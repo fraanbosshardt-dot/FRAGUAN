@@ -12,4 +12,4 @@ Los archivos recibidos no contienen fotografías; se mantienen las composiciones
 
 El usuario autorizó subir y desplegar este diseño en el proyecto existente de FRAGUAN, conservando el dominio www.fraguan.com.
 
-En celular (hasta 700 px) la tienda conserva la identidad visual y adapta la interacción: catálogo en dos columnas, selección de talle desde la ficha, navegación con controles táctiles, texto de campaña completo sin desplazamiento prolongado y carrusel horizontal con ajuste por tarjeta. Los formularios usan texto de 16 px; WhatsApp y los avisos no cubren los botones de compra. En escritorio se mantienen las animaciones y composiciones de la referencia.
+En celular (hasta 700 px) la tienda conserva la identidad visual y adapta la interacción: catálogo en dos columnas, selección de talle desde la ficha y navegación con controles táctiles. A pedido del usuario se conservan también las animaciones de texto progresivo y carrusel horizontal al bajar, con recorridos ajustados al celular. Los formularios usan texto de 16 px; WhatsApp y los avisos no cubren los botones de compra. En escritorio se mantienen las animaciones y composiciones de la referencia.

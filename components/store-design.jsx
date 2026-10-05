@@ -253,12 +253,12 @@ function HScroll() {
   return html`<section class="hs" ref=${r}>
     <div>
       <h2 class="d">Lo más vendido</h2>
-      <p class="design-swipe-hint">DESLIZÁ PARA VER MÁS →</p>
+      <p class="design-swipe-hint">SEGUÍ BAJANDO PARA VER MÁS ↓</p>
       <div
         class="trk"
         ref=${t}
         tabindex="0"
-        aria-label="Productos más vendidos. Deslizá para explorar."
+        aria-label="Productos más vendidos"
         style=${{ transform: `translateX(${-x}px)` }}
       >
         ${[7, 0, 2, 4, 3, 5]
