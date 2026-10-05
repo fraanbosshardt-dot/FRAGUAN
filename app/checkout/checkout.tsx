@@ -1,4 +1,5 @@
 'use client';
+import TarjetaClub from '@/components/fraguan-animaciones/TarjetaClub';
 import {
   ArrowLeft,
   ArrowRight,
@@ -48,6 +49,7 @@ export default function Checkout({
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   const [createAccount, setCreateAccount] = useState(false);
+  const [createdCustomer, setCreatedCustomer] = useState<any>(null);
   const [cardChoice, setCardChoice] = useState<'card' | 'mp'>('card');
   const [payment, setPayment] = useState<'transfer' | 'card'>('transfer');
   const [shippingMethod, setShippingMethod] = useState<
@@ -208,6 +210,7 @@ export default function Checkout({
         });
         const account = await storeApi('store-account');
         setSession(account);
+        setCreatedCustomer(account.customer);
         setCreateAccount(false);
         dispatchEvent(
           new CustomEvent('fraguan-account', { detail: account.customer }),
@@ -399,6 +402,13 @@ export default function Checkout({
       <div className="store-shell">
         <section className="sec pg">
           <PagoAprobado status="processing" />
+          {createdCustomer && (
+            <TarjetaClub
+              nombre={[createdCustomer.name, createdCustomer.surname]
+                .filter(Boolean)
+                .join(' ')}
+            />
+          )}
         </section>
       </div>
     );
@@ -411,6 +421,13 @@ export default function Checkout({
           </div>
           <span>PEDIDO #{order.orderNumber}</span>
           <h1 className="d">¡Gracias por tu compra!</h1>
+          {createdCustomer && (
+            <TarjetaClub
+              nombre={[createdCustomer.name, createdCustomer.surname]
+                .filter(Boolean)
+                .join(' ')}
+            />
+          )}
           <StorePaymentTicket
             order={order}
             showPending={
@@ -530,6 +547,13 @@ export default function Checkout({
           <ArrowLeft /> Seguir comprando
         </a>
         <h1 className="d h1">Pagar</h1>
+        {createdCustomer && (
+          <TarjetaClub
+            nombre={[createdCustomer.name, createdCustomer.surname]
+              .filter(Boolean)
+              .join(' ')}
+          />
+        )}
         <div className="steps" aria-label="Pasos de compra">
           {['1 · TUS DATOS', '2 · ENVÍO', '3 · PAGO'].map((label, i) => (
             <span

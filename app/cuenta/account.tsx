@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { DesignProductGrid } from '@/components/store-design';
+import TarjetaClub from '@/components/fraguan-animaciones/TarjetaClub';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import {
   StoreProduct,
@@ -49,6 +50,7 @@ export default function Account({
   const [busy, setBusy] = useState(false);
   const [catalog, setCatalog] = useState<StoreProduct[]>([]);
   const [profileState, setProfileState] = useState('');
+  const [createdCustomer, setCreatedCustomer] = useState<any>(null);
   const { favorites } = useStoreFavorites();
   const load = () =>
     storeApi('store-account').then((result) => {
@@ -56,6 +58,7 @@ export default function Account({
       dispatchEvent(
         new CustomEvent('fraguan-account', { detail: result.customer }),
       );
+      return result;
     });
   useEffect(() => {
     load().catch((e) => setError(e.message));
@@ -84,7 +87,8 @@ export default function Account({
           marketingConsent: Boolean(f.get('marketingConsent')),
         }),
       });
-      await load();
+      const account = await load();
+      if (mode === 'register') setCreatedCustomer(account.customer);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -97,6 +101,7 @@ export default function Account({
       body: JSON.stringify({ action: 'logout' }),
     });
     dispatchEvent(new CustomEvent('fraguan-account', { detail: null }));
+    setCreatedCustomer(null);
     setData({ customer: null, orders: [], addresses: [], benefits: [] });
   }
   async function updateProfile(event: React.SyntheticEvent<HTMLFormElement>) {
@@ -153,6 +158,13 @@ export default function Account({
         <>
           <b className="k">CLUB FRAGUAN</b>
           <h1 className="d h1">Hola, {data.customer.name}</h1>
+          {createdCustomer && (
+            <TarjetaClub
+              nombre={[createdCustomer.name, createdCustomer.surname]
+                .filter(Boolean)
+                .join(' ')}
+            />
+          )}
           <div className="pills">
             <button
               className={panel === 'datos' ? 'on' : ''}

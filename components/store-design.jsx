@@ -8,6 +8,13 @@ import React, {
   useMemo,
 } from 'react';
 import htm from 'htm';
+import {
+  volarAlCarrito,
+  BarraEnvioGratis,
+  EtiquetaTalle,
+  HeroForja,
+  ColeccionHover,
+} from '@/components/fraguan-animaciones';
 import { usePathname } from 'next/navigation';
 import {
   storeApi,
@@ -181,20 +188,19 @@ function Count({ to, suf = '' }) {
   }, [v, to]);
   return html`<span ref=${r}>${n}${suf}</span>`;
 }
-function Wm({ t }) {
-  return html`<h1 class="wm d" aria-label=${t}>
-    ${t.split('').map((c, i) => html`<span style=${{ '--i': i }} key=${i}>${c}</span>`)}
-  </h1>`;
-}
 const Err = ({ e }) => (e ? html`<div class="err">${e}</div>` : null);
 
 function Card({ p, i = 0 }) {
+  const imageRef = useRef(null);
   const { add, favs, tf } = useC(),
     f = favs.includes(p.id);
   return html`<${Rv} c="card" d=${(i % 4) * 70}
-    ><div class=${'m t-' + (TONE[p.cols[0]] || 'sand')}>
+    ><div
+      ref=${!p.img ? imageRef : undefined}
+      class=${'m t-' + (TONE[p.cols[0]] || 'sand')}
+    >
       <a class="ml" href=${'#/p/' + p.slug} aria-label=${p.n}></a
-      >${p.img && html`<img class="im" src=${p.img} alt=${p.n} loading="lazy" />`}<span
+      >${p.img && html`<img ref=${imageRef} class="im" src=${p.img} alt=${p.n} loading="lazy" />`}<span
         class="ct"
         >${p.c.toUpperCase()}</span
       >${p.low && html`<span class="lo">QUEDAN POCOS</span>`}
@@ -209,7 +215,7 @@ function Card({ p, i = 0 }) {
       <div class="qa">
         <p>AGREGAR RÁPIDO · TALLE</p>
         <div>
-          ${p.z.map((z) => html`<button key=${z} disabled=${!p.variants.some((v) => v.size === z && v.color === p.cols[0] && v.stock > 0)} onClick=${() => add(p, z, p.cols[0])}>${z}</button>`)}
+          ${p.z.map((z) => html`<button key=${z} disabled=${!p.variants.some((v) => v.size === z && v.color === p.cols[0] && v.stock > 0)} onClick=${() => add(p, z, p.cols[0], 1, true, imageRef.current)}>${z}</button>`)}
         </div>
       </div>
     </div>
@@ -283,10 +289,7 @@ function HScroll() {
 function Home() {
   const { news, products: P, categories: CATS } = useC();
   return html`<${React.Fragment}>
-    <header class="hero">
-      <p class="tag k">NUEVA TEMPORADA</p>
-      <${Wm} t="FRAGUAN" />
-      <p class="sub">Lo nuevo. <b>A tu manera.</b></p>
+    <${HeroForja} titulo="FRAGUAN" linea="Lo nuevo." destacado="A tu manera.">
       <div class="tiles">
         <a class="tile" href="#/c/nuevos"
           ><b class="k">01 — NOVEDADES</b
@@ -296,22 +299,13 @@ function Home() {
           ><span class="d">Elegir<br />remeras →</span></a
         >
       </div>
-    </header>
+    <//>
     <${Words} />
     <section class="sec lt cats">
       <${Rv}><b class="k">COLECCIÓN</b><//
-      >${CATS.map(
-        (c, i) =>
-          html`<${Rv} key=${c} d=${i * 50}
-            ><a href=${'#/c/' + c.toLowerCase()}
-              ><span class="d">${c}</span
-              ><small
-                >${String(P.filter((p) => p.c == c).length).padStart(2, '0')}
-                MODELOS</small
-              ></a
-            ><//
-          >`,
-      )}
+      ><${ColeccionHover}
+        items=${CATS.map((c) => ({ nombre: c, cantidad: String(P.filter((p) => p.c === c).length).padStart(2, '0') + ' MODELOS', href: '/coleccion/' + c.toLowerCase(), img: P.find((p) => p.c === c && p.img)?.img }))}
+      />
     </section>
     <section class="sec lt2">
       <${Rv}><h2 class="d h1">Lo nuevo</h2><//><${Grid} L=${P.slice(0, 8)} />
@@ -436,6 +430,7 @@ function Coll({ c }) {
 }
 
 function Prod({ id }) {
+  const imageRef = useRef(null);
   const { add, favs, tf, products: P } = useC(),
     p = P.find((p) => p.slug === id),
     [s, ss] = useState(''),
@@ -461,7 +456,7 @@ function Prod({ id }) {
       return;
     }
     se('');
-    if (!add(p, s, c, q, o))
+    if (!add(p, s, c, q, o, imageRef.current))
       se('Este talle y color no tienen stock disponible.');
   };
   return html`<section class="sec lt pg">
@@ -470,8 +465,11 @@ function Prod({ id }) {
       <a href=${'#/c/' + p.c.toLowerCase()}>${p.c.toUpperCase()}</a>
     </p>
     <div class="pd">
-      <div class=${'m t-' + (TONE[c] || 'sand')}>
-        ${p.img && html`<img class="im" src=${p.img} alt=${p.n} />`}<span
+      <div
+        ref=${!p.img ? imageRef : undefined}
+        class=${'m t-' + (TONE[c] || 'sand')}
+      >
+        ${p.img && html`<img ref=${imageRef} class="im" src=${p.img} alt=${p.n} />`}<span
           class="ct"
           >${p.c.toUpperCase()} · ${c.toUpperCase()}</span
         >${!p.img && html`<span class="big d">${p.k}</span>`}
@@ -491,6 +489,12 @@ function Prod({ id }) {
         <div class="chips">
           ${p.z.map((x) => html`<button key=${x} disabled=${!p.variants.some((v) => v.size === x && v.color === c && v.stock > 0)} class=${x == s ? 'on' : ''} onClick=${() => ss(x)}>${x}</button>`)}
         </div>
+        <${EtiquetaTalle}
+          key=${s + c}
+          talle=${s}
+          nombre=${p.n}
+          precio=${variant ? variant.price / 100 : p.p}
+        />
         <span class="k">CANTIDAD</span>
         <div class="qt">
           <button onClick=${() => sq(Math.max(1, q - 1))}>−</button>${q}<button
@@ -588,6 +592,7 @@ function CartPage() {
     </section>`;
   return html`<section class="sec lt pg">
     <h1 class="d h1">Tu carrito</h1>
+    <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} />
     ${
       cart.length
         ? html`<div class="ck">
@@ -599,14 +604,6 @@ function CartPage() {
             </div>
             <div>
               <${Sum} est=${true} />
-              <div class="sb">
-                <i
-                  style=${{ width: Math.min(100, (sub / FREE) * 100) + '%' }}
-                ></i>
-              </div>
-              <p class="sn">
-                ${sub >= FREE ? '¡Tenés envío gratis!' : `Te faltan ${$(FREE - sub)} para envío gratis`}
-              </p>
               <a class="btn a w" href="#/checkout">IR A PAGAR</a>
             </div>
           </div>`
@@ -631,8 +628,7 @@ function Favs() {
   </section>`;
 }
 function Cart({ o, close }) {
-  const { cart, sub } = useC(),
-    left = Math.max(0, FREE - sub);
+  const { cart, sub } = useC();
   return html`<${React.Fragment}
     ><div
       aria-hidden="true"
@@ -650,12 +646,7 @@ function Cart({ o, close }) {
       <header class="d">
         Tu carrito<button onClick=${close}>CERRAR ✕</button>
       </header>
-      <div class="sb">
-        <i style=${{ width: Math.min(100, (sub / FREE) * 100) + '%' }}></i>
-      </div>
-      <div class="sn">
-        ${left ? `Te faltan ${$(left)} para envío gratis` : '¡Tenés envío gratis!'}
-      </div>
+      <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} />
       <div class="it"><${Lines} /></div>
       <div class="tot g"><span>Subtotal</span><span>${$(sub)}</span></div>
       ${cart.length > 0 && html`<${React.Fragment}><a class="btn a w" href="#/checkout">IR A PAGAR</a><a class="btn g w" href="#/carrito">VER CARRITO</a><//>`}
@@ -796,13 +787,16 @@ function PublicStore({ children }) {
     col: i.color,
     q: i.quantity,
   }));
-  const add = (p, s, col, q = 1, show = true) => {
+  const add = (p, s, col, q = 1, show = true, origin = null) => {
     const variant = p.variants.find(
       (v) => v.size === s && v.color === col && v.stock > 0,
     );
     if (!variant) return false;
     basket.add(p.original, variant, q);
-    if (show) setOpen(true);
+    if (show) {
+      if (origin) volarAlCarrito(origin, trigger.current, () => setOpen(true));
+      else setOpen(true);
+    }
     return true;
   };
   const news = async (email) => {
