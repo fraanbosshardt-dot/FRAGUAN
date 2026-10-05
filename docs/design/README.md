@@ -11,3 +11,5 @@ La portada conserva todas las secciones, animaciones, colores, tipografía, gril
 Los archivos recibidos no contienen fotografías; se mantienen las composiciones tipográficas del diseño. El botón WhatsApp lleva a Contacto mientras no haya un número comercial confirmado. Efectivo aparece en el diseño del checkout pero no se habilita como medio online: el sistema actual solo procesa transferencia y tarjeta/Mercado Pago. La conexión de pagos, emails y Correo Argentino permanece pendiente según lo acordado previamente.
 
 El usuario autorizó subir y desplegar este diseño en el proyecto existente de FRAGUAN, conservando el dominio www.fraguan.com.
+
+En celular (hasta 700 px) la tienda conserva la identidad visual y adapta la interacción: catálogo en dos columnas, selección de talle desde la ficha, navegación con controles táctiles, texto de campaña completo sin desplazamiento prolongado y carrusel horizontal con ajuste por tarjeta. Los formularios usan texto de 16 px; WhatsApp y los avisos no cubren los botones de compra. En escritorio se mantienen las animaciones y composiciones de la referencia.

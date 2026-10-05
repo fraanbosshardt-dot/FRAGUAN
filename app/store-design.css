@@ -1004,6 +1004,11 @@
   .mobile-menu {
     display: none;
   }
+  .design-nav-icon,
+  .design-card-link,
+  .design-swipe-hint {
+    display: none;
+  }
   .design-mobile-links {
     background: var(--ink-2);
     padding: 20px 4vw;
@@ -1446,6 +1451,267 @@
       gap: 36px;
     }
   }
+  @media (max-width: 700px) {
+    nav {
+      min-height: 64px;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    nav .nr {
+      gap: 0;
+      font-size: 14px;
+    }
+    nav .nr > a,
+    nav .nr > button {
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .design-nav-label {
+      display: none;
+    }
+    .design-nav-icon {
+      display: block;
+    }
+    .design-mobile-links {
+      position: sticky;
+      top: 64px;
+      z-index: 49;
+      max-height: calc(100svh - 64px);
+      overflow-y: auto;
+      gap: 0;
+      padding: 12px;
+    }
+    .design-mobile-links a {
+      padding: 14px 8px;
+      min-height: 48px;
+      border-bottom: 1px solid #ffffff20;
+    }
+    .sec {
+      padding: 56px 16px;
+    }
+    .pg {
+      padding: 32px 16px 48px;
+      min-height: 60svh;
+    }
+    .hero {
+      padding: 28px 16px 40px;
+    }
+    .tile {
+      min-height: 220px;
+      padding: 20px;
+    }
+    .tile .d {
+      font-size: clamp(48px, 14vw, 80px);
+    }
+    .tile:hover,
+    .btn:hover {
+      transform: none;
+    }
+    .words {
+      height: auto;
+      padding: 48px 0;
+    }
+    .words > div {
+      position: static;
+      height: auto;
+      padding: 0 16px;
+    }
+    .words span {
+      opacity: 1;
+    }
+    .cats a {
+      font-size: clamp(36px, 10vw, 68px);
+      min-height: 56px;
+      gap: 12px;
+    }
+    .cats a small {
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px 12px;
+    }
+    .card {
+      min-width: 0;
+    }
+    .card .m {
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: flex-start;
+      padding: 10px;
+    }
+    .card .m .big {
+      font-size: clamp(54px, 17vw, 100px);
+      margin-bottom: 0;
+    }
+    .card .ct {
+      left: 10px;
+      top: 12px;
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      max-width: calc(100% - 48px);
+    }
+    .card .lo {
+      left: 10px;
+      font-size: 9px;
+      letter-spacing: 0.04em;
+    }
+    .card .fv {
+      top: 0;
+      right: 0;
+      width: 44px;
+      height: 44px;
+    }
+    .card .qa {
+      display: none;
+    }
+    .nfo {
+      display: block;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .nfo > span {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+    .nfo > span + span {
+      margin-top: 8px;
+    }
+    .design-card-link {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+    .pills {
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .pills a {
+      min-height: 44px;
+      padding: 12px;
+    }
+    input,
+    select,
+    textarea,
+    .store-shell input,
+    .store-shell select,
+    .store-shell textarea {
+      font-size: 16px;
+    }
+    .store-checkout {
+      padding: 32px 16px 48px;
+    }
+    .store-email-control > span {
+      flex-wrap: wrap;
+    }
+    .store-email-control input {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+    .store-email-control button {
+      min-height: 44px;
+    }
+    .pills input {
+      min-width: 0;
+      width: 100%;
+      flex-basis: 100%;
+    }
+    .hs {
+      height: auto;
+      padding: 48px 0;
+    }
+    .hs > div {
+      position: static;
+      height: auto;
+      overflow: visible;
+    }
+    .hs h2 {
+      padding: 0 16px 16px;
+    }
+    .design-swipe-hint {
+      display: block;
+      padding: 0 16px 20px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+    }
+    .trk {
+      transform: none !important;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 16px;
+      padding: 0 16px 16px;
+      will-change: auto;
+    }
+    .hc {
+      scroll-snap-align: start;
+      flex-basis: 82%;
+      height: 360px;
+      padding: 20px;
+    }
+    .hc .d {
+      font-size: 46px;
+    }
+    .hc a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+    .ben {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .ben .d {
+      font-size: clamp(44px, 12vw, 80px);
+    }
+    .ben p {
+      margin-top: 12px;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      line-height: 1.5;
+    }
+    .pd .m {
+      aspect-ratio: 1;
+      max-height: 420px;
+    }
+    .pd {
+      gap: 28px;
+    }
+    .chips button,
+    .qt button {
+      min-width: 44px;
+      min-height: 44px;
+    }
+    .qt button {
+      flex-shrink: 0;
+    }
+    .dr {
+      height: 100dvh;
+    }
+    .dr header button {
+      min-height: 44px;
+      padding-inline: 8px;
+    }
+    .wa {
+      position: static;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      margin: 0 16px 20px;
+    }
+    .cur {
+      display: none;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .words {
       height: auto;
@@ -1490,6 +1756,34 @@ body:has(.fraguan-design) .store-cookie-banner {
 body:has(.fraguan-design) .store-cookie-banner button.primary {
   background: #2440ff;
   color: #f2eee6;
+}
+body:has(.fraguan-design) .store-cookie-banner p {
+  color: #14110f;
+}
+@media (max-width: 700px) {
+  body:has(.fraguan-design) .store-toast {
+    top: calc(76px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+  body:has(.fraguan-design) .store-cookie-banner {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 16px;
+    gap: 16px;
+    display: grid;
+  }
+  body:has(.fraguan-design) .store-cookie-banner > div:last-child {
+    flex-wrap: wrap;
+  }
+  body:has(.fraguan-design) .store-cookie-banner button {
+    min-height: 44px;
+    flex: 1;
+    white-space: normal;
+  }
 }
 body:has(.fraguan-design) .store-toast {
   background: #14110f;

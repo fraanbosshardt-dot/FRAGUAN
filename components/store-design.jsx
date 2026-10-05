@@ -212,7 +212,13 @@ function Card({ p, i = 0 }) {
     <div class="nfo">
       <span>${p.n}<small>${p.col}</small></span
       ><span>${$(p.p)}</span>
-    </div><//
+    </div>
+    <a
+      class="design-card-link"
+      href=${'#/p/' + p.slug}
+      aria-label=${'Elegir talle de ' + p.n}
+      >ELEGIR TALLE →</a
+    ><//
   >`;
 }
 const Grid = ({ L }) =>
@@ -243,7 +249,14 @@ function HScroll() {
   return html`<section class="hs" ref=${r}>
     <div>
       <h2 class="d">Lo más vendido</h2>
-      <div class="trk" ref=${t} style=${{ transform: `translateX(${-x}px)` }}>
+      <p class="design-swipe-hint">DESLIZÁ PARA VER MÁS →</p>
+      <div
+        class="trk"
+        ref=${t}
+        tabindex="0"
+        aria-label="Productos más vendidos. Deslizá para explorar."
+        style=${{ transform: `translateX(${-x}px)` }}
+      >
         ${[7, 0, 2, 4, 3, 5]
           .map((i) => P[i])
           .filter(Boolean)
@@ -679,6 +692,17 @@ function PublicStore({ children }) {
     trigger = useRef(null),
     lastFocus = useRef(null);
   useEffect(() => {
+    if (!menu) return;
+    const close = (event) => {
+      if (event.key === 'Escape') {
+        setMenu(false);
+        root.current?.querySelector('.mobile-menu')?.focus();
+      }
+    };
+    addEventListener('keydown', close);
+    return () => removeEventListener('keydown', close);
+  }, [menu]);
+  useEffect(() => {
     if (location.hash.startsWith('#/')) {
       const parts = location.hash.slice(2).split('/');
       if (parts[0] !== 'p') location.replace(route(location.hash));
@@ -848,6 +872,7 @@ function PublicStore({ children }) {
               className="mobile-menu"
               aria-label="Abrir categorías"
               aria-expanded={menu}
+              aria-controls="store-mobile-menu"
               onClick={() => setMenu(!menu)}
             >
               ☰
@@ -858,19 +883,54 @@ function PublicStore({ children }) {
             >
               ♡ {saved.favorites.length}
             </a>
-            <a href="/cuenta">{user?.name || 'Cuenta'}</a>
+            <a
+              href="/cuenta"
+              aria-label={user?.name ? 'Cuenta de ' + user.name : 'Mi cuenta'}
+            >
+              <span className="design-nav-label">{user?.name || 'Cuenta'}</span>
+              <svg
+                className="design-nav-icon"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+              </svg>
+            </a>
             <button
               className="cb"
               ref={trigger}
               onClick={() => setOpen(true)}
               aria-haspopup="dialog"
+              aria-label={'Carrito, ' + basket.count + ' productos'}
             >
-              CARRITO<i>{basket.count}</i>
+              <span className="design-nav-label">CARRITO</span>
+              <svg
+                className="design-nav-icon"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 5h2l3 12h11l2-9H6M9 21h.01M18 21h.01"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <i>{basket.count}</i>
             </button>
           </div>
         </nav>
         {menu && (
-          <div className="design-mobile-links">
+          <div className="design-mobile-links" id="store-mobile-menu">
             {[
               ['todo', 'Toda la colección'],
               ['nuevos', 'Nuevos'],
