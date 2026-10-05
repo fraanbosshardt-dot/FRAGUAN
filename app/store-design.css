@@ -64,7 +64,9 @@
     background: var(--ink);
     color: var(--bone);
     font-family: var(--fb);
-    overflow-x: hidden;
+    /* Clip horizontal animation overflow without creating a scroll container.
+       Sticky sections must follow the document's vertical scroll. */
+    overflow-x: clip;
   }
   a {
     color: inherit;
