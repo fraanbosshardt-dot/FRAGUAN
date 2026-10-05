@@ -210,7 +210,7 @@ function Card({ p, i = 0 }) {
         >${p.c.toUpperCase()}</span
       >${p.low && html`<span class="lo">QUEDAN POCOS</span>`}
       <button
-        class="fv"
+        class=${'fv' + (f ? ' store-favorite-pop' : '')}
         aria-label=${f ? 'Quitar de favoritos' : 'Guardar en favoritos'}
         aria-pressed=${f}
         onClick=${() => tf(p.id)}
@@ -556,12 +556,16 @@ function Prod({ id }) {
   </section>`;
 }
 
-function Lines({ ro }) {
+function Lines({ ro, stagger = false }) {
   const { cart, chg, rm } = useC();
   return cart.length
     ? cart.map(
-        (i) =>
-          html`<div class="ln2" key=${i.k}>
+        (i, index) =>
+          html`<div
+            class=${'ln2' + (stagger ? ' store-cart-enter' : '')}
+            style=${stagger ? { '--cart-index': Math.min(index, 6) } : undefined}
+            key=${i.k}
+          >
             <div>
               <b>${i.n}</b
               ><small>${i.col} · Talle ${i.s} · ${$(i.p)}</small
@@ -652,7 +656,9 @@ function Cart({ o, close }) {
         Tu carrito<button onClick=${close}>CERRAR ✕</button>
       </header>
       <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} />
-      <div class="it"><${Lines} /></div>
+      <div class="it" key=${o ? 'open' : 'closed'}>
+        <${Lines} stagger=${o} />
+      </div>
       <div class="tot g"><span>Subtotal</span><span>${$(sub)}</span></div>
       ${cart.length > 0 && html`<${React.Fragment}><a class="btn a w" href="#/checkout">IR A PAGAR</a><a class="btn g w" href="#/carrito">VER CARRITO</a><//>`}
     </aside><//
@@ -945,7 +951,12 @@ function PublicStore({ children }) {
             ))}
           </div>
         )}
-        <main id="store-content" inert={open}>
+        <main
+          id="store-content"
+          className="store-page-enter"
+          key={pathname}
+          inert={open}
+        >
           {catalogError && (
             <p className="err" role="alert">
               {catalogError}

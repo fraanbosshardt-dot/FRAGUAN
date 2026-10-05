@@ -80,6 +80,27 @@ footer .wm{font-size:clamp(60px,23vw,460px);line-height:.8}footer .wm span{trans
 .cur{display:none;position:fixed;top:0;left:0;width:16px;height:16px;margin:-8px;background:var(--acc-l);border-radius:50%;pointer-events:none;z-index:200;transition:width .25s,height .25s,margin .25s,opacity .25s;mix-blend-mode:difference}.cur.h{width:56px;height:56px;margin:-28px;opacity:.55}@media(hover:hover){.cur{display:block}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}.rv{opacity:1;transform:none}.wm span{transform:none}.sub{opacity:1}}
 .im{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* ANIM 1 · transición entre páginas y pasos del checkout */
+.pgin,.stp{animation:pgin .45s var(--ease) both}@keyframes pgin{from{opacity:0;transform:translateY(10px)}}
+/* ANIM 2 · líneas del carrito entran escalonadas (el producto nuevo se desliza adentro) */
+.st{animation:li .5s var(--ease) both;animation-delay:calc(var(--i)*55ms)}@keyframes li{from{opacity:0;transform:translateX(18px)}}
+/* ANIM 3 · subrayado del menú + marquesina que se pausa al pasar el mouse */
+nav .ln a{position:relative}nav .ln a::after{content:'';position:absolute;left:0;right:0;bottom:-5px;height:2px;background:var(--acc-l);transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}nav .ln a:hover::after{transform:none}.mq:hover div{animation-play-state:paused}
+/* ANIM 4 · corazón de favoritos */
+.fv.on{animation:hp .5s var(--ease)}@keyframes hp{0%{transform:scale(.7)}50%{transform:scale(1.35)}100%{transform:none}}
+/* ANIM 5 · zoom suave de la foto de producto */
+.im{transition:transform .9s var(--ease)}.card:hover .im{transform:scale(1.04)}
+/* ANIM 6 · envío gratis: camioncito en la barra + cartel (reemplaza la animación anterior) */
+.sb{position:relative;margin:34px 0 8px}.sb i{overflow:hidden}
+.tm{position:absolute;bottom:calc(100% + 1px);left:calc(var(--p)*(100% - 30px));color:var(--ink);transition:left .7s var(--ease),color .4s}
+.sb.full .tm{color:var(--acc);animation:hop .7s var(--ease)}@keyframes hop{0%{transform:none}35%{transform:translateY(-6px)}65%{transform:none}80%{transform:translateY(-2px)}100%{transform:none}}
+.sb.full i::after{content:'';display:block;height:100%;background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--bone) 55%,transparent) 50%,transparent 70%);transform:translateX(-100%);animation:bs 1s .1s var(--ease) both}@keyframes bs{to{transform:translateX(100%)}}
+.ft{position:fixed;top:calc(74px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:150;display:flex;gap:12px;align-items:center;background:var(--ink);color:var(--bone);padding:12px 22px 12px 14px;pointer-events:none;animation:ft 3.2s both}
+.ft svg{flex:none}.ft b{display:block;font-size:13px;letter-spacing:.06em}.ft small{display:block;opacity:.7;font-size:12px;margin-top:2px}
+.c1,.c2{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 1;stroke-dashoffset:1;animation:dsh .7s .3s var(--ease) forwards}.c1{stroke:var(--acc-l);stroke-width:2}.c2{stroke:var(--bone);stroke-width:2.4;animation-delay:.75s}@keyframes dsh{to{stroke-dashoffset:0}}
+@keyframes ft{0%{opacity:0;transform:translate(-50%,-14px);animation-timing-function:cubic-bezier(.16,.8,.3,1)}9%,88%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-10px)}}
+.sn.won{color:var(--acc);animation:sn .6s var(--ease)}@keyframes sn{0%{transform:scale(.9);opacity:0}100%{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.ft,.tm,.sb.full i::after,.c1,.c2,.pgin,.stp,.st,.fv.on{animation:none!important}.c1,.c2{stroke-dashoffset:0}}
 </style></head>
 <body><div id="root"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -109,7 +130,7 @@ const Err=({e})=>e?html`<div class="err">${e}</div>`:null;
 
 function Card({p,i=0}){const{add,favs,tf}=useC(),f=favs.includes(p.id);
 return html`<${Rv} c="card" d=${(i%4)*70}><div class=${'m t-'+TONE[p.cols[0]]}><a class="ml" href=${'#/p/'+p.id} aria-label=${p.n}></a>${p.img&&html`<img class="im" src=${p.img} alt=${p.n} loading="lazy"/>`}<span class="ct">${p.c.toUpperCase()}</span>${p.low&&html`<span class="lo">QUEDAN POCOS</span>`}
-<button class="fv" aria-label="Favorito" onClick=${()=>tf(p.id)}>${f?'♥':'♡'}</button>${!p.img&&html`<span class="big d">${p.k}</span>`}
+<button class=${'fv'+(f?' on':'')} key=${f} aria-label="Favorito" onClick=${()=>tf(p.id)}>${f?'♥':'♡'}</button>${!p.img&&html`<span class="big d">${p.k}</span>`}
 <div class="qa"><p>AGREGAR RÁPIDO · TALLE</p><div>${p.z.map(z=>html`<button key=${z} onClick=${()=>add(p,z,p.cols[0])}>${z}</button>`)}</div></div></div>
 <div class="nfo"><span>${p.n}<small>${p.col}</small></span><span>${$(p.p)}</span></div><//>`}
 const Grid=({L})=>L.length?html`<div class="grid">${L.map((p,i)=>html`<${Card} key=${p.id} p=${p} i=${i}/>`)}</div>`:html`<p class="em0">No hay prendas para mostrar.</p>`;
@@ -151,9 +172,9 @@ return html`<section class="sec lt pg"><p class="k" style=${{marginBottom:20}}><
 <details><summary>ENVÍOS</summary><p>Enviamos a todo el país. Gratis desde ${$(FREE)}. Retiro sin cargo en el local.</p></details><details><summary>CAMBIOS Y DEVOLUCIONES</summary><p>30 días para cambiar tu prenda sin uso y con etiquetas.</p></details></div></div>
 <h2 class="d h1" style=${{marginTop:'10vh'}}>También te puede gustar</h2><${Grid} L=${P.filter(x=>x.c==p.c&&x.id!=p.id).concat(P.filter(x=>x.c!=p.c)).slice(0,4)}/></section>`}
 
-function Lines({ro}){const{cart,chg,rm}=useC();return cart.length?cart.map(i=>html`<div class="ln2" key=${i.k}><div><b>${i.n}</b><small>${i.col} · Talle ${i.s} · ${$(i.p)}</small>${ro?html`<small>Cantidad: ${i.q}</small>`:html`<div class="qt"><button onClick=${()=>chg(i.k,-1)}>−</button>${i.q}<button onClick=${()=>chg(i.k,1)}>+</button><button style=${{marginLeft:10}} onClick=${()=>rm(i.k)}>QUITAR</button></div>`}</div><b>${$(i.p*i.q)}</b></div>`):html`<p class="em0">Tu carrito está vacío.</p>`}
+function Lines({ro,st}){const{cart,chg,rm}=useC();return cart.length?cart.map((i,x)=>html`<div class=${'ln2'+(st?' st':'')} style=${st?{'--i':x}:null} key=${i.k}><div><b>${i.n}</b><small>${i.col} · Talle ${i.s} · ${$(i.p)}</small>${ro?html`<small>Cantidad: ${i.q}</small>`:html`<div class="qt"><button onClick=${()=>chg(i.k,-1)}>−</button>${i.q}<button onClick=${()=>chg(i.k,1)}>+</button><button style=${{marginLeft:10}} onClick=${()=>rm(i.k)}>QUITAR</button></div>`}</div><b>${$(i.p*i.q)}</b></div>`):html`<p class="em0">Tu carrito está vacío.</p>`}
 function Sum({ship=0,disc=0,est}){const{sub}=useC();return html`<div class="sum"><h3 class="d">Resumen</h3><${Lines} ro=${true}/><div class="tot"><span>Subtotal</span><span>${$(sub)}</span></div><div class="tot"><span>Envío</span><span>${est?'Se calcula al pagar':ship?$(ship):'Gratis'}</span></div>${disc>0&&html`<div class="tot"><span>Descuento transferencia</span><span>− ${$(disc)}</span></div>`}<div class="tot g"><span>Total</span><span>${$(sub+ship-disc)}</span></div></div>`}
-function CartPage(){const{cart,sub}=useC();return html`<section class="sec lt pg"><h1 class="d h1">Tu carrito</h1>${cart.length?html`<div class="ck"><div><${Lines}/><p style=${{margin:'20px 0'}}><a href="#/c/todo" class="k">← SEGUIR COMPRANDO</a></p></div><div><${Sum} est=${true}/><div class="sb"><i style=${{width:Math.min(100,sub/FREE*100)+'%'}}></i></div><p class="sn">${sub>=FREE?'¡Tenés envío gratis!':`Te faltan ${$(FREE-sub)} para envío gratis`}</p><a class="btn a w" href="#/checkout">IR A PAGAR</a></div></div>`:html`<p class="em0">Todavía no agregaste nada. <a class="k" href="#/c/todo">VER COLECCIÓN →</a></p>`}</section>`}
+function CartPage(){const{cart,sub,win}=useC();return html`<section class="sec lt pg"><h1 class="d h1">Tu carrito</h1>${cart.length?html`<div class="ck"><div><${Lines}/><p style=${{margin:'20px 0'}}><a href="#/c/todo" class="k">← SEGUIR COMPRANDO</a></p></div><div><${Sum} est=${true}/><${Bar}/><p class=${'sn'+(sub>=FREE?' won':'')} key=${sub>=FREE?win:'n'}>${sub>=FREE?'✓ ¡Tenés envío gratis!':`Te faltan ${$(FREE-sub)} para envío gratis`}</p><a class="btn a w" href="#/checkout">IR A PAGAR</a></div></div>`:html`<p class="em0">Todavía no agregaste nada. <a class="k" href="#/c/todo">VER COLECCIÓN →</a></p>`}</section>`}
 
 const Rad=({on,set,t,s,off})=>html`<button type="button" disabled=${off} class=${'rad '+(on?'on':'')} onClick=${set}><b>${t}</b><small>${s}</small></button>`;
 function Check(){const{cart,sub,user,reg,saveOrder}=useC(),u=user||{};
@@ -168,11 +189,11 @@ if(d.crear&&!user)await reg({email:d.email,nom:d.nom,ape:d.ape,dni:d.dni,tel:d.t
 const setEnv=v=>sd({...d,env:v,met:v=='dom'&&d.met=='efec'?'transf':d.met});
 return html`<section class="sec lt pg"><h1 class="d h1">Pagar</h1><div class="steps">${['1 · TUS DATOS','2 · ENVÍO','3 · PAGO'].map((x,i)=>html`<span key=${x} class=${st==i+1?'on':''}>${x}</span>`)}</div>
 <div class="ck"><div>
-${st==1&&html`<div>${user?html`<div class="ok" style=${{padding:18}}><b>Hola ${user.nom}, completamos tus datos con tu cuenta.</b></div>`:html`<p style=${{marginBottom:18}}>¿Ya tenés cuenta? <a class="k" href="#/cuenta" onClick=${()=>{RET='#/checkout'}}>INGRESÁ PARA AUTOCOMPLETAR →</a></p>`}
+${st==1&&html`<div class="stp">${user?html`<div class="ok" style=${{padding:18}}><b>Hola ${user.nom}, completamos tus datos con tu cuenta.</b></div>`:html`<p style=${{marginBottom:18}}>¿Ya tenés cuenta? <a class="k" href="#/cuenta" onClick=${()=>{RET='#/checkout'}}>INGRESÁ PARA AUTOCOMPLETAR →</a></p>`}
 <${F} l="EMAIL" k="email" d=${d} sd=${sd} t="email"/><div class="row"><${F} l="NOMBRE" k="nom" d=${d} sd=${sd}/><${F} l="APELLIDO" k="ape" d=${d} sd=${sd}/></div><div class="row"><${F} l="DNI" k="dni" d=${d} sd=${sd}/><${F} l="TELÉFONO" k="tel" d=${d} sd=${sd} t="tel"/></div></div>`}
-${st==2&&html`<div><${Rad} on=${d.env=='dom'} set=${()=>setEnv('dom')} t="Envío a domicilio" s=${ship||sub>=FREE?'Gratis':$(SHIP)+' · Todo el país'}/><${Rad} on=${d.env=='ret'} set=${()=>setEnv('ret')} t="Retiro en el local" s="Sin cargo"/>
+${st==2&&html`<div class="stp"><${Rad} on=${d.env=='dom'} set=${()=>setEnv('dom')} t="Envío a domicilio" s=${ship||sub>=FREE?'Gratis':$(SHIP)+' · Todo el país'}/><${Rad} on=${d.env=='ret'} set=${()=>setEnv('ret')} t="Retiro en el local" s="Sin cargo"/>
 ${d.env=='dom'&&html`<div style=${{marginTop:18}}><${F} l="CALLE Y NÚMERO" k="calle" d=${d} sd=${sd}/><div class="row"><${F} l="CIUDAD" k="ciu" d=${d} sd=${sd}/><${Sel} l="PROVINCIA" k="prov" d=${d} sd=${sd} o=${PROV}/><${F} l="CÓD. POSTAL" k="cp" d=${d} sd=${sd}/></div></div>`}</div>`}
-${st==3&&html`<div><${Rad} on=${d.met=='transf'} set=${()=>sd({...d,met:'transf'})} t="Transferencia bancaria · 10% OFF" s="Te mostramos los datos al confirmar"/><${Rad} on=${d.met=='tarj'} set=${()=>sd({...d,met:'tarj'})} t="Tarjeta de crédito o débito" s="Pago seguro"/><${Rad} on=${d.met=='mp'} set=${()=>sd({...d,met:'mp'})} t="Mercado Pago" s="Dinero en cuenta, tarjetas guardadas"/><${Rad} off=${d.env=='dom'} on=${d.met=='efec'} set=${()=>sd({...d,met:'efec'})} t="Efectivo en el local" s=${d.env=='dom'?'Solo con retiro en el local':'Pagás al retirar'}/>
+${st==3&&html`<div class="stp"><${Rad} on=${d.met=='transf'} set=${()=>sd({...d,met:'transf'})} t="Transferencia bancaria · 10% OFF" s="Te mostramos los datos al confirmar"/><${Rad} on=${d.met=='tarj'} set=${()=>sd({...d,met:'tarj'})} t="Tarjeta de crédito o débito" s="Pago seguro"/><${Rad} on=${d.met=='mp'} set=${()=>sd({...d,met:'mp'})} t="Mercado Pago" s="Dinero en cuenta, tarjetas guardadas"/><${Rad} off=${d.env=='dom'} on=${d.met=='efec'} set=${()=>sd({...d,met:'efec'})} t="Efectivo en el local" s=${d.env=='dom'?'Solo con retiro en el local':'Pagás al retirar'}/>
 ${d.met=='tarj'&&!LIVE&&html`<div style=${{marginTop:18}}><${F} l="NÚMERO DE TARJETA" k="num" d=${d} sd=${sd} ph="0000 0000 0000 0000"/><div class="row"><${F} l="VENCIMIENTO" k="vto" d=${d} sd=${sd} ph="MM/AA"/><${F} l="CÓD. SEGURIDAD" k="cvv" d=${d} sd=${sd} t="password"/></div><${F} l="TITULAR" k="tit" d=${d} sd=${sd}/><${Sel} l="CUOTAS" k="cuo" d=${d} sd=${sd} o=${['1 pago','3 cuotas','6 cuotas']}/></div>`}
 ${!user&&html`<label style=${{display:'flex',gap:10,alignItems:'center',margin:'14px 0',fontWeight:700}}><input type="checkbox" style=${{width:20}} checked=${d.crear} onChange=${x=>sd({...d,crear:x.target.checked})}/>Crear mi cuenta con estos datos</label>`}
 ${d.crear&&!user&&html`<${F} l="CONTRASEÑA (6+)" k="pass" d=${d} sd=${sd} t="password"/>`}</div>`}
@@ -196,8 +217,13 @@ ${pt=='datos'?html`<div style=${{maxWidth:680}}><p style=${{marginBottom:16}}>Es
 function Info({k}){const x=INFO[k];if(!x)return html`<${NF}/>`;return html`<section class="sec lt pg"><b class="k">AYUDA</b><h1 class="d h1">${x[0]}</h1><div class="txt">${x[1].map((t,i)=>html`<p key=${i}>${t}</p>`)}</div></section>`}
 const NF=()=>html`<section class="sec lt pg"><h1 class="d h1">No encontrado</h1><a class="btn" href="#/">VOLVER AL INICIO</a></section>`;
 function Favs(){const{favs}=useC();return html`<section class="sec lt2 pg"><h1 class="d h1">Favoritos</h1><${Grid} L=${P.filter(p=>favs.includes(p.id))}/></section>`}
-function Cart({o,close}){const{cart,sub}=useC(),left=Math.max(0,FREE-sub);return html`<div class=${'ov '+(o?'on':'')} onClick=${close}></div><aside class=${'dr '+(o?'on':'')}><header class="d">Tu carrito<button onClick=${close}>CERRAR ✕</button></header><div class="sb"><i style=${{width:Math.min(100,sub/FREE*100)+'%'}}></i></div><div class="sn">${left?`Te faltan ${$(left)} para envío gratis`:'¡Tenés envío gratis!'}</div><div class="it"><${Lines}/></div><div class="tot g"><span>Subtotal</span><span>${$(sub)}</span></div>${cart.length>0&&html`<a class="btn a w" href="#/checkout">IR A PAGAR</a><a class="btn g w" href="#/carrito">VER CARRITO</a>`}</aside>`}
+function Cart({o,close}){const{cart,sub,win}=useC(),left=Math.max(0,FREE-sub);return html`<div class=${'ov '+(o?'on':'')} onClick=${close}></div><aside class=${'dr '+(o?'on':'')}><header class="d">Tu carrito<button onClick=${close}>CERRAR ✕</button></header><${Bar}/><div class=${'sn'+(left?'':' won')} key=${left?'n':win}>${left?`Te faltan ${$(left)} para envío gratis`:'✓ ¡Tenés envío gratis!'}</div><div class="it" key=${o?'o':'c'}><${Lines} st=${true}/></div><div class="tot g"><span>Subtotal</span><span>${$(sub)}</span></div>${cart.length>0&&html`<a class="btn a w" href="#/checkout">IR A PAGAR</a><a class="btn g w" href="#/carrito">VER CARRITO</a>`}</aside>`}
 function Cur(){const r=useRef();useEffect(()=>{const m=e=>{r.current.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;r.current.classList.toggle('h',!!e.target.closest('a,button,.card,input,select'))};addEventListener('mousemove',m);return()=>removeEventListener('mousemove',m)},[]);return html`<div class="cur" ref=${r}></div>`}
+
+function Bar(){const{sub,win}=useC(),p=Math.min(1,sub/FREE);
+return html`<div class=${'sb'+(sub>=FREE?' full':'')} style=${{'--p':p}}><i style=${{width:p*100+'%'}}></i><svg class="tm" key=${win} viewBox="0 0 30 16" width="30" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 2h16v9H1zM17 5h6l5 4v2H17z"/><circle cx="7" cy="13" r="2" fill="var(--bone)"/><circle cx="23" cy="13" r="2" fill="var(--bone)"/></svg></div>`}
+function Win({k}){const[on,sv]=useState(false);useEffect(()=>{if(!k)return;sv(true);const t=setTimeout(()=>sv(false),3200);return()=>clearTimeout(t)},[k]);
+if(!on)return null;return html`<div class="ft" role="status"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle class="c1" pathLength="1" cx="12" cy="12" r="10"/><path class="c2" pathLength="1" d="M7 12.5l3.2 3.2L17 9"/></svg><span><b>Envío gratis desbloqueado</b><small>Tu compra llega a todo el país sin costo</small></span></div>`}
 
 function App(){const[h,sh]=useState(location.hash||'#/'),[o,so]=useState(false),[cart,sc]=useState(()=>ls.g('fg_cart',[])),[user,su]=useState(()=>ls.g('fg_me',null)),[favs,sf]=useState(()=>ls.g('fg_fav',[])),[orders,sord]=useState(()=>ls.g('fg_orders',[])),[nw,snw]=useState(false);
 useEffect(()=>{const f=()=>{sh(location.hash||'#/');scrollTo(0,0);so(false)};addEventListener('hashchange',f);return()=>removeEventListener('hashchange',f)},[]);
@@ -208,14 +234,15 @@ const reg=async(p,pw)=>{const U=ls.g('fg_users',{}),k=p.email.toLowerCase();if(U
 const login=async(em,pw)=>{const U=ls.g('fg_users',{}),r=U[em.toLowerCase()];if(!r||r.h!=await sha(pw))return'Email o contraseña incorrectos.';const{h:_,...p}=r;su(p);return''};
 const save=p=>{const U=ls.g('fg_users',{}),k=p.email.toLowerCase();if(U[k])U[k]={...U[k],...p};ls.s('fg_users',U);su(p)};
 const saveOrder=x=>{sord(a=>[x,...a]);sc([])},n=cart.reduce((a,x)=>a+x.q,0),sub=cart.reduce((a,x)=>a+x.p*x.q,0);
+const[win,sw]=useState(0),pv=useRef(sub);useEffect(()=>{if(pv.current<FREE&&sub>=FREE){sw(w=>w+1);try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}}pv.current=sub},[sub]);
 const[a,b]=h.replace('#/','').split('/');
 const pg=a==''?html`<${Home}/>`:a=='c'?html`<${Coll} c=${b||'todo'} key=${b}/>`:a=='p'?html`<${Prod} id=${+b} key=${b}/>`:a=='carrito'?html`<${CartPage}/>`:a=='checkout'?html`<${Check}/>`:a=='cuenta'?html`<${Acc} key=${user?'u':'g'}/>`:a=='gracias'?html`<${Thanks} id=${b}/>`:a=='favoritos'?html`<${Favs}/>`:a=='info'?html`<${Info} k=${b}/>`:html`<${NF}/>`;
 const M='10% OFF PAGANDO POR TRANSFERENCIA',E='ENVÍOS A TODO EL PAÍS';
-return html`<${C.Provider} value=${{cart,add,chg,rm,n,sub,favs,tf,user,reg,login,logout:()=>su(null),save,orders,saveOrder,so,news:[nw,()=>snw(true)]}}>
+return html`<${C.Provider} value=${{cart,add,chg,rm,n,sub,favs,tf,user,reg,login,logout:()=>su(null),save,orders,saveOrder,so,win,news:[nw,()=>snw(true)]}}>
 <div class="mq"><div>${[0,1,2,3,4,5].map(i=>html`<span key=${i}>${M} ✦ ${E} ✦</span>`)}</div></div>
 <nav><a class="lg d" href="#/">Fraguan</a><div class="ln">${[['nuevos','Nuevos'],['camisas','Camisas'],['remeras','Remeras'],['pantalones','Pantalones'],['camperas','Abrigos']].map(([s,l])=>html`<a key=${s} href=${'#/c/'+s}>${l}</a>`)}</div><div class="nr"><a href="#/favoritos">♡ ${favs.length}</a><a href="#/cuenta">${user?user.nom:'Cuenta'}</a><button class="cb" onClick=${()=>so(true)}>CARRITO<i>${n}</i></button></div></nav>
-<main>${pg}</main>
+<main key=${a+'/'+(b||'')} class="pgin">${pg}</main>
 <footer><div class="fl"><div><b>AYUDA</b>${['envios','cambios','pagos','talles','contacto'].map(k=>html`<a key=${k} href=${'#/info/'+k}>${INFO[k][0]}</a>`)}<a href="#/cuenta">Mi cuenta</a></div><div><b>LEGAL</b>${['terminos','privacidad','cookies','arrepentimiento'].map(k=>html`<a key=${k} href=${'#/info/'+k}>${INFO[k][0]}</a>`)}</div></div><div class="wm d" aria-hidden="true">${'FRAGUAN'.split('').map((c,i)=>html`<span key=${i}>${c}</span>`)}</div></footer>
-<${Cart} o=${o} close=${()=>so(false)}/><a class="wa" target="_blank" rel="noopener" href=${'https://wa.me/'+WAN}>WHATSAPP</a><${Cur}/><//>`}
+<${Cart} o=${o} close=${()=>so(false)}/><a class="wa" target="_blank" rel="noopener" href=${'https://wa.me/'+WAN}>WHATSAPP</a><${Cur}/><${Win} k=${win}/><//>`}
 ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
 </script></body></html>

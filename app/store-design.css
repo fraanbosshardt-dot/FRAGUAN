@@ -1866,3 +1866,95 @@ body:has(.fraguan-design) .store-toast {
     grid-template-columns: 1fr;
   }
 }
+
+/* Microanimaciones del paquete nuevo; envío gratis mantiene su barra actual. */
+@keyframes store-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes store-cart-enter {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes store-favorite-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  50% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: none;
+  }
+}
+.fraguan-design .store-page-enter,
+.fraguan-design .store-step-enter {
+  animation: store-page-enter 0.45s var(--ease) backwards;
+}
+.fraguan-design .store-cart-enter {
+  animation: store-cart-enter 0.5s var(--ease) backwards;
+  animation-delay: calc(var(--cart-index) * 55ms);
+}
+.fraguan-design nav .ln a {
+  position: relative;
+}
+.fraguan-design nav .ln a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  background: var(--acc-l);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s var(--ease);
+}
+.fraguan-design nav .ln a:hover::after,
+.fraguan-design nav .ln a:focus-visible::after {
+  transform: scaleX(1);
+}
+.fraguan-design .mq:hover > div,
+.fraguan-design .mq:focus-within > div {
+  animation-play-state: paused;
+}
+.fraguan-design .fv.store-favorite-pop {
+  animation: store-favorite-pop 0.5s var(--ease);
+}
+.fraguan-design .card .im {
+  transition: transform 0.9s var(--ease);
+}
+@media (hover: hover) {
+  .fraguan-design .card:hover .im {
+    transform: scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design .store-page-enter,
+  .fraguan-design .store-step-enter,
+  .fraguan-design .store-cart-enter,
+  .fraguan-design .fv.store-favorite-pop {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .fraguan-design .card .im,
+  .fraguan-design nav .ln a::after {
+    transition: none;
+  }
+  .fraguan-design .card:hover .im {
+    transform: none;
+  }
+}

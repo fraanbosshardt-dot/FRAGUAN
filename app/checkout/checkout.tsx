@@ -578,7 +578,11 @@ export default function Checkout({
             className="store-checkout-form"
             data-step={step}
           >
-            <section data-checkout-step={1} hidden={step !== 1}>
+            <section
+              data-checkout-step={1}
+              hidden={step !== 1}
+              className={step === 1 ? 'store-step-enter' : undefined}
+            >
               <div className="store-form-step">
                 <span>01</span>
                 <div>
@@ -707,7 +711,11 @@ export default function Checkout({
                 </label>
               </div>
             </section>
-            <section data-checkout-step={2} hidden={step !== 2}>
+            <section
+              data-checkout-step={2}
+              hidden={step !== 2}
+              className={step === 2 ? 'store-step-enter' : undefined}
+            >
               <div className="store-form-step">
                 <span>02</span>
                 <div>
@@ -887,7 +895,11 @@ export default function Checkout({
                 </label>
               )}
             </section>
-            <section data-checkout-step={3} hidden={step !== 3}>
+            <section
+              data-checkout-step={3}
+              hidden={step !== 3}
+              className={step === 3 ? 'store-step-enter' : undefined}
+            >
               <div className="store-form-step">
                 <span>03</span>
                 <div>
