@@ -33,6 +33,10 @@ const html = htm.bind((tag, props, ...children) => {
       props.className = props.class;
       delete props.class;
     }
+    if ('tabindex' in props) {
+      props.tabIndex = props.tabindex;
+      delete props.tabindex;
+    }
     if (props.href) props.href = route(props.href);
   }
   return React.createElement(tag, props, ...children);
