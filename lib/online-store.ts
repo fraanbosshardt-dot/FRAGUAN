@@ -668,8 +668,8 @@ async function createMercadoPagoPreference(order: Record<string, any>) {
   if (publicOrigin) {
     body.notification_url = `${publicOrigin}/api/webhooks/mercadopago`;
     body.back_urls = {
-      success: `${publicOrigin}/cuenta`,
-      pending: `${publicOrigin}/cuenta`,
+      success: `${publicOrigin}/gracias/${order.id}`,
+      pending: `${publicOrigin}/gracias/${order.id}`,
       failure: `${publicOrigin}/checkout`,
     };
     body.auto_return = 'approved';

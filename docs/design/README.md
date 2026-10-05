@@ -12,4 +12,6 @@ Los archivos recibidos no contienen fotografías; se mantienen las composiciones
 
 El usuario autorizó subir y desplegar este diseño en el proyecto existente de FRAGUAN, conservando el dominio www.fraguan.com.
 
+PagoAprobado muestra el estado de procesamiento y, únicamente cuando el pedido protegido devuelve paymentStatus=paid, el tilde y el ticket animado. Checkout, seguimiento y el retorno de Mercado Pago usan los importes y productos persistidos del pedido; informar una transferencia no equivale a acreditarla. La altura del ticket se mide automáticamente, incluidos pedidos largos. El componente no imprime en una impresora física.
+
 En celular (hasta 700 px) la tienda conserva la identidad visual y adapta la interacción: catálogo en dos columnas, selección de talle desde la ficha y navegación con controles táctiles. A pedido del usuario se conservan también las animaciones de texto progresivo y carrusel horizontal al bajar, con recorridos ajustados al celular. Los formularios usan texto de 16 px; WhatsApp y los avisos no cubren los botones de compra. En escritorio se mantienen las animaciones y composiciones de la referencia.

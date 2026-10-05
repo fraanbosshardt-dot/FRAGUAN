@@ -11,6 +11,12 @@ import {
   Truck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import PagoAprobado from '@/components/PagoAprobado';
+import {
+  StorePaymentTicket,
+  useOrderPaymentUpdates,
+} from '@/components/store-payment-ticket';
+import type { ReceiptOrder } from '@/lib/store-payment-receipt';
 import {
   storeApi,
   storeMoney,
@@ -22,7 +28,7 @@ import {
 
 const STORE_PICKUP_POSTAL_CODE = '2661';
 
-type Order = Record<string, any>;
+type Order = ReceiptOrder & Record<string, any>;
 type CheckoutQuote = {
   subtotal: number;
   transferDiscount: number;
@@ -53,6 +59,8 @@ export default function Checkout({
   const [session, setSession] = useState<any>(null);
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  useOrderPaymentUpdates(order, setOrder);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -180,6 +188,7 @@ export default function Checkout({
   const total = pricing?.total ?? subtotal - discount;
   async function submit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    setConfirmingPayment(true);
     setBusy(true);
     setError('');
     const form = new FormData(event.currentTarget);
@@ -248,6 +257,7 @@ export default function Checkout({
       setError(cause.message);
     } finally {
       setBusy(false);
+      setConfirmingPayment(false);
     }
   }
   async function requestEmailCode() {
@@ -384,6 +394,14 @@ export default function Checkout({
     setError('');
     setStep(step + 1);
   }
+  if (confirmingPayment && !order)
+    return (
+      <div className="store-shell">
+        <section className="sec pg">
+          <PagoAprobado status="processing" />
+        </section>
+      </div>
+    );
   if (order)
     return (
       <div className="store-shell">
@@ -393,7 +411,22 @@ export default function Checkout({
           </div>
           <span>PEDIDO #{order.orderNumber}</span>
           <h1 className="d">¡Gracias por tu compra!</h1>
-          {payment === 'transfer' ? (
+          <StorePaymentTicket
+            order={order}
+            showPending={
+              busy ||
+              order.paymentStatus === 'reported' ||
+              order.paymentMethod === 'card'
+            }
+          />
+          {order.paymentStatus === 'reported' && (
+            <p>
+              Recibimos tu aviso de transferencia. Estamos esperando la
+              acreditación del pago.
+            </p>
+          )}
+          {order.paymentStatus === 'paid' ? null : payment === 'transfer' &&
+            order.paymentStatus !== 'reported' ? (
             <>
               <p>
                 Transferí el importe exacto e incluí esta referencia en el
@@ -439,7 +472,7 @@ export default function Checkout({
                 </button>
               </form>
             </>
-          ) : (
+          ) : payment === 'card' ? (
             <div className="store-payment-pending">
               <CreditCard />
               <h2>Pago con tarjeta preparado</h2>
@@ -448,10 +481,13 @@ export default function Checkout({
                 confirmación llegará automáticamente al pedido.
               </p>
             </div>
-          )}
+          ) : null}
           <div className="store-order-next">
             <p>
-              <PackageCheck /> Reservamos tus prendas durante 30 minutos.
+              <PackageCheck />{' '}
+              {order.paymentStatus === 'paid'
+                ? 'Tu pago está confirmado.'
+                : 'Reservamos tus prendas durante 30 minutos.'}
             </p>
             <p>
               <Truck /> El pedido aparecerá en preparación apenas se confirme el

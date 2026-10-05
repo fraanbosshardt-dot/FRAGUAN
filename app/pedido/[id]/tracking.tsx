@@ -2,6 +2,10 @@
 import { ArrowLeft, Check, Clock, PackageCheck, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { storeApi, storeMoney } from '@/lib/store-client';
+import {
+  StorePaymentTicket,
+  useOrderPaymentUpdates,
+} from '@/components/store-payment-ticket';
 
 const fulfillment: Record<string, string> = {
   pending: 'Pedido recibido',
@@ -28,6 +32,7 @@ export default function OrderTracking({
 }) {
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState('');
+  useOrderPaymentUpdates(order, setOrder);
   useEffect(() => {
     const token = sessionStorage.getItem(`fraguan-order-${orderId}`) || '';
     storeApi(`store-order?id=${encodeURIComponent(orderId)}`, {
@@ -68,6 +73,13 @@ export default function OrderTracking({
                 {payment[order.paymentStatus] || order.paymentStatus}
               </p>
             </header>
+            <StorePaymentTicket
+              order={order}
+              showPending={
+                order.paymentStatus === 'reported' ||
+                order.paymentMethod === 'card'
+              }
+            />
             <section className="store-tracking-steps">
               <article className="done">
                 <Check />

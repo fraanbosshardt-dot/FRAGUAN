@@ -1,0 +1,276 @@
+/* Tokens: cambialos por los de tu tema (mismo tono de marca) */
+.pa {
+  --pa-bg: var(--ink, #14110f);
+  --pa-line: var(--ink-2, #221e1b);
+  --pa-text: var(--bone, #f2eee6);
+  --pa-muted: var(--acc-l, #93a3ff);
+  --pa-accent: var(--acc-l, #93a3ff);
+  --pa-paper: var(--bone, #f2eee6);
+  --pa-ink: var(--ink, #14110f);
+  --pa-body-top: #2a2a27;
+  --pa-body-bot: #1d1d1b;
+  --pa-body-line: #3a3a36;
+  --pa-font: var(--fb, 'DM Sans', Arial, sans-serif);
+  --pa-mono: 'Courier New', ui-monospace, monospace;
+
+  color: var(--pa-text);
+  font-family: var(--pa-font);
+  text-align: center;
+  padding: 24px 16px;
+  background: var(--pa-bg);
+}
+.pa * {
+  box-sizing: border-box;
+}
+
+/* Estado */
+.pa-status {
+  display: block;
+  padding: 10px 0;
+}
+.pa .pa-status h1,
+.fraguan-design .pa .pa-status h1 {
+  font-family: var(--pa-font);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--pa-text);
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+}
+.pa-status p {
+  margin: 6px 0 0;
+  color: var(--pa-muted);
+  font-size: 13px;
+}
+.pa-spin {
+  width: 46px;
+  height: 46px;
+  border: 3px solid var(--pa-line);
+  border-top-color: var(--pa-accent);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: pa-sp 0.8s linear infinite;
+}
+@keyframes pa-sp {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.pa-check {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  display: block;
+}
+.pa-check circle {
+  fill: none;
+  stroke: var(--pa-accent);
+  stroke-width: 3;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: pa-dr 0.6s 0.1s forwards;
+}
+.pa-check path {
+  fill: none;
+  stroke: var(--pa-accent);
+  stroke-width: 4;
+  stroke-linecap: square;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: pa-dr 0.4s 0.6s forwards;
+}
+@keyframes pa-dr {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Impresora */
+.pa-printer {
+  width: 300px;
+  max-width: 100%;
+  margin: 18px auto 0;
+}
+.pa-body {
+  position: relative;
+  z-index: 3;
+  background: linear-gradient(var(--pa-body-top), var(--pa-body-bot));
+  border: 1px solid var(--pa-body-line);
+  border-radius: 14px 14px 6px 6px;
+  padding: 14px 16px 12px;
+  box-shadow: 0 10px 30px #0008;
+}
+.pa-body.work {
+  animation: pa-vib 0.09s linear infinite;
+}
+@keyframes pa-vib {
+  50% {
+    transform: translateY(1px);
+  }
+}
+.pa-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--pa-muted);
+  margin-bottom: 12px;
+}
+.pa-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pa-body-line);
+}
+.pa-body.work .pa-led {
+  background: var(--pa-accent);
+  animation: pa-bl 0.4s steps(2) infinite;
+}
+.pa-body.done .pa-led {
+  background: var(--pa-accent);
+}
+@keyframes pa-bl {
+  50% {
+    opacity: 0.2;
+  }
+}
+.pa-slot {
+  height: 9px;
+  background: #000;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 2px 3px #000,
+    0 1px 0 #4a4a45;
+}
+
+/* Ticket */
+.pa-feed {
+  position: relative;
+  z-index: 1;
+  margin: -4px 14px 0;
+  overflow: hidden;
+  height: 0;
+  transition: height 0.3s;
+}
+.pa-feed.open {
+  height: var(--pa-ticket-height, 470px);
+}
+.pa-ticket {
+  background: var(--pa-paper);
+  color: var(--pa-ink);
+  font-family: var(--pa-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 20px 18px 26px;
+  text-align: left;
+  transform: translateY(-100%);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 8px),
+    95% 100%,
+    90% calc(100% - 8px),
+    85% 100%,
+    80% calc(100% - 8px),
+    75% 100%,
+    70% calc(100% - 8px),
+    65% 100%,
+    60% calc(100% - 8px),
+    55% 100%,
+    50% calc(100% - 8px),
+    45% 100%,
+    40% calc(100% - 8px),
+    35% 100%,
+    30% calc(100% - 8px),
+    25% 100%,
+    20% calc(100% - 8px),
+    15% 100%,
+    10% calc(100% - 8px),
+    5% 100%,
+    0 calc(100% - 8px)
+  );
+}
+.pa-ticket.go {
+  animation: pa-out 4.2s steps(42, end) forwards;
+}
+@keyframes pa-out {
+  to {
+    transform: translateY(0);
+  }
+}
+.pa-ticket .c {
+  text-align: center;
+}
+.pa-ticket .l {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pa-ticket .l b {
+  font-weight: 700;
+}
+.pa .pa-ticket .sub {
+  color: #555;
+  margin: 0;
+  opacity: 1;
+  animation: none;
+  font-size: 12px;
+  text-align: left;
+}
+.pa .pa-ticket .tot {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+}
+.pa-ticket hr {
+  border: 0;
+  border-top: 1px dashed #1b1b1999;
+  margin: 10px 0;
+}
+.pa-brand {
+  font-family: var(--pa-font);
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  font-size: 18px;
+}
+.pa-bars {
+  height: 34px;
+  margin-top: 10px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--pa-ink) 0 2px,
+    transparent 2px 4px,
+    var(--pa-ink) 4px 5px,
+    transparent 5px 8px,
+    var(--pa-ink) 8px 11px,
+    transparent 11px 12px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pa-ticket.go {
+    animation-duration: 0.01s;
+  }
+  .pa-body.work {
+    animation: none;
+  }
+}
+
+.pa-ticket .l > :last-child {
+  flex-shrink: 0;
+}
+.pa-ticket .l > :first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 360px) {
+  .pa {
+    padding-inline: 8px;
+  }
+  .pa-ticket {
+    padding-inline: 12px;
+  }
+}
