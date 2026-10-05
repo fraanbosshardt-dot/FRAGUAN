@@ -251,6 +251,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pa-spin {
+    animation: none;
+  }
+  .pa-check circle,
+  .pa-check path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
   .pa-ticket.go {
     animation-duration: 0.01s;
   }
