@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { AppError } from './auth';
+import { isOpenStaffAccess } from './staff-access';
 
 export const adminPinCookie = 'fraguan_admin_access';
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -84,6 +85,7 @@ export async function createAdminPinToken(userId: string) {
 }
 
 export async function verifyAdminPinToken(token: string, userId: string) {
+  if (isOpenStaffAccess()) return true;
   const parts = token.split('.');
   if (parts.length !== 5 || parts[0] !== 'v1') return false;
   const [version, expiresRaw, encodedUserId, nonce, signature] = parts;
@@ -108,6 +110,7 @@ export async function verifyAdminPinToken(token: string, userId: string) {
 }
 
 export async function verifyAdminPinRequest(req: Request, userId: string) {
+  if (isOpenStaffAccess()) return true;
   const value = (req.headers.get('cookie') || '')
     .split(';')
     .map((part) => part.trim().split('='))

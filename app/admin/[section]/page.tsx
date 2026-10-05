@@ -7,6 +7,7 @@ import Operations from '../../operations-workspace';
 import ComingSoon from '../../coming-soon';
 import { isProductionComingSoon } from '@/lib/release-mode';
 import type { Metadata } from 'next';
+import { adminEntryPath } from '@/lib/admin-entry';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Administración | FRAGUAN',
@@ -53,6 +54,7 @@ export default async function AdminPage({
   params: Promise<{ section: string }>;
 }) {
   const { section } = await params;
+  if (section === 'dashboard') redirect('/admin');
   if (isProductionComingSoon()) return <ComingSoon area="FRAGUAN ADMIN" />;
   if (section === 'stock') redirect('/admin/products');
   if (!adminSections.has(section)) notFound();
@@ -60,7 +62,7 @@ export default async function AdminPage({
   try {
     a = await actor();
   } catch {
-    redirect('/pos');
+    redirect(adminEntryPath(`/admin/${section}`));
   }
   const permission = section === 'stock-movements' ? 'stock' : section;
   if (!can(a, permission))
@@ -73,9 +75,7 @@ export default async function AdminPage({
   const cookieStore = await cookies();
   const adminToken = cookieStore.get(adminPinCookie)?.value ?? '';
   if (!(await verifyAdminPinToken(adminToken, a.id)))
-    redirect(
-      `/admin-access?returnTo=${encodeURIComponent(`/admin/${section}`)}`,
-    );
+    redirect(adminEntryPath(`/admin/${section}`));
   return [
     'banking',
     'club-rewards',

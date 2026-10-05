@@ -7,6 +7,7 @@ import { getChatGPTUser } from '../chatgpt-auth';
 import { redirect } from 'next/navigation';
 import { internalPasswordConfigured } from '@/lib/internal-password';
 import { internalSessionsConfigured } from '@/lib/internal-session';
+import { adminEntryPath } from '@/lib/admin-entry';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -19,12 +20,12 @@ function safeReturnTo(requested: string) {
     const parsed = new URL(requested, 'https://fraguan.local');
     if (parsed.origin !== 'https://fraguan.local') return '/pos';
     if (parsed.pathname === '/pos') return '/pos';
-    if (parsed.pathname === '/admin-access') {
+    if (parsed.pathname === '/admin' || parsed.pathname === '/admin-access') {
       const adminTarget = parsed.searchParams.get('returnTo') ?? '';
-      if (/^\/admin\/[a-z0-9-]+$/.test(adminTarget))
-        return `/admin-access?returnTo=${encodeURIComponent(adminTarget)}`;
-      return '/admin-access';
+      return adminEntryPath(adminTarget);
     }
+    if (/^\/admin\/[a-z0-9-]+$/.test(parsed.pathname))
+      return adminEntryPath(parsed.pathname);
   } catch {}
   return '/pos';
 }

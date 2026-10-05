@@ -112,6 +112,7 @@ export const navigationGroups: readonly NavigationGroup[] = [
 export const navigation = navigationGroups.flatMap((group) => group.items);
 
 type AdminSession = {
+  openAccess?: boolean;
   permissions?: unknown[];
   user?: { name?: string; role?: string };
 } | null;
@@ -131,7 +132,7 @@ export function AdminSidebar({
 
   return (
     <aside className="sidebar">
-      <a className="wordmark" href="/admin/dashboard">
+      <a className="wordmark" href="/admin">
         FRAGUAN<span>ADMINISTRACIÓN</span>
       </a>
       <a className="new-sale-link" href="/pos">
@@ -151,7 +152,7 @@ export function AdminSidebar({
               {primary.map(([key, label, Icon]) => (
                 <a
                   key={key}
-                  href={'/admin/' + key}
+                  href={key === 'dashboard' ? '/admin' : '/admin/' + key}
                   className={section === key ? 'active' : ''}
                   aria-current={section === key ? 'page' : undefined}
                 >
@@ -168,7 +169,7 @@ export function AdminSidebar({
                   {secondary.map(([key, label, Icon]) => (
                     <a
                       key={key}
-                      href={'/admin/' + key}
+                      href={key === 'dashboard' ? '/admin' : '/admin/' + key}
                       className={section === key ? 'active' : ''}
                       aria-current={section === key ? 'page' : undefined}
                     >
@@ -188,7 +189,7 @@ export function AdminSidebar({
           {userName.split('@')[0]}
           <small>{role}</small>
         </span>
-        <InternalSignOut />
+        {!session?.openAccess && <InternalSignOut />}
       </div>
     </aside>
   );

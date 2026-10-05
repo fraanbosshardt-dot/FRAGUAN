@@ -139,6 +139,7 @@ import {
 } from '@/lib/store-growth';
 import { env } from 'cloudflare:workers';
 import { verifyGoogleIdToken } from '@/lib/google-token';
+import { isOpenStaffAccess } from '@/lib/staff-access';
 import {
   internalPasswordConfigured,
   verifyInternalPassword,
@@ -295,6 +296,7 @@ export async function GET(
       if (!configured) return reply({ needsSetup: true, name: u.displayName });
       const a = await actor();
       return reply({
+        openAccess: isOpenStaffAccess(),
         user: {
           id: a.id,
           email: a.email,

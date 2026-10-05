@@ -11,11 +11,13 @@ export function InternalLogin({
   returnTo,
   localAccess,
   passwordAccess,
+  area = 'pos',
 }: {
   clientId: string;
   returnTo: string;
   localAccess: boolean;
   passwordAccess: boolean;
+  area?: 'pos' | 'admin';
 }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -50,12 +52,18 @@ export function InternalLogin({
         <div className="admin-access-icon">
           <ShieldCheck size={25} />
         </div>
-        <p className="eyebrow">ACCESO DEL PERSONAL</p>
-        <h1>Ingresá a FRAGUAN</h1>
+        <p className="eyebrow">
+          {area === 'admin' ? 'ADMINISTRACIÓN' : 'ACCESO DEL PERSONAL'}
+        </p>
+        <h1>
+          {area === 'admin' ? 'Ingresá a Administración' : 'Ingresá a FRAGUAN'}
+        </h1>
         <p className="admin-access-copy">
           {localAccess
             ? 'Entrá al POS o a Administración con la cuenta local. Administración conserva su PIN de acceso.'
-            : 'Usá tu email y contraseña para entrar al POS. Administración conserva su PIN adicional de acceso.'}
+            : area === 'admin'
+              ? 'Ingresá con tu email y contraseña. Luego confirmá tu PIN para acceder al panel.'
+              : 'Usá tu email y contraseña para entrar al POS. Administración conserva su PIN adicional de acceso.'}
         </p>
         {passwordAccess ? (
           <form onSubmit={submit}>
@@ -102,7 +110,7 @@ export function InternalLogin({
             onError={setError}
           />
         ) : (
-          <output className="notice">
+          <output className="notice" style={{ display: 'block' }}>
             El acceso del personal está protegido. Falta configurar las
             credenciales de producción.
           </output>

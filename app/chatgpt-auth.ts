@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { env } from 'cloudflare:workers';
 import { verifyInternalSession } from '@/lib/internal-session';
+import { isOpenStaffAccess, openStaffIdentity } from '@/lib/staff-access';
 
 export type ChatGPTUser = {
   userId: string;
@@ -21,16 +22,14 @@ const SIGN_OUT_PATH = '/signout-with-chatgpt';
 const CALLBACK_PATH = '/callback';
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
+  if (isOpenStaffAccess()) return openStaffIdentity();
   const runtimeEnv = env as unknown as Record<string, string | undefined>;
   const requestHeaders = await headers();
   const internalSession = await verifyInternalSession(
     requestHeaders.get('cookie') ?? '',
   );
   if (internalSession) return internalSession;
-  if (
-    !import.meta.env.DEV &&
-    runtimeEnv.INTERNAL_AUTH_TRUST_PROXY !== 'true'
-  )
+  if (!import.meta.env.DEV && runtimeEnv.INTERNAL_AUTH_TRUST_PROXY !== 'true')
     return null;
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER)?.trim().toLowerCase();

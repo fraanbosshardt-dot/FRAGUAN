@@ -211,7 +211,8 @@ export default function Workspace() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
-        e.key === 'F2' || e.code === 'F2' ||
+        e.key === 'F2' ||
+        e.code === 'F2' ||
         ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')
       ) {
         e.preventDefault();
@@ -225,7 +226,10 @@ export default function Workspace() {
         e.preventDefault();
         openPayment();
       }
-      if (e.key === 'F6' && session?.permissions?.includes('pos-online-orders')) {
+      if (
+        e.key === 'F6' &&
+        session?.permissions?.includes('pos-online-orders')
+      ) {
         e.preventDefault();
         void showOnlineOrders();
       }
@@ -377,7 +381,9 @@ export default function Workspace() {
       setBusy(false);
     }
   }
-  async function updateOnlineOrder(action: 'prepare' | 'ready-pickup' | 'deliver') {
+  async function updateOnlineOrder(
+    action: 'prepare' | 'ready-pickup' | 'deliver',
+  ) {
     if (!onlineOrder) return;
     setError('');
     setBusy(true);
@@ -449,11 +455,7 @@ export default function Workspace() {
         <div className="wordmark">FRAGUAN</div>
         <h1>Tu espacio de trabajo.</h1>
         <p>{sessionError}</p>
-        <a
-          className="login-link"
-          href="/acceso?returnTo=%2Fpos"
-          target="_top"
-        >
+        <a className="login-link" href="/acceso?returnTo=%2Fpos" target="_top">
           Ingresar con Google <ArrowUpRight size={18} />
         </a>
       </main>
@@ -508,11 +510,7 @@ export default function Workspace() {
         </div>
         <div className="user-chip">
           {session?.permissions?.includes('dashboard') && (
-            <a
-              className="admin-entry"
-              title="Administración"
-              href="/admin-access?returnTo=%2Fadmin%2Fdashboard"
-            >
+            <a className="admin-entry" title="Administración" href="/admin">
               <LayoutDashboard size={18} />
               <span>Administración</span>
             </a>
@@ -533,7 +531,7 @@ export default function Workspace() {
             {session?.user?.name?.split('@')[0] ?? 'Cargando…'}
             <small className="user-time">{clock}</small>
           </span>
-          <InternalSignOut />
+          {!session?.openAccess && <InternalSignOut />}
         </div>
       </header>
       <div className="pos-body">
@@ -595,7 +593,8 @@ export default function Workspace() {
             <ScanBarcode aria-hidden="true" />
           </div>
           <p className="pos-search-help" id="pos-search-help">
-            Hacé clic en el campo y escaneá con el lector. Enter agrega la prenda a la venta.
+            Hacé clic en el campo y escaneá con el lector. Enter agrega la
+            prenda a la venta.
           </p>
           <div className="chips">
             {['Todos', ...new Set(catalog.map((x) => x.category))].map((x) => (
@@ -870,7 +869,7 @@ export default function Workspace() {
               ? 'fraguan-modal receipt-modal'
               : modal === 'online-orders' || modal === 'online-order'
                 ? 'fraguan-modal pos-online-modal'
-              : 'fraguan-modal'
+                : 'fraguan-modal'
           }
         >
           <DialogTitle>
@@ -897,9 +896,9 @@ export default function Workspace() {
                   ? 'Prepará y entregá pedidos pagos con la información necesaria para trabajar.'
                   : modal === 'online-order'
                     ? 'Ubicá las prendas y avanzá el pedido sin acceder a datos financieros.'
-                : modal === 'refund'
-                  ? 'Ingresá la autorización del responsable y las prendas que vuelven al stock.'
-                  : 'FRAGUAN · Punto de venta'}
+                    : modal === 'refund'
+                      ? 'Ingresá la autorización del responsable y las prendas que vuelven al stock.'
+                      : 'FRAGUAN · Punto de venta'}
           </DialogDescription>
           {error && (
             <p className="notice" role="alert">
@@ -1378,21 +1377,31 @@ export default function Workspace() {
                     key={order.id}
                     onClick={() => showOnlineOrder(String(order.id))}
                   >
-                    <span className="pos-online-icon"><Store size={18} /></span>
+                    <span className="pos-online-icon">
+                      <Store size={18} />
+                    </span>
                     <span className="pos-online-copy">
-                      <strong>#{order.orderNumber} · {order.customerName}</strong>
+                      <strong>
+                        #{order.orderNumber} · {order.customerName}
+                      </strong>
                       <small>
-                        {order.shippingMethod === 'pickup' ? 'Retiro en local' : 'Envío por Correo Argentino'} · {date(order.createdAt)}
+                        {order.shippingMethod === 'pickup'
+                          ? 'Retiro en local'
+                          : 'Envío por Correo Argentino'}{' '}
+                        · {date(order.createdAt)}
                       </small>
                     </span>
-                    <span className={`pos-order-status status-${order.fulfillmentStatus}`}>
+                    <span
+                      className={`pos-order-status status-${order.fulfillmentStatus}`}
+                    >
                       {{
                         unfulfilled: 'Por preparar',
                         preparing: 'Preparando',
                         ready_pickup: 'Listo para retirar',
                         shipped: 'Despachado',
                         delivered: 'Entregado',
-                      }[order.fulfillmentStatus as string] ?? order.fulfillmentStatus}
+                      }[order.fulfillmentStatus as string] ??
+                        order.fulfillmentStatus}
                     </span>
                     <ArrowUpRight size={16} />
                   </button>
@@ -1412,8 +1421,14 @@ export default function Workspace() {
                 </span>
                 <span>
                   <small>Entrega</small>
-                  <strong>{onlineOrder.shippingMethod === 'pickup' ? 'Retiro en local' : 'Correo Argentino'}</strong>
-                  {onlineOrder.trackingNumber && <small>{onlineOrder.trackingNumber}</small>}
+                  <strong>
+                    {onlineOrder.shippingMethod === 'pickup'
+                      ? 'Retiro en local'
+                      : 'Correo Argentino'}
+                  </strong>
+                  {onlineOrder.trackingNumber && (
+                    <small>{onlineOrder.trackingNumber}</small>
+                  )}
                 </span>
               </div>
               <div className="pos-picking-list">
@@ -1422,7 +1437,9 @@ export default function Workspace() {
                   <article key={`${item.sku}-${index}`}>
                     <span>
                       <strong>{item.productName}</strong>
-                      <small>{item.color} · Talle {item.size} · SKU {item.sku}</small>
+                      <small>
+                        {item.color} · Talle {item.size} · SKU {item.sku}
+                      </small>
                       <em>{item.location}</em>
                     </span>
                     <b>{item.quantity} u.</b>
@@ -1430,27 +1447,61 @@ export default function Workspace() {
                 ))}
               </div>
               {onlineOrder.fulfillmentStatus === 'unfulfilled' && (
-                <Button className="activate" disabled={busy} onClick={() => updateOnlineOrder('prepare')}>
-                  <PackageCheck /> {busy ? 'Actualizando…' : 'Empezar preparación'}
+                <Button
+                  className="activate"
+                  disabled={busy}
+                  onClick={() => updateOnlineOrder('prepare')}
+                >
+                  <PackageCheck />{' '}
+                  {busy ? 'Actualizando…' : 'Empezar preparación'}
                 </Button>
               )}
-              {onlineOrder.fulfillmentStatus === 'preparing' && onlineOrder.shippingMethod === 'pickup' && (
-                <Button className="activate" disabled={busy} onClick={() => updateOnlineOrder('ready-pickup')}>
-                  <Check /> {busy ? 'Actualizando…' : 'Marcar listo para retirar'}
-                </Button>
-              )}
+              {onlineOrder.fulfillmentStatus === 'preparing' &&
+                onlineOrder.shippingMethod === 'pickup' && (
+                  <Button
+                    className="activate"
+                    disabled={busy}
+                    onClick={() => updateOnlineOrder('ready-pickup')}
+                  >
+                    <Check />{' '}
+                    {busy ? 'Actualizando…' : 'Marcar listo para retirar'}
+                  </Button>
+                )}
               {onlineOrder.fulfillmentStatus === 'ready_pickup' && (
-                <Button className="activate" disabled={busy} onClick={() => updateOnlineOrder('deliver')}>
-                  <Check /> {busy ? 'Actualizando…' : 'Registrar entrega al cliente'}
+                <Button
+                  className="activate"
+                  disabled={busy}
+                  onClick={() => updateOnlineOrder('deliver')}
+                >
+                  <Check />{' '}
+                  {busy ? 'Actualizando…' : 'Registrar entrega al cliente'}
                 </Button>
               )}
-              {onlineOrder.fulfillmentStatus === 'preparing' && onlineOrder.shippingMethod !== 'pickup' && (
-                <p className="notice neutral">Administración completará el despacho y el seguimiento de Correo Argentino.</p>
+              {onlineOrder.fulfillmentStatus === 'preparing' &&
+                onlineOrder.shippingMethod !== 'pickup' && (
+                  <p className="notice neutral">
+                    Administración completará el despacho y el seguimiento de
+                    Correo Argentino.
+                  </p>
+                )}
+              {['shipped', 'delivered'].includes(
+                onlineOrder.fulfillmentStatus,
+              ) && (
+                <p className="notice neutral">
+                  Este pedido ya fue{' '}
+                  {onlineOrder.fulfillmentStatus === 'delivered'
+                    ? 'entregado'
+                    : 'despachado'}
+                  .
+                </p>
               )}
-              {['shipped', 'delivered'].includes(onlineOrder.fulfillmentStatus) && (
-                <p className="notice neutral">Este pedido ya fue {onlineOrder.fulfillmentStatus === 'delivered' ? 'entregado' : 'despachado'}.</p>
-              )}
-              <Button variant="ghost" disabled={busy} onClick={showOnlineOrders}>Volver a pedidos</Button>
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={showOnlineOrders}
+              >
+                Volver a pedidos
+              </Button>
             </div>
           )}
         </DialogContent>

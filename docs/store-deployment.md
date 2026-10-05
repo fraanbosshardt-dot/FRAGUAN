@@ -2,8 +2,16 @@
 
 La aplicación usa dos servicios del mismo repositorio en el dominio existente
 `https://www.fraguan.com`. El build publica la superficie `business`: tienda,
-`/pos`, `/admin-access` y `/admin/dashboard`. Los datos internos siguen protegidos
-por identidad, roles y PIN administrativo; publicar las rutas no habilita acceso anónimo.
+`/pos` y `/admin`. `/admin-access` y `/admin/dashboard` redirigen al único acceso `/admin`.
+
+**Estado actual solicitado por el propietario: acceso directo temporal, sin contraseña ni PIN.**
+`FRAGUAN_STAFF_OPEN_ACCESS=true` se usa por defecto en el build actual. Cualquier
+visitante puede operar el POS y Administración con los permisos del propietario
+activo existente. No se crea ni cambia el usuario del negocio. Las operaciones de
+este modo comparten ese usuario; no permiten identificar a cada visitante.
+Para cerrar nuevamente el acceso, configurar `FRAGUAN_STAFF_OPEN_ACCESS=false`
+en Vercel y Railway y reconstruir ambos servicios. Recuperar las credenciales del
+apartado siguiente. Las cuentas de clientes no se alteran.
 
 ## Vercel: fraguan-store
 
@@ -48,7 +56,7 @@ hash PBKDF2-SHA256 con 600.000 iteraciones, dos secretos aleatorios de sesión y
 Agregar esas variables en Railway, servicio `fraguan-store-api`, sin borrar las
 variables existentes. No pegarlas en el chat ni en el repositorio.
 
-El login acepta únicamente el email del propietario **existente** en `settings.owner`
+Con `FRAGUAN_STAFF_OPEN_ACCESS=false`, el login acepta únicamente el email del propietario **existente** en `settings.owner`
 y un usuario ADMIN activo. No crea cuentas ni concede permisos. POS requiere esa
 sesión; Administración además conserva su PIN. Las sesiones son firmadas, HttpOnly,
 Secure y SameSite=Strict. No configurar `INTERNAL_AUTH_TRUST_PROXY=true` ni usar
@@ -60,8 +68,11 @@ es independiente y no se habilita con estas variables.
 
 ## Validación
 
-Ejecutar TypeScript, `node scripts/test-staff-auth.mjs` y ambas compilaciones.
-Verificar tienda y checkout; sin sesión, `/pos` y `/admin-access` llevan a `/acceso`,
-las APIs internas rechazan consultas, los encabezados falsos no autentican y
-las escrituras desde otro Origin se rechazan. Con credenciales reales comprobar
-ingreso, roles, PIN y salida. No generar ventas ni pagos reales para probar.
+Ejecutar TypeScript, `node scripts/test-staff-auth.mjs`,
+`node scripts/test-staff-access.mjs` y ambas compilaciones.
+En modo abierto verificar `/pos`, `/admin`, APIs y redirecciones de los enlaces
+anteriores sin cookies. Las escrituras desde otro Origin siguen rechazándose.
+Para `scripts/test-staff-routes.mjs` compilar primero la API con
+`FRAGUAN_STAFF_OPEN_ACCESS=false`: verifica el modo cerrado, la pantalla de ingreso
+unificada, redirecciones, bloqueo de APIs y encabezados falsos.
+No generar ventas ni pagos reales para probar.

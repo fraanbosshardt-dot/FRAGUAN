@@ -32,6 +32,7 @@ try {
   $random.GetBytes($sessionBytes)
   $random.GetBytes($adminBytes)
   $values = @(
+    'FRAGUAN_STAFF_OPEN_ACCESS=false'
     "INTERNAL_PASSWORD_HASH=pbkdf2-sha256:600000:${salt}:${hash}"
     "INTERNAL_SESSION_SECRET=$([Convert]::ToBase64String($sessionBytes))"
     "ADMIN_SESSION_SECRET=$([Convert]::ToBase64String($adminBytes))"

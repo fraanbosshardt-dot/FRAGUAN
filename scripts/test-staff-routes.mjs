@@ -58,8 +58,23 @@ try {
       307,
       `${page} must redirect unauthenticated users`,
     );
-    assert.match(response.headers.get('location') ?? '', /^\/(acceso|pos)/);
+    assert.match(response.headers.get('location') ?? '', /^\/(acceso|admin)/);
   }
+  const adminEntry = await get('/admin');
+  assert.equal(adminEntry.status, 200, 'Unified admin entry must render login');
+  const adminHtml = await adminEntry.text();
+  assert.match(adminHtml, /Ingresá a Administración/);
+  assert.match(adminHtml, /current-password/);
+  assert.equal(
+    (await get('/admin/products')).headers.get('location'),
+    '/admin?returnTo=%2Fadmin%2Fproducts',
+  );
+  assert.equal(
+    (
+      await get('/admin-access?returnTo=https%3A%2F%2Foutside.example.test')
+    ).headers.get('location'),
+    '/admin',
+  );
   const spoof = {
     'oai-authenticated-user-id': 'local_seedy',
     'oai-authenticated-user-email': 'seedy@sites.test',

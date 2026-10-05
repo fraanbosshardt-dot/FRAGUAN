@@ -10,6 +10,7 @@ export function StoreExperience() {
     pathname === '/pos' ||
     pathname === '/acceso' ||
     pathname === '/admin-access' ||
+    pathname === '/admin' ||
     pathname.startsWith('/admin/');
   const [message, setMessage] = useState('');
   const [cookies, setCookies] = useState(false);
