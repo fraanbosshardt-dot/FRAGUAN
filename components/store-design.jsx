@@ -9,6 +9,16 @@ import React, {
 } from 'react';
 import htm from 'htm';
 import {
+  RollingText,
+  Odometer,
+  useFluidGrid,
+  ColorMedia,
+  PhotoReveal,
+  AnimatedLabel,
+  AnimatedForm,
+  ScrollMarquee,
+} from '@/components/store-motion';
+import {
   volarAlCarrito,
   BarraEnvioGratis,
   EtiquetaTalle,
@@ -45,6 +55,17 @@ const html = htm.bind((tag, props, ...children) => {
       delete props.tabindex;
     }
     if (props.href) props.href = route(props.href);
+  }
+  if (tag === 'label') tag = AnimatedLabel;
+  if (tag === 'form') tag = AnimatedForm;
+  if (
+    (tag === 'button' || tag === 'a') &&
+    props?.className?.split(' ').includes('btn') &&
+    children.every(
+      (child) => typeof child === 'string' || typeof child === 'number',
+    )
+  ) {
+    children = [React.createElement(RollingText, null, children)];
   }
   return React.createElement(tag, props, ...children);
 });
@@ -166,10 +187,11 @@ function useSeen() {
   }, []);
   return [r, v];
 }
-function Rv({ c = '', d = 0, children }) {
+function Rv({ c = '', d = 0, children, animationKey }) {
   const [r, v] = useSeen();
   return html`<div
     ref=${r}
+    data-fg-key=${animationKey}
     class=${'rv ' + (v ? 'in ' : '') + c}
     style=${{ transitionDelay: d + 'ms' }}
   >
@@ -199,13 +221,13 @@ function Card({ p, i = 0 }) {
   const imageRef = useRef(null);
   const { add, favs, tf } = useC(),
     f = favs.includes(p.id);
-  return html`<${Rv} c="card" d=${(i % 4) * 70}
+  return html`<${Rv} c="card" animationKey=${p.id} d=${(i % 4) * 70}
     ><div
       ref=${!p.img ? imageRef : undefined}
       class=${'m t-' + (TONE[p.cols[0]] || 'sand')}
     >
       <a class="ml" href=${'#/p/' + p.slug} aria-label=${p.n}></a
-      >${p.img && html`<img ref=${imageRef} class="im" src=${p.img} alt=${p.n} loading="lazy" />`}<span
+      >${p.img && html`<${PhotoReveal}><img ref=${imageRef} class="im" src=${p.img} alt=${p.n} loading="lazy" /><//>`}<span
         class="ct"
         >${p.c.toUpperCase()}</span
       >${p.low && html`<span class="lo">QUEDAN POCOS</span>`}
@@ -236,12 +258,13 @@ function Card({ p, i = 0 }) {
     ><//
   >`;
 }
-const Grid = ({ L }) =>
-  L.length
-    ? html`<div class="grid">
-        ${L.map((p, i) => html`<${Card} key=${p.id} p=${p} i=${i} />`)}
-      </div>`
-    : html`<p class="em0">No hay prendas para mostrar.</p>`;
+function Grid({ L }) {
+  const ref = useRef(null);
+  useFluidGrid(ref, L.map((p) => p.id).join('|'));
+  return html`<div class="grid" ref=${ref}>
+    ${L.length ? L.map((p, i) => html`<${Card} key=${p.id} p=${p} i=${i} />`) : html`<p class="em0">No hay prendas para mostrar.</p>`}
+  </div>`;
+}
 
 function Words() {
   const r = useRef(),
@@ -470,18 +493,18 @@ function Prod({ id }) {
       <a href=${'#/c/' + p.c.toLowerCase()}>${p.c.toUpperCase()}</a>
     </p>
     <div class="pd">
-      <div
-        ref=${!p.img ? imageRef : undefined}
-        class=${'m t-' + (TONE[c] || 'sand')}
+      <${ColorMedia}
+        color=${c}
+        tone=${(name) => TONE[name] || 'sand'}
+        imageRef=${!p.img ? imageRef : undefined}
       >
-        ${p.img && html`<img ref=${imageRef} class="im" src=${p.img} alt=${p.n} />`}<span
-          class="ct"
-          >${p.c.toUpperCase()} · ${c.toUpperCase()}</span
-        >${!p.img && html`<span class="big d">${p.k}</span>`}
-      </div>
+        ${(shown) => html`${p.img && html`<img ref=${imageRef} class="im" src=${p.img} alt=${p.n} />`}<span key=${shown} class="ct fg-color-label">${p.c.toUpperCase()} · ${shown.toUpperCase()}</span>${!p.img && html`<span class="big d">${p.k}</span>`}`}
+      <//>
       <div>
         <h1 class="d">${p.n}</h1>
-        <div class="pr">${$(variant?.price / 100 || p.p)}</div>
+        <div class="pr">
+          <${Odometer} value=${variant?.price / 100 || p.p} />
+        </div>
         <p style=${{ fontSize: 14 }}>
           ${$(Math.max(0, (variant?.price / 100 || p.p) * 0.9))} pagando por
           transferencia · Envíos a todo el país
@@ -571,7 +594,7 @@ function Lines({ ro, stagger = false }) {
               ><small>${i.col} · Talle ${i.s} · ${$(i.p)}</small
               >${ro ? html`<small>Cantidad: ${i.q}</small>` : html`<div class="qt"><button onClick=${() => chg(i.k, -1)}>−</button>${i.q}<button onClick=${() => chg(i.k, 1)}>+</button><button style=${{ marginLeft: 10 }} onClick=${() => rm(i.k)}>QUITAR</button></div>`}
             </div>
-            <b>${$(i.p * i.q)}</b>
+            <b><${Odometer} value=${i.p * i.q} /></b>
           </div>`,
       )
     : html`<p class="em0">Tu carrito está vacío.</p>`;
@@ -581,14 +604,16 @@ function Sum({ ship = 0, disc = 0, est }) {
   return html`<div class="sum">
     <h3 class="d">Resumen</h3>
     <${Lines} ro=${true} />
-    <div class="tot"><span>Subtotal</span><span>${$(sub)}</span></div>
+    <div class="tot">
+      <span>Subtotal</span><span><${Odometer} value=${sub} /></span>
+    </div>
     <div class="tot">
       <span>Envío</span
       ><span>${est ? 'Se calcula al pagar' : ship ? $(ship) : 'Gratis'}</span>
     </div>
     ${disc > 0 && html`<div class="tot"><span>Descuento transferencia</span><span>− ${$(disc)}</span></div>`}
     <div class="tot g">
-      <span>Total</span><span>${$(sub + ship - disc)}</span>
+      <span>Total</span><span><${Odometer} value=${sub + ship - disc} /></span>
     </div>
   </div>`;
 }
@@ -659,7 +684,9 @@ function Cart({ o, close }) {
       <div class="it" key=${o ? 'open' : 'closed'}>
         <${Lines} stagger=${o} />
       </div>
-      <div class="tot g"><span>Subtotal</span><span>${$(sub)}</span></div>
+      <div class="tot g">
+        <span>Subtotal</span><span><${Odometer} value=${sub} /></span>
+      </div>
       ${cart.length > 0 && html`<${React.Fragment}><a class="btn a w" href="#/checkout">IR A PAGAR</a><a class="btn g w" href="#/carrito">VER CARRITO</a><//>`}
     </aside><//
   >`;
@@ -847,18 +874,13 @@ function PublicStore({ children }) {
         <a className="design-skip" href="#store-content">
           Saltar al contenido
         </a>
-        <div
-          className="mq"
-          aria-label="10% OFF pagando por transferencia. Envíos a todo el país."
-        >
-          <div aria-hidden="true">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <span key={i}>
-                10% OFF PAGANDO POR TRANSFERENCIA ✦ ENVÍOS A TODO EL PAÍS ✦
-              </span>
-            ))}
-          </div>
-        </div>
+        <ScrollMarquee aria-label="10% OFF pagando por transferencia. Envíos a todo el país.">
+          {[0, 1, 2].map((i) => (
+            <span key={i}>
+              10% OFF PAGANDO POR TRANSFERENCIA ✦ ENVÍOS A TODO EL PAÍS ✦
+            </span>
+          ))}
+        </ScrollMarquee>
         <nav inert={open} aria-label="Navegación principal">
           <a className="lg d" href="/">
             Fraguan

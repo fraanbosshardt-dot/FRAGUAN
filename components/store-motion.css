@@ -1,0 +1,301 @@
+.fraguan-design {
+  --fg-ease: var(--ease);
+  --fg-line: var(--sand);
+  --fg-ink: var(--ink);
+  --fg-accent: var(--acc);
+  --fg-error: var(--acc);
+}
+.fraguan-design .fg-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.fraguan-design .fg-roll__txt {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: middle;
+  line-height: 1.3;
+  padding-block: 0.08em;
+}
+.fraguan-design .fg-roll__a,
+.fraguan-design .fg-roll__b {
+  display: block;
+  transition: transform 0.5s var(--fg-ease);
+}
+.fraguan-design .fg-roll__b {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+}
+.fraguan-design
+  :is(button, a):hover
+  > .fg-roll__txt
+  :is(.fg-roll__a, .fg-roll__b),
+.fraguan-design
+  :is(button, a):focus-visible
+  > .fg-roll__txt
+  :is(.fg-roll__a, .fg-roll__b) {
+  transform: translateY(-100%);
+}
+.fraguan-design .fg-odo {
+  position: relative;
+  display: inline-flex;
+  height: 1.3em;
+  line-height: 1.3;
+  overflow: hidden;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fraguan-design .fg-odo__col {
+  display: inline-block;
+  height: 1.3em;
+  overflow: hidden;
+}
+.fraguan-design .fg-odo__strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.9s var(--fg-ease);
+}
+.fraguan-design .fg-odo__strip > span,
+.fraguan-design .fg-odo__sep {
+  display: block;
+  flex: none;
+  height: 1.3em;
+  line-height: 1.3;
+}
+.fraguan-design .fg-color-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: var(--ink);
+  clip-path: inset(0 100% 0 0);
+}
+.fraguan-design .fg-photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  clip-path: inset(0);
+  transition: clip-path 1.1s var(--fg-ease);
+}
+.fraguan-design .fg-photo > img {
+  transform: scale(1);
+  transition: transform 1.5s var(--fg-ease);
+}
+.fraguan-design .fg-photo-hidden {
+  clip-path: inset(0 0 100% 0);
+}
+.fraguan-design .fg-photo-hidden > img {
+  transform: scale(1.18);
+}
+.fraguan-design label.fg-field {
+  position: relative;
+  display: block;
+  padding: 0;
+}
+.fraguan-design label.fg-field > input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 64px;
+  padding: 27px 14px 9px;
+  margin: 0;
+  border: 1px solid var(--fg-line);
+  background: var(--bone-2);
+  transition:
+    border-color 0.25s var(--fg-ease),
+    box-shadow 0.25s var(--fg-ease);
+}
+.fraguan-design .fg-field-label {
+  position: absolute;
+  pointer-events: none;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: left top;
+  color: var(--fg-ink);
+  transition:
+    top 0.25s var(--fg-ease),
+    transform 0.25s var(--fg-ease);
+}
+.fraguan-design .fg-field > input:focus + .fg-field-label,
+.fraguan-design .fg-field > input:not(:placeholder-shown) + .fg-field-label {
+  top: 8px;
+  transform: scale(0.75);
+}
+.fraguan-design .fg-field > input:focus {
+  border-color: var(--fg-accent);
+  box-shadow: 0 0 0 2px var(--acc-l);
+}
+.fraguan-design input[aria-invalid='true'] {
+  border-color: var(--fg-error);
+  outline: 2px solid var(--acc-l);
+}
+.fraguan-design .fg-steps {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0 0 5vh;
+  padding: 0;
+  gap: 12px;
+}
+.fraguan-design .fg-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+.fraguan-design .fg-step:last-child {
+  flex: none;
+}
+.fraguan-design .fg-step-dot {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--fg-line);
+  font-size: 12px;
+  transition:
+    background 0.4s var(--fg-ease),
+    border-color 0.4s var(--fg-ease);
+}
+.fraguan-design .fg-step-dot svg {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  fill: none;
+  stroke: var(--bone);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fraguan-design .fg-step-dot path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  transition: stroke-dashoffset 0.5s var(--fg-ease) 0.15s;
+}
+.fraguan-design .fg-step-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-ink);
+}
+.fraguan-design .fg-step-line {
+  flex: 1;
+  min-width: 12px;
+  height: 2px;
+  background: var(--fg-line);
+  position: relative;
+  overflow: hidden;
+}
+.fraguan-design .fg-step-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--fg-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s var(--fg-ease) 0.35s;
+}
+.fraguan-design .fg-step.is-current .fg-step-dot {
+  border-color: var(--fg-accent);
+}
+.fraguan-design .fg-step.is-done .fg-step-dot {
+  background: var(--fg-accent);
+  border-color: var(--fg-accent);
+}
+.fraguan-design .fg-step.is-done .fg-step-dot path {
+  stroke-dashoffset: 0;
+}
+.fraguan-design .fg-step.is-done .fg-step-line::after {
+  transform: scaleX(1);
+}
+.fraguan-design .fg-scroll-marquee > div {
+  display: flex;
+  width: max-content;
+  min-width: 200%;
+  padding: 10px 0;
+  animation: none;
+  will-change: transform;
+}
+.fraguan-design .fg-scroll-marquee .fg-marquee-group {
+  display: flex;
+  flex: none;
+  justify-content: space-around;
+  min-width: 50%;
+  margin: 0;
+}
+@media (max-width: 480px) {
+  .fraguan-design .fg-steps {
+    gap: 6px;
+  }
+  .fraguan-design .fg-step {
+    gap: 5px;
+  }
+  .fraguan-design .fg-step-label {
+    font-size: 10px;
+  }
+  .fraguan-design .fg-step-dot {
+    width: 25px;
+    height: 25px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design
+    :is(
+      .fg-roll__a,
+      .fg-roll__b,
+      .fg-odo__strip,
+      .fg-photo,
+      .fg-photo > img,
+      .fg-field > input,
+      .fg-field-label,
+      .fg-step-dot,
+      .fg-step-dot path,
+      .fg-step-line::after
+    ) {
+    transition: none;
+  }
+  .fraguan-design .fg-photo-hidden {
+    clip-path: none;
+  }
+  .fraguan-design .fg-photo-hidden > img {
+    transform: none;
+  }
+}
+
+.fraguan-design .fg-odo,
+.fraguan-design .fg-odo span {
+  gap: 0;
+}
+.fraguan-design .fg-odo__col,
+.fraguan-design .fg-odo__sep {
+  flex-shrink: 0;
+}
+@keyframes fg-color-label {
+  from {
+    opacity: 0;
+    transform: translateY(60%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fraguan-design .fg-color-label {
+  animation: fg-color-label 0.4s var(--fg-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design .fg-color-label {
+    animation: none;
+  }
+}

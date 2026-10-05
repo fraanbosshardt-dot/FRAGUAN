@@ -12,6 +12,13 @@ import {
   Truck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import {
+  Odometer,
+  RollingText,
+  CheckoutSteps,
+  AnimatedLabel,
+  useAnimatedFields,
+} from '@/components/store-motion';
 import PagoAprobado from '@/components/PagoAprobado';
 import {
   StorePaymentTicket,
@@ -74,6 +81,7 @@ export default function Checkout({
   const [verificationMessage, setVerificationMessage] = useState('');
   const [verificationBusy, setVerificationBusy] = useState(false);
   const checkoutForm = useRef<HTMLFormElement>(null);
+  useAnimatedFields(checkoutForm);
   const addressAutoFilled = useRef(false);
   const idempotency = useRef(crypto.randomUUID());
   const accessToken = useRef(crypto.randomUUID());
@@ -473,7 +481,7 @@ export default function Checkout({
                 </dl>
               </div>
               <form onSubmit={report} className="store-report-transfer">
-                <label>
+                <AnimatedLabel>
                   ¿Ya transferiste?
                   <input
                     name="transactionId"
@@ -482,7 +490,7 @@ export default function Checkout({
                     maxLength={80}
                     placeholder="Número de operación bancaria"
                   />
-                </label>
+                </AnimatedLabel>
                 <button disabled={busy}>
                   {busy ? 'Registrando…' : 'Avisar transferencia'}{' '}
                   <ArrowRight />
@@ -554,17 +562,7 @@ export default function Checkout({
               .join(' ')}
           />
         )}
-        <div className="steps" aria-label="Pasos de compra">
-          {['1 · TUS DATOS', '2 · ENVÍO', '3 · PAGO'].map((label, i) => (
-            <span
-              key={label}
-              className={step === i + 1 ? 'on' : ''}
-              aria-current={step === i + 1 ? 'step' : undefined}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
+        <CheckoutSteps step={step} />
         <div className="store-checkout-grid">
           <form
             ref={checkoutForm}
@@ -600,7 +598,7 @@ export default function Checkout({
                 </div>
               </div>
               <div className="store-fields">
-                <label>
+                <AnimatedLabel>
                   NOMBRE
                   <input
                     name="firstName"
@@ -609,8 +607,8 @@ export default function Checkout({
                     maxLength={80}
                     required
                   />
-                </label>
-                <label>
+                </AnimatedLabel>
+                <AnimatedLabel>
                   APELLIDO
                   <input
                     name="surname"
@@ -619,8 +617,8 @@ export default function Checkout({
                     maxLength={80}
                     required
                   />
-                </label>
-                <label className="store-email-control">
+                </AnimatedLabel>
+                <AnimatedLabel className="store-email-control">
                   Email
                   <span>
                     <input
@@ -682,8 +680,8 @@ export default function Checkout({
                       {verificationMessage}
                     </small>
                   )}
-                </label>
-                <label>
+                </AnimatedLabel>
+                <AnimatedLabel>
                   Teléfono
                   <input
                     name="phone"
@@ -693,8 +691,8 @@ export default function Checkout({
                     maxLength={25}
                     required
                   />
-                </label>
-                <label>
+                </AnimatedLabel>
+                <AnimatedLabel>
                   DNI <small>Para identificar la entrega</small>
                   <input
                     name="document"
@@ -708,7 +706,7 @@ export default function Checkout({
                         .slice(0, 11);
                     }}
                   />
-                </label>
+                </AnimatedLabel>
               </div>
             </section>
             <section
@@ -758,7 +756,7 @@ export default function Checkout({
               {shippingMethod !== 'pickup' && (
                 <div className="store-fields">
                   {!!session?.addresses?.length && (
-                    <label className="wide">
+                    <AnimatedLabel className="wide">
                       Dirección guardada
                       <select
                         value={selectedAddressId}
@@ -780,9 +778,9 @@ export default function Checkout({
                       <small>
                         Podés modificar estos datos solo para esta compra.
                       </small>
-                    </label>
+                    </AnimatedLabel>
                   )}
-                  <label>
+                  <AnimatedLabel>
                     País
                     <select
                       name="country"
@@ -792,8 +790,8 @@ export default function Checkout({
                     >
                       <option>Argentina</option>
                     </select>
-                  </label>
-                  <label>
+                  </AnimatedLabel>
+                  <AnimatedLabel>
                     Código postal
                     <input
                       value={postalCode}
@@ -808,8 +806,8 @@ export default function Checkout({
                       maxLength={4}
                       required
                     />
-                  </label>
-                  <label>
+                  </AnimatedLabel>
+                  <AnimatedLabel>
                     Dirección
                     <input
                       name="address"
@@ -818,16 +816,16 @@ export default function Checkout({
                       maxLength={100}
                       required
                     />
-                  </label>
-                  <label>
+                  </AnimatedLabel>
+                  <AnimatedLabel>
                     Piso / departamento <small>Opcional</small>
                     <input
                       name="addressExtra"
                       autoComplete="address-line2"
                       maxLength={50}
                     />
-                  </label>
-                  <label>
+                  </AnimatedLabel>
+                  <AnimatedLabel>
                     Ciudad
                     <input
                       name="city"
@@ -835,8 +833,8 @@ export default function Checkout({
                       maxLength={60}
                       required
                     />
-                  </label>
-                  <label>
+                  </AnimatedLabel>
+                  <AnimatedLabel>
                     Provincia
                     <select
                       name="province"
@@ -876,7 +874,7 @@ export default function Checkout({
                         <option key={province}>{province}</option>
                       ))}
                     </select>
-                  </label>
+                  </AnimatedLabel>
                 </div>
               )}
               {shipping && (
@@ -889,10 +887,10 @@ export default function Checkout({
                 </p>
               )}
               {session?.customer && shippingMethod !== 'pickup' && (
-                <label className="store-checkout-consent">
+                <AnimatedLabel className="store-checkout-consent">
                   <input name="saveAddress" type="checkbox" defaultChecked />
                   <span>Guardar esta dirección en Mi FRAGUAN.</span>
-                </label>
+                </AnimatedLabel>
               )}
             </section>
             <section
@@ -985,7 +983,7 @@ export default function Checkout({
               </div>
               {!session?.customer && (
                 <>
-                  <label className="design-consent">
+                  <AnimatedLabel className="design-consent">
                     <input
                       type="checkbox"
                       checked={createAccount}
@@ -993,9 +991,9 @@ export default function Checkout({
                       onChange={(e) => setCreateAccount(e.target.checked)}
                     />
                     Crear mi cuenta con estos datos
-                  </label>
+                  </AnimatedLabel>
                   {createAccount && (
-                    <label className="fi">
+                    <AnimatedLabel className="fi">
                       CONTRASEÑA (8+)
                       <input
                         name="accountPassword"
@@ -1005,12 +1003,12 @@ export default function Checkout({
                         maxLength={128}
                         required
                       />
-                    </label>
+                    </AnimatedLabel>
                   )}
                 </>
               )}
             </section>
-            <label className="store-notes">
+            <AnimatedLabel className="store-notes">
               Notas para el pedido
               <textarea
                 name="notes"
@@ -1018,8 +1016,8 @@ export default function Checkout({
                 maxLength={240}
                 placeholder="Opcional · máximo 240 caracteres"
               />
-            </label>
-            <label className="store-checkout-consent">
+            </AnimatedLabel>
+            <AnimatedLabel className="store-checkout-consent">
               <input type="checkbox" required />
               <span>
                 Confirmo que los datos son correctos y acepto los{' '}
@@ -1040,8 +1038,8 @@ export default function Checkout({
                 </a>
                 .
               </span>
-            </label>
-            <label className="store-checkout-consent">
+            </AnimatedLabel>
+            <AnimatedLabel className="store-checkout-consent">
               <input
                 name="marketingRecovery"
                 type="checkbox"
@@ -1084,7 +1082,7 @@ export default function Checkout({
               <span>
                 Quiero recibir ayuda por email si dejo esta compra sin terminar.
               </span>
-            </label>
+            </AnimatedLabel>
             {error && (
               <p className="store-buy-error" role="alert">
                 {error}
@@ -1118,12 +1116,12 @@ export default function Checkout({
                     setError('');
                   }}
                 >
-                  ← VOLVER
+                  <RollingText>← VOLVER</RollingText>
                 </button>
               )}
               {step < 3 && (
                 <button type="button" className="btn a" onClick={advance}>
-                  CONTINUAR →
+                  <RollingText>CONTINUAR →</RollingText>
                 </button>
               )}
             </div>
@@ -1142,7 +1140,9 @@ export default function Checkout({
                   </small>
                 </span>
                 <span className="store-summary-edit">
-                  <b>{storeMoney(item.price * item.quantity)}</b>
+                  <b>
+                    <Odometer value={(item.price * item.quantity) / 100} />
+                  </b>
                   <span className="store-summary-quantity">
                     <button
                       type="button"
@@ -1164,7 +1164,7 @@ export default function Checkout({
               </div>
             ))}
             <div className="store-coupon">
-              <label htmlFor="coupon">¿Tenés un cupón?</label>
+              <AnimatedLabel htmlFor="coupon">¿Tenés un cupón?</AnimatedLabel>
               <div>
                 <input
                   id="coupon"
@@ -1194,7 +1194,9 @@ export default function Checkout({
             <dl>
               <div>
                 <dt>Subtotal</dt>
-                <dd>{storeMoney(subtotal)}</dd>
+                <dd>
+                  <Odometer value={subtotal / 100} />
+                </dd>
               </div>
               {transferDiscount > 0 && (
                 <div className="discount">
@@ -1220,7 +1222,9 @@ export default function Checkout({
               </div>
               <div className="total">
                 <dt>Total</dt>
-                <dd>{storeMoney(total)}</dd>
+                <dd>
+                  <Odometer value={total / 100} />
+                </dd>
               </div>
             </dl>
           </aside>

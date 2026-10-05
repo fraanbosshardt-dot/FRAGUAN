@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { DesignProductGrid } from '@/components/store-design';
+import {
+  AnimatedLabel,
+  AnimatedForm,
+  RollingText,
+} from '@/components/store-motion';
 import TarjetaClub from '@/components/fraguan-animaciones/TarjetaClub';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import {
@@ -141,7 +146,7 @@ export default function Account({
     value = '',
     extra: Record<string, any> = {},
   ) => (
-    <label className="fi">
+    <AnimatedLabel className="fi">
       {label}
       <input
         name={name}
@@ -150,7 +155,7 @@ export default function Account({
         maxLength={100}
         {...extra}
       />
-    </label>
+    </AnimatedLabel>
   );
   return (
     <section className="sec lt pg">
@@ -198,7 +203,7 @@ export default function Account({
               <p style={{ marginBottom: 16 }}>
                 Estos datos se completan solos cuando pagás.
               </p>
-              <form
+              <AnimatedForm
                 onSubmit={updateProfile}
                 style={{ maxWidth: 680 }}
                 key={data.customer.id}
@@ -240,7 +245,7 @@ export default function Account({
                     autoComplete: 'address-level2',
                     maxLength: 60,
                   })}
-                  <label className="fi">
+                  <AnimatedLabel className="fi">
                     PROVINCIA
                     <select
                       name="province"
@@ -251,7 +256,7 @@ export default function Account({
                         <option key={p}>{p}</option>
                       ))}
                     </select>
-                  </label>
+                  </AnimatedLabel>
                   {field(
                     'CÓD. POSTAL',
                     'postalCode',
@@ -264,21 +269,21 @@ export default function Account({
                     },
                   )}
                 </div>
-                <label className="design-consent">
+                <AnimatedLabel className="design-consent">
                   <input
                     name="marketingConsent"
                     type="checkbox"
                     defaultChecked={data.customer.marketingConsent}
                   />
                   Quiero recibir novedades y beneficios.
-                </label>
+                </AnimatedLabel>
                 {profileState && (
                   <output className="err">{profileState}</output>
                 )}
                 <button className="btn a" disabled={busy}>
                   {busy ? 'GUARDANDO…' : 'GUARDAR'}
                 </button>
-              </form>
+              </AnimatedForm>
               <div className="design-benefits">
                 <b className="k">TUS BENEFICIOS</b>
                 <p>{data.customer.level || 'Club FRAGUAN'}</p>
@@ -356,7 +361,7 @@ export default function Account({
               CREAR CUENTA
             </button>
           </div>
-          <form onSubmit={submit} style={{ maxWidth: 560 }} key={mode}>
+          <AnimatedForm onSubmit={submit} style={{ maxWidth: 560 }} key={mode}>
             {passwordAuthEnabled && (
               <>
                 {mode === 'register' && (
@@ -396,10 +401,10 @@ export default function Account({
                   },
                 )}
                 {mode === 'register' && (
-                  <label className="design-consent">
+                  <AnimatedLabel className="design-consent">
                     <input name="marketingConsent" type="checkbox" />
                     Quiero recibir novedades y beneficios.
-                  </label>
+                  </AnimatedLabel>
                 )}
                 {error && (
                   <p className="err" role="alert">
@@ -407,11 +412,13 @@ export default function Account({
                   </p>
                 )}
                 <button className="btn a" disabled={busy}>
-                  {busy
-                    ? 'PROCESANDO…'
-                    : mode === 'login'
-                      ? 'INGRESAR'
-                      : 'CREAR MI CUENTA'}
+                  <RollingText>
+                    {busy
+                      ? 'PROCESANDO…'
+                      : mode === 'login'
+                        ? 'INGRESAR'
+                        : 'CREAR MI CUENTA'}
+                  </RollingText>
                 </button>
               </>
             )}
@@ -430,7 +437,7 @@ export default function Account({
               <a href="/informacion/terminos">Términos</a> y la{' '}
               <a href="/informacion/privacidad">Política de privacidad</a>.
             </p>
-          </form>
+          </AnimatedForm>
         </>
       )}
     </section>

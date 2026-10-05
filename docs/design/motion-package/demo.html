@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fraguan · demo de animaciones</title>
+<link rel="stylesheet" href="fraguan-animaciones.css">
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: #1a1a1a; background: #f6f3ee; }
+  section { max-width: 960px; margin: 0 auto; padding: 3rem 1.25rem; }
+  h2 { font-size: 1rem; margin: 0 0 1rem; font-weight: 600; }
+  button { font: inherit; padding: .7rem 1.3rem; border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff; cursor: pointer; border-radius: 2px; }
+  button.alt { background: transparent; color: #1a1a1a; }
+  .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .card { background: #e4ddd0; aspect-ratio: 3 / 4; display: flex; align-items: flex-end; padding: .7rem; font-size: .9rem; }
+  .card[hidden] { display: none; }
+  .total { font-size: 2rem; font-weight: 600; }
+  .chip { width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #1a1a1a; padding: 0; }
+  #bloque { width: 100%; max-width: 360px; aspect-ratio: 4 / 3; background: #d8c3a5; margin-top: 1rem; }
+  .marq { background: #1a1a1a; color: #f6f3ee; font-size: 3rem; font-weight: 700; padding: 1rem 0; }
+  .fotos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .fotos div > div { aspect-ratio: 3 / 4; }
+  form { max-width: 360px; }
+  .spacer { height: 30vh; }
+</style>
+</head>
+<body>
+
+<section>
+  <h2>1 · Reordenamiento fluido</h2>
+  <div class="row">
+    <button class="alt" data-f="todo">Todo</button>
+    <button class="alt" data-f="camisas">Camisas</button>
+    <button class="alt" data-f="pantalones">Pantalones</button>
+    <button class="alt" id="orden">Menor precio</button>
+  </div>
+  <div class="grid" id="grid">
+    <div class="card" data-c="camisas" data-p="32000">Camisa lino · $32.000</div>
+    <div class="card" data-c="pantalones" data-p="48000">Pantalón sastre · $48.000</div>
+    <div class="card" data-c="camisas" data-p="27000">Camisa oxford · $27.000</div>
+    <div class="card" data-c="pantalones" data-p="39000">Bermuda · $39.000</div>
+    <div class="card" data-c="camisas" data-p="41000">Camisa denim · $41.000</div>
+    <div class="card" data-c="pantalones" data-p="52000">Pantalón cargo · $52.000</div>
+  </div>
+</section>
+
+<section>
+  <h2>2 · Botones con texto que rueda</h2>
+  <div class="row"><button class="fg-roll">Agregar al carrito</button><button class="fg-roll alt">Seguir comprando</button></div>
+</section>
+
+<section>
+  <h2>3 · Total tipo odómetro</h2>
+  <div class="row">
+    <button class="alt" id="menos">−</button><span id="cant">1</span><button class="alt" id="mas">+</button>
+    <button class="alt" id="transf">Pagar por transferencia (10% off)</button>
+  </div>
+  <p class="total" id="total" data-odometer="45000"></p>
+</section>
+
+<section>
+  <h2>4 · Cambio de color con cortina</h2>
+  <div class="row">
+    <button class="chip" style="background:#d8c3a5" data-color="#d8c3a5" data-name="Arena" aria-label="Arena"></button>
+    <button class="chip" style="background:#222" data-color="#222222" data-name="Negro" aria-label="Negro"></button>
+    <button class="chip" style="background:#6b7a5a" data-color="#6b7a5a" data-name="Oliva" aria-label="Oliva"></button>
+    <span id="colorName" style="display:inline-block">Arena</span>
+  </div>
+  <div id="bloque"></div>
+</section>
+
+<section>
+  <h2>5 · Formulario con etiqueta flotante</h2>
+  <form id="form" novalidate>
+    <div class="fg-field"><input id="nombre" placeholder=" " required><label for="nombre">Nombre y apellido</label><span class="fg-field__msg"></span></div>
+    <div class="fg-field"><input id="email" type="email" placeholder=" " required><label for="email">Email</label><span class="fg-field__msg"></span></div>
+    <p><button class="fg-roll" type="submit">Continuar</button></p>
+  </form>
+</section>
+
+<div class="marq fg-marquee" data-fg-marquee data-speed="70">
+  <div class="fg-marquee__track"><span class="fg-marquee__item">FORJÁ TU ESTILO ✦</span></div>
+</div>
+
+<section>
+  <h2>7 · Pasos del checkout</h2>
+  <ol class="fg-steps" id="steps">
+    <li class="fg-step is-current"><span class="fg-step__dot"><span class="fg-step__num">1</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="fg-step__label">Carrito</span><span class="fg-step__line"></span></li>
+    <li class="fg-step"><span class="fg-step__dot"><span class="fg-step__num">2</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="fg-step__label">Envío</span><span class="fg-step__line"></span></li>
+    <li class="fg-step"><span class="fg-step__dot"><span class="fg-step__num">3</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="fg-step__label">Pago</span></li>
+  </ol>
+  <p class="row"><button class="alt" id="atras">Atrás</button><button id="sig">Siguiente paso</button></p>
+</section>
+
+<div class="spacer"></div>
+
+<section>
+  <h2>8 · Fotos que se revelan al hacer scroll</h2>
+  <div class="fotos">
+    <div data-reveal><div style="background:#d8c3a5"></div></div>
+    <div data-reveal><div style="background:#6b7a5a"></div></div>
+    <div data-reveal><div style="background:#222"></div></div>
+  </div>
+</section>
+<div class="spacer"></div>
+
+<script src="fraguan-animaciones.js"></script>
+<script>
+  /* 1 */
+  var grid = document.getElementById('grid'), asc = true;
+  document.querySelectorAll('[data-f]').forEach(function (b) {
+    b.onclick = function () {
+      Fraguan.flip(grid, function () {
+        Array.from(grid.children).forEach(function (c) { c.hidden = b.dataset.f !== 'todo' && c.dataset.c !== b.dataset.f; });
+      });
+    };
+  });
+  document.getElementById('orden').onclick = function (e) {
+    Fraguan.flip(grid, function () {
+      Array.from(grid.children).sort(function (a, b) { return asc ? a.dataset.p - b.dataset.p : b.dataset.p - a.dataset.p; })
+        .forEach(function (c) { grid.appendChild(c); });
+    });
+    asc = !asc;
+    e.target.textContent = asc ? 'Menor precio' : 'Mayor precio';
+  };
+  /* 3 */
+  var q = 1, off = false, PRECIO = 45000;
+  function recalc() {
+    document.getElementById('cant').textContent = q;
+    Fraguan.odometer(document.getElementById('total'), PRECIO * q * (off ? .9 : 1));
+  }
+  document.getElementById('mas').onclick = function () { q++; recalc(); };
+  document.getElementById('menos').onclick = function () { q = Math.max(1, q - 1); recalc(); };
+  document.getElementById('transf').onclick = function () { off = !off; recalc(); };
+  /* 4 */
+  document.querySelectorAll('[data-color]').forEach(function (b) {
+    b.onclick = function () {
+      Fraguan.colorSwipe(document.getElementById('bloque'), b.dataset.color, { label: document.getElementById('colorName'), name: b.dataset.name });
+    };
+  });
+  /* 5 */
+  document.getElementById('form').onsubmit = function (e) {
+    e.preventDefault();
+    var n = document.getElementById('nombre'), m = document.getElementById('email');
+    if (!n.value.trim()) Fraguan.shake(n.closest('.fg-field'), 'Ingresá tu nombre y apellido');
+    if (!/^\S+@\S+\.\S+$/.test(m.value)) Fraguan.shake(m.closest('.fg-field'), 'Ingresá un email válido');
+  };
+  /* 7 */
+  var paso = 0, steps = document.getElementById('steps');
+  document.getElementById('sig').onclick = function () { paso = Math.min(3, paso + 1); Fraguan.setStep(steps, paso); };
+  document.getElementById('atras').onclick = function () { paso = Math.max(0, paso - 1); Fraguan.setStep(steps, paso); };
+</script>
+</body>
+</html>
