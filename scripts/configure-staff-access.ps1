@@ -47,5 +47,5 @@ try {
   $random.Dispose()
 }
 Write-Host "Archivo privado creado: $target"
-Write-Host 'En Railway, fraguan-store-api > Variables > Raw Editor, AGREGA esas lineas sin borrar las variables existentes.'
+Write-Host 'En Railway, fraguan-store-api > Variables > New Variable, agrega cada nombre y su valor sin borrar las variables existentes.'
 Write-Host 'Usa el email del propietario existente del negocio para ingresar. No pegues estas claves en el chat.'
