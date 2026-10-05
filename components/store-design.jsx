@@ -626,7 +626,7 @@ function CartPage() {
     </section>`;
   return html`<section class="sec lt pg">
     <h1 class="d h1">Tu carrito</h1>
-    <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} />
+    <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} ready=${ready} />
     ${
       cart.length
         ? html`<div class="ck">
@@ -662,7 +662,7 @@ function Favs() {
   </section>`;
 }
 function Cart({ o, close }) {
-  const { cart, sub } = useC();
+  const { cart, sub, ready } = useC();
   return html`<${React.Fragment}
     ><div
       aria-hidden="true"
@@ -680,7 +680,7 @@ function Cart({ o, close }) {
       <header class="d">
         Tu carrito<button onClick=${close}>CERRAR ✕</button>
       </header>
-      <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} />
+      <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} ready=${ready} />
       <div class="it" key=${o ? 'open' : 'closed'}>
         <${Lines} stagger=${o} />
       </div>
