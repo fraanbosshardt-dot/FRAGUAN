@@ -114,7 +114,12 @@ export const designProduct = (p) => ({
   p: p.price / 100,
   cols: [...new Set(p.variants.map((v) => v.color))],
   col: [...new Set(p.variants.map((v) => v.color))].join(' · '),
-  z: [...new Set(p.variants.map((v) => v.size))],
+  z: [...new Set(p.variants.map((v) => v.size))].sort((a, b) => {
+    const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    if (order.includes(a) && order.includes(b))
+      return order.indexOf(a) - order.indexOf(b);
+    return a.localeCompare(b, 'es', { numeric: true });
+  }),
   low:
     p.variants.reduce((n, v) => n + v.stock, 0) > 0 &&
     p.variants.reduce((n, v) => n + v.stock, 0) < 10,
@@ -483,11 +488,11 @@ function Prod({ id }) {
         </p>
         <span class="k">COLOR · ${c.toUpperCase()}</span>
         <div class="chips">
-          ${p.cols.map((x) => html`<button key=${x} class=${x == c ? 'on' : ''} onClick=${() => sc(x)}>${x}</button>`)}
+          ${p.cols.map((x) => html`<button key=${x} class=${x == c ? 'on' : ''} aria-pressed=${x === c} onClick=${() => sc(x)}>${x}</button>`)}
         </div>
         <span class="k">TALLE</span>
         <div class="chips">
-          ${p.z.map((x) => html`<button key=${x} disabled=${!p.variants.some((v) => v.size === x && v.color === c && v.stock > 0)} class=${x == s ? 'on' : ''} onClick=${() => ss(x)}>${x}</button>`)}
+          ${p.z.map((x) => html`<button key=${x} disabled=${!p.variants.some((v) => v.size === x && v.color === c && v.stock > 0)} class=${x == s ? 'on' : ''} aria-pressed=${x === s} onClick=${() => ss(x)}>${x}</button>`)}
         </div>
         <${EtiquetaTalle}
           key=${s + c}
@@ -984,9 +989,6 @@ function PublicStore({ children }) {
           </div>
         </footer>
         <Cart o={open} close={() => setOpen(false)} />
-        <a className="wa" href="/informacion/contacto">
-          WHATSAPP
-        </a>
         <Cur />
       </div>
     </C.Provider>
@@ -1118,14 +1120,16 @@ function SizeHelp({ product }) {
     );
   }
   return (
-    <details>
+    <details className="design-size-help">
       <summary>GUÍA Y ASISTENTE DE TALLES</summary>
       <p>Encontrá tu talle según tus medidas y el calce que preferís.</p>
-      <div className="row" style={{ marginTop: 16 }}>
+      <div className="design-size-fields">
         <label className="fi">
           ALTURA (CM)
           <input
             type="number"
+            placeholder="Ej. 175"
+            inputMode="numeric"
             min="130"
             max="230"
             value={height}
@@ -1136,6 +1140,8 @@ function SizeHelp({ product }) {
           PESO (KG)
           <input
             type="number"
+            placeholder="Ej. 75"
+            inputMode="numeric"
             min="35"
             max="220"
             value={weight}
