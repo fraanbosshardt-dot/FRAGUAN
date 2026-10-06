@@ -19,6 +19,9 @@ export const saleInput = z
     promotionId: text.nullable(),
     promotionIds: z.array(text).max(10).optional(),
     couponCode: z.string().trim().max(50).optional(),
+    manualDiscountMinor: money.optional(),
+    autoPromotions: z.boolean().optional(),
+    excludedPromotionIds: z.array(text).max(100).optional(),
     payments: z
       .array(
         z

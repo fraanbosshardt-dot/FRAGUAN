@@ -126,8 +126,14 @@ async function customerCommercialContext(customerId: string | null) {
     birthDate: customer.birthday ?? undefined,
   };
 }
-export async function quote(raw: unknown, pricingOnly = false): Promise<any> {
+export async function quote(
+  raw: unknown,
+  pricingOnly = false,
+  actor?: Actor,
+): Promise<any> {
   const data = quoteInput.parse(raw);
+  if (data.manualDiscountMinor && (!actor || !can(actor, 'promotions')))
+    throw new AppError(403, 'Tu usuario no puede aplicar descuentos manuales.');
   const unique = new Set(data.items.map((x) => x.variantId));
   if (unique.size !== data.items.length)
     throw new AppError(400, 'Agrupá las cantidades por variante.');
@@ -155,8 +161,10 @@ export async function quote(raw: unknown, pricingOnly = false): Promise<any> {
   const allPromotions = activePromotionRows.map(commercialPromotion);
   const normalizedCoupon = data.couponCode?.trim().toLocaleLowerCase('es-AR');
   const promotions = allPromotions.filter((promotion) => {
+    if (data.excludedPromotionIds?.includes(promotion.id)) return false;
     if (requestedPromotionIds.includes(promotion.id)) return true;
     const coupons = promotion.conditions?.couponCodes;
+    if (data.autoPromotions && !coupons?.length) return true;
     return Boolean(
       normalizedCoupon &&
       coupons?.some(
@@ -200,9 +208,27 @@ export async function quote(raw: unknown, pricingOnly = false): Promise<any> {
       403,
       'Una promoción no corresponde a los productos, cliente, horario o pago elegidos.',
     );
-  if (data.couponCode && !commercialResult.appliedDiscounts.length)
+  if (
+    data.couponCode &&
+    !promotions.some(
+      (promotion) =>
+        appliedPromotionIds.has(promotion.id) &&
+        promotion.conditions?.couponCodes?.some(
+          (coupon) => coupon.toLocaleLowerCase('es-AR') === normalizedCoupon,
+        ),
+    )
+  )
     throw new AppError(403, 'El cupón no es válido para esta venta.');
-  const discount = commercialResult.discountTotalCents;
+  const manualDiscount = data.manualDiscountMinor ?? 0;
+  if (
+    manualDiscount >= subtotal - commercialResult.discountTotalCents &&
+    manualDiscount > 0
+  )
+    throw new AppError(
+      400,
+      'El descuento manual debe ser menor que el importe pendiente.',
+    );
+  const discount = commercialResult.discountTotalCents + manualDiscount;
   const base = subtotal - discount;
   if (pricingOnly)
     return {
@@ -294,10 +320,13 @@ const pricingInput = z
     promotionId: saleInput.shape.promotionId,
     promotionIds: saleInput.shape.promotionIds,
     couponCode: saleInput.shape.couponCode,
+    manualDiscountMinor: saleInput.shape.manualDiscountMinor,
+    autoPromotions: saleInput.shape.autoPromotions,
+    excludedPromotionIds: saleInput.shape.excludedPromotionIds,
     methodIds: z.array(z.string().trim().min(1).max(200)).min(1).max(4),
   })
   .strict();
-export async function priceCart(raw: unknown) {
+export async function priceCart(raw: unknown, actor?: Actor) {
   const data = pricingInput.parse(raw);
   const result = await quote(
     {
@@ -306,12 +335,16 @@ export async function priceCart(raw: unknown) {
       promotionId: data.promotionId,
       promotionIds: data.promotionIds,
       couponCode: data.couponCode,
+      manualDiscountMinor: data.manualDiscountMinor,
+      autoPromotions: data.autoPromotions,
+      excludedPromotionIds: data.excludedPromotionIds,
       payments: data.methodIds.map((methodId) => ({
         methodId,
         baseMinor: 1,
       })),
     },
     true,
+    actor,
   );
   return {
     subtotal: result.subtotal,
@@ -408,7 +441,7 @@ export async function confirmSale(a: Actor, raw: unknown) {
     return saleDetail(a, previous.id);
   }
   const { idempotencyKey, ...input } = data;
-  const q = await quote(input);
+  const q = await quote(input, false, a);
   const session = await one<{ id: string }>(
     'SELECT id FROM cash_sessions WHERE closedAt IS NULL',
   );
@@ -587,7 +620,10 @@ export async function confirmSale(a: Actor, raw: unknown) {
       );
   }
   commands.push(
-    auditStatement(a.id, 'Venta confirmada', saleId, null, { total: q.total }),
+    auditStatement(a.id, 'Venta confirmada', saleId, null, {
+      total: q.total,
+      manualDiscountMinor: data.manualDiscountMinor ?? 0,
+    }),
   );
   try {
     await db().batch(commands);

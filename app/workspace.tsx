@@ -41,12 +41,21 @@ import {
 } from '@/lib/client';
 import './pos/pos-proposal.css';
 import { InternalSignOut } from '@/components/internal-sign-out';
+import { PosSections } from '@/components/pos-sections';
 export default function Workspace() {
   const { session, error: sessionError, reload } = useSession(),
     clock = useClock();
-  const [view, setView] = useState<'sale' | 'today'>('sale'),
+  const [view, setView] = useState<
+      'sale' | 'summary' | 'returns' | 'promotions'
+    >('sale'),
     [cartOpen, setCartOpen] = useState(false),
-    [dayPayments, setDayPayments] = useState<Row[]>([]),
+    [sectionRevision, setSectionRevision] = useState(0),
+    [cartPricing, setCartPricing] = useState<Row | null>(null),
+    [pricingPending, setPricingPending] = useState(false),
+    [pricingError, setPricingError] = useState(''),
+    [manualDiscountType, setManualDiscountType] = useState('%'),
+    [manualDiscountValue, setManualDiscountValue] = useState(''),
+    [excludedPromotionIds, setExcludedPromotionIds] = useState<string[]>([]),
     [catalog, setCatalog] = useState<Row[]>([]),
     [catalogLoading, setCatalogLoading] = useState(true),
     [methods, setMethods] = useState<Row[]>([]),
@@ -85,6 +94,7 @@ export default function Workspace() {
   const searchRef = useRef<HTMLInputElement>(null),
     requestKey = useRef('');
   const focusScanner = useCallback(() => {
+    setView('sale');
     setCategory('Todos');
     searchRef.current?.focus();
     searchRef.current?.select();
@@ -117,15 +127,26 @@ export default function Workspace() {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
   useEffect(() => {
-    if (modal !== 'customer') return;
+    if (customerQuery.trim().length < 2) {
+      setCustomers([]);
+      return;
+    }
+    let cancelled = false;
     const t = setTimeout(
       () =>
         api('customers?scope=pos&q=' + encodeURIComponent(customerQuery))
-          .then(setCustomers)
-          .catch((e) => setError(e.message)),
+          .then((result) => {
+            if (!cancelled) setCustomers(result);
+          })
+          .catch((e) => {
+            if (!cancelled) setError(e.message);
+          }),
       220,
     );
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [customerQuery, modal]);
   useEffect(() => {
     if (!customer?.id) {
@@ -161,14 +182,84 @@ export default function Workspace() {
           .includes(search.toLowerCase()),
       ),
   );
-  const subtotal = cart.reduce((n, i) => n + i.price * i.quantity, 0),
-    promotion =
+  const subtotal = cart.reduce((n, i) => n + i.price * i.quantity, 0);
+  const canDiscount = session?.permissions?.includes('promotions');
+  const manualDiscountMinor = (() => {
+    if (!manualDiscountValue.trim() || !canDiscount) return 0;
+    try {
+      const value = minor(manualDiscountValue);
+      return manualDiscountType === '%'
+        ? Math.round((subtotal * value) / 10000)
+        : value;
+    } catch {
+      return -1;
+    }
+  })();
+  const promotion =
       offerIds.length === 1 ? offers.find((o) => o.id === offerIds[0]) : null,
-    discount =
+    estimatedDiscount =
       promotion && (!promotion.kind || promotion.kind === 'percentage')
         ? Math.floor((subtotal * promotion.percent) / 100)
         : 0,
+    discount = cartPricing?.discount ?? estimatedDiscount,
     base = subtotal - discount;
+  useEffect(() => {
+    setQuote(null);
+    setCartPricing(null);
+    setPricingError('');
+    requestKey.current = '';
+    if (!cart.length || !session?.user) {
+      setPricingPending(false);
+      return;
+    }
+    if (manualDiscountMinor < 0) {
+      setPricingError('Ingresá un descuento válido.');
+      setPricingPending(false);
+      return;
+    }
+    let cancelled = false;
+    setPricingPending(true);
+    const timer = setTimeout(() => {
+      api('pricing', {
+        items: cart.map((item) => ({
+          variantId: item.id,
+          quantity: item.quantity,
+        })),
+        customerId: customer?.id ?? null,
+        promotionId: null,
+        promotionIds: offerIds,
+        couponCode: couponCode.trim() || undefined,
+        manualDiscountMinor,
+        autoPromotions: true,
+        excludedPromotionIds,
+        methodIds: split ? [method, secondMethod] : [method],
+      })
+        .then((result) => {
+          if (!cancelled) setCartPricing(result);
+        })
+        .catch((e) => {
+          if (!cancelled) setPricingError(e.message);
+        })
+        .finally(() => {
+          if (!cancelled) setPricingPending(false);
+        });
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    cart,
+    customer?.id,
+    offerIds,
+    couponCode,
+    manualDiscountMinor,
+    method,
+    secondMethod,
+    split,
+    excludedPromotionIds,
+    session?.user,
+  ]);
   const firstBase = split
     ? (() => {
         try {
@@ -185,6 +276,19 @@ export default function Workspace() {
   const estimatedTotal =
     surcharge(firstBase, selectedMethod) +
     (split ? surcharge(base - firstBase, second) : 0);
+  const cashDue =
+    method === 'cash'
+      ? surcharge(firstBase, selectedMethod)
+      : split && secondMethod === 'cash'
+        ? surcharge(base - firstBase, second)
+        : 0;
+  const cashReceived = (() => {
+    try {
+      return minor(received);
+    } catch {
+      return 0;
+    }
+  })();
   const add = (variant: Row) => {
     setError('');
     setCart((current) => {
@@ -205,13 +309,13 @@ export default function Workspace() {
     searchRef.current?.focus();
   };
   const openPayment = useCallback(() => {
-    if (cart.length) {
+    if (cart.length && !pricingPending && !pricingError) {
       setQuote(null);
       setReceived('');
       setError('');
       setModal('payment');
     }
-  }, [cart.length]);
+  }, [cart.length, pricingPending, pricingError]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -300,6 +404,9 @@ export default function Workspace() {
       promotionId: null,
       promotionIds: offerIds,
       couponCode: couponCode.trim() || undefined,
+      manualDiscountMinor,
+      autoPromotions: true,
+      excludedPromotionIds,
       payments,
     };
   }
@@ -316,6 +423,9 @@ export default function Workspace() {
         promotionId: null,
         promotionIds: offerIds,
         couponCode: couponCode.trim() || undefined,
+        manualDiscountMinor,
+        autoPromotions: true,
+        excludedPromotionIds,
         methodIds: split ? [method, secondMethod] : [method],
       });
       const q = await api('quote', paymentInput(pricing.base));
@@ -341,9 +451,12 @@ export default function Workspace() {
       setCustomer(null);
       setOfferIds([]);
       setCouponCode('');
+      setManualDiscountValue('');
+      setExcludedPromotionIds([]);
       setQuote(null);
       requestKey.current = '';
       await refresh();
+      setSectionRevision((n) => n + 1);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -424,15 +537,18 @@ export default function Workspace() {
           quantity: refundItems[item.id] ?? 0,
         }))
         .filter((item: Row) => item.quantity > 0);
+      if (!items.length)
+        throw new Error('Seleccioná al menos una prenda para devolver.');
       await api('refunds', {
         saleId: receipt.id,
         reason: refundReason,
         method: refundMethod,
-        ...(items.length ? { items } : {}),
+        items,
         ...(refundToken ? { authorizationToken: refundToken.trim() } : {}),
       });
       setReceipt(await api('sales?scope=pos&id=' + receipt.id));
       await refresh();
+      setSectionRevision((n) => n + 1);
       setModal('receipt');
       setError('');
     } catch (e: any) {
@@ -504,7 +620,7 @@ export default function Workspace() {
     );
   return (
     <div
-      className={`pos-shell pos-proposal ${view === 'today' ? 'pos-history' : ''}`}
+      className={`pos-shell pos-proposal ${view !== 'sale' ? 'pos-history' : ''}`}
     >
       <header className="topbar">
         <a className="wordmark" href="/pos">
@@ -550,35 +666,25 @@ export default function Workspace() {
           </p>
         </div>
         <nav className="pos-tabs" aria-label="Pantalla del POS">
-          <Button
-            className={view === 'sale' ? 'selected' : ''}
-            variant="outline"
-            onClick={() => setView('sale')}
-          >
-            Venta
-          </Button>
-          <Button
-            className={view === 'today' ? 'selected' : ''}
-            variant="outline"
-            disabled={busy}
-            onClick={async () => {
-              setError('');
-              setBusy(true);
-              try {
-                const day = await api('sales?scope=pos&today=1');
-                setRecent(day.sales);
-                setDayPayments(day.payments);
-                setView('today');
-              } catch (e: any) {
-                setError(e.message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Hoy
-          </Button>
-        </nav>{' '}
+          {(
+            [
+              ['sale', 'Venta'],
+              ['returns', 'Devoluciones'],
+              ['summary', 'Resumen'],
+              ['promotions', 'Promos'],
+            ] as const
+          ).map(([key, label]) => (
+            <Button
+              key={key}
+              className={view === key ? 'selected' : ''}
+              variant="outline"
+              onClick={() => setView(key)}
+              aria-current={view === key ? 'page' : undefined}
+            >
+              {label}
+            </Button>
+          ))}
+        </nav>
         <div className="user-chip">
           {session?.permissions?.includes('dashboard') && (
             <a className="admin-entry" title="Administración" href="/admin">
@@ -718,23 +824,70 @@ export default function Workspace() {
             </span>
           </button>
           <div id="pos-cart-details" className="pos-cart-details">
-            <button
-              className="customer-line"
-              onClick={() => setModal('customer')}
-            >
-              <span className="customer-icon">
-                <UserRound size={18} />
-              </span>
-              <span>
-                {customer
-                  ? `${customer.name} ${customer.surname}`
-                  : 'Cliente ocasional'}
-                <small>
-                  {customer ? 'Cambiar cliente' : 'Agregar cliente a la venta'}
-                </small>
-              </span>
-              <Plus size={18} />
-            </button>
+            <div className="pos-customer-inline">
+              {customer ? (
+                <div className="pos-customer-selected">
+                  <span>
+                    <b>
+                      {customer.name} {customer.surname}
+                    </b>
+                    <small>{customer.phone}</small>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    aria-label="Quitar cliente"
+                    onClick={() => {
+                      setCustomer(null);
+                      setCustomerQuery('');
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="pos-customer-search">
+                    <Input
+                      value={customerQuery}
+                      onChange={(e) => setCustomerQuery(e.target.value)}
+                      placeholder="Cliente (nombre o celular)"
+                      aria-label="Buscar cliente de la venta"
+                      autoComplete="off"
+                      maxLength={100}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => setModal('customer')}
+                    >
+                      + Nuevo
+                    </Button>
+                  </div>
+                  {customerQuery.trim().length >= 2 && (
+                    <div className="pos-customer-matches">
+                      {customers.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setCustomer(c);
+                            setCustomerQuery('');
+                          }}
+                        >
+                          <b>
+                            {c.name} {c.surname}
+                          </b>
+                          <small>{c.phone}</small>
+                        </button>
+                      ))}
+                      {!customers.length && (
+                        <small>
+                          Buscá por nombre o celular, o creá un cliente.
+                        </small>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
             {cart.length ? (
               <div className="cart-items">
                 {cart.map((i) => (
@@ -803,35 +956,86 @@ export default function Workspace() {
             )}
           </div>
           <div className="cart-bottom">
-            <label className="pos-cart-promotion">
-              Descuento autorizado
-              <select
-                aria-label="Descuento autorizado"
-                value={offerIds.length === 1 ? offerIds[0] : ''}
-                onChange={(event) => {
-                  setOfferIds(event.target.value ? [event.target.value] : []);
-                  setQuote(null);
-                  requestKey.current = '';
-                }}
-              >
-                <option value="">Sin descuento</option>
-                {offers
-                  .filter((offer) => !offer.kind || offer.kind === 'percentage')
-                  .map((offer) => (
-                    <option key={offer.id} value={offer.id}>
-                      {offer.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <div className="summary-line">
-              <span>Subtotal</span>
-              <span>{money(subtotal)}</span>
+            <div className="pos-cart-discounts">
+              {canDiscount && (
+                <div className="pos-manual-discount">
+                  <select
+                    value={manualDiscountType}
+                    onChange={(e) => setManualDiscountType(e.target.value)}
+                    aria-label="Tipo de descuento manual"
+                  >
+                    <option value="%">Desc. %</option>
+                    <option value="$">Desc. $</option>
+                  </select>
+                  <Input
+                    inputMode="decimal"
+                    value={manualDiscountValue}
+                    onChange={(e) => setManualDiscountValue(e.target.value)}
+                    placeholder="0"
+                    aria-label="Descuento manual"
+                  />
+                </div>
+              )}
+              <div className="summary-line">
+                <span>Subtotal</span>
+                <span>{money(subtotal)}</span>
+              </div>
+              {cartPricing?.appliedDiscounts?.map((p: Row) => (
+                <div className="pos-applied-promo" key={p.promotionId}>
+                  <span>{p.name}</span>
+                  <b>−{money(p.amount)}</b>
+                  <Button
+                    variant="ghost"
+                    aria-label={'Quitar promoción ' + p.name}
+                    onClick={() => {
+                      setExcludedPromotionIds((ids) => [...ids, p.promotionId]);
+                      setOfferIds((ids) =>
+                        ids.filter((id) => id !== p.promotionId),
+                      );
+                    }}
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
+              {!!excludedPromotionIds.length && (
+                <Button
+                  className="pos-restore-promos"
+                  variant="ghost"
+                  onClick={() => setExcludedPromotionIds([])}
+                >
+                  Restaurar promociones
+                </Button>
+              )}
+              <Input
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="Cupón de descuento"
+                aria-label="Cupón de descuento"
+                autoComplete="off"
+                maxLength={50}
+              />
+              {canDiscount && (
+                <div className="summary-line">
+                  <span>Descuento manual</span>
+                  <span>
+                    {manualDiscountMinor > 0
+                      ? '−' + money(manualDiscountMinor)
+                      : '—'}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="summary-line">
-              <span>Descuentos autorizados</span>
-              <span>{discount ? `−${money(discount)}` : '—'}</span>
-            </div>
+            {pricingPending && (
+              <output className="quiet" aria-live="polite">
+                Calculando total…
+              </output>
+            )}
+            {pricingError && (
+              <p className="notice" role="alert">
+                {pricingError}
+              </p>
+            )}
             <div className="total-line">
               <span>Total</span>
               <strong>{money(base)}</strong>
@@ -852,7 +1056,9 @@ export default function Workspace() {
               </Button>
               <Button
                 className="checkout"
-                disabled={!cart.length || busy}
+                disabled={
+                  !cart.length || busy || pricingPending || !!pricingError
+                }
                 onClick={openPayment}
               >
                 Cobrar <kbd>F4</kbd>
@@ -860,80 +1066,33 @@ export default function Workspace() {
             </div>
           </div>
         </aside>
-        {view === 'today' && (
-          <section className="pos-day">
-            <Button
-              className="no-print"
-              variant="outline"
-              onClick={() => printCommerce('pos-day')}
-            >
-              <Printer /> Imprimir resumen del día
-            </Button>
-            <div className="pos-day-report">
-              <h1>Ventas de hoy</h1>
-              <p className="quiet">
-                Ventas de {session?.user?.name}. Los tickets devueltos están
-                identificados.
-              </p>
-              <div className="pos-day-stats">
-                <article>
-                  <span>Ventas</span>
-                  <b>{recent.length}</b>
-                </article>
-                <article>
-                  <span>Total vendido · antes de devoluciones</span>
-                  <b>
-                    {money(recent.reduce((sum, sale) => sum + sale.total, 0))}
-                  </b>
-                </article>
-              </div>
-              <div className="pos-day-stats">
-                {dayPayments.map((payment, index) => (
-                  <article key={index}>
-                    <span>{payment.name}</span>
-                    <b>{money(payment.amount)}</b>
-                  </article>
-                ))}
-              </div>
-              <div className="recent-list">
-                {recent.map((sale) => (
-                  <button
-                    key={sale.id}
-                    onClick={async () => {
-                      try {
-                        setReceipt(await api('sales?scope=pos&id=' + sale.id));
-                        setModal('receipt');
-                      } catch (e: any) {
-                        setError(e.message);
-                      }
-                    }}
-                  >
-                    <span>
-                      #{String(sale.ticket).padStart(6, '0')}
-                      <small>
-                        {date(sale.createdAt)} ·{' '}
-                        {sale.status === 'refunded'
-                          ? 'Devuelta'
-                          : sale.status === 'partially_refunded'
-                            ? 'Devuelta parcialmente'
-                            : 'Completada'}
-                      </small>
-                    </span>
-                    <strong>{money(sale.total)}</strong>
-                    <Printer size={18} />
-                  </button>
-                ))}
-                {!recent.length && (
-                  <p className="empty-state">Todavía no hay ventas hoy.</p>
-                )}
-              </div>
-              {error && (
-                <p className="notice" role="alert">
-                  {error}
-                </p>
-              )}
-            </div>
-          </section>
+        {view !== 'sale' && session && (
+          <PosSections
+            key={sectionRevision}
+            view={view}
+            session={{
+              ...session,
+              categories: [...new Set(catalog.map((p) => p.category))],
+            }}
+            onPromotionsChanged={refresh}
+            onSale={async (id, refund) => {
+              const ticket = await api(
+                'sales?scope=pos&id=' + encodeURIComponent(id),
+              );
+              setReceipt(ticket);
+              setError('');
+              if (
+                refund &&
+                ['confirmed', 'partially_refunded'].includes(ticket.status)
+              ) {
+                setRefundReason('');
+                setRefundToken('');
+                setRefundMethod('original');
+                setRefundItems({});
+                setModal('refund');
+              } else setModal('receipt');
+            }}
+          />
         )}
       </div>
       {cart.length > 0 && (
@@ -1224,10 +1383,16 @@ export default function Workspace() {
                         </Button>
                       ))}
                   </div>
-                  {selectedMethod?.installments > 1 && (
+                  {selectedMethod && selectedMethod.installments > 1 && (
                     <p className="variant-info">
-                      {selectedMethod?.installments} cuotas · Total{' '}
-                      {money(surcharge(firstBase, selectedMethod))}
+                      {selectedMethod?.installments} cuotas de{' '}
+                      {money(
+                        Math.round(
+                          surcharge(firstBase, selectedMethod) /
+                            selectedMethod.installments,
+                        ),
+                      )}{' '}
+                      · Total {money(surcharge(firstBase, selectedMethod))}
                     </p>
                   )}
                   <details className="pos-discounts">
@@ -1238,21 +1403,30 @@ export default function Workspace() {
                     <label>Promociones autorizadas</label>
                     <div className="promotion-options">
                       {offers.map((promotion) => {
-                        const selectedPromotion = offerIds.includes(
-                          promotion.id,
-                        );
+                        const selectedPromotion =
+                          offerIds.includes(promotion.id) ||
+                          Boolean(
+                            cartPricing?.appliedDiscounts?.some(
+                              (p: Row) => p.promotionId === promotion.id,
+                            ),
+                          );
                         return (
                           <Button
                             key={promotion.id}
                             type="button"
                             variant={selectedPromotion ? 'default' : 'outline'}
-                            onClick={() =>
+                            onClick={() => {
+                              setExcludedPromotionIds((ids) =>
+                                selectedPromotion
+                                  ? [...new Set([...ids, promotion.id])]
+                                  : ids.filter((id) => id !== promotion.id),
+                              );
                               setOfferIds(
                                 selectedPromotion
                                   ? offerIds.filter((id) => id !== promotion.id)
                                   : [...offerIds, promotion.id],
-                              )
-                            }
+                              );
+                            }}
                           >
                             {promotion.name}
                           </Button>
@@ -1329,9 +1503,10 @@ export default function Workspace() {
                       <div className="pos-cash-quick">
                         {[
                           ...new Set([
-                            Math.ceil(estimatedTotal / 100),
-                            Math.ceil(estimatedTotal / 1000000) * 10000,
-                            Math.ceil(estimatedTotal / 5000000) * 50000,
+                            Math.ceil(cashDue / 100),
+                            Math.ceil(cashDue / 100000) * 1000,
+                            Math.ceil(cashDue / 500000) * 5000,
+                            Math.ceil(cashDue / 1000000) * 10000,
                           ]),
                         ].map((amount) => (
                           <Button
@@ -1345,7 +1520,8 @@ export default function Workspace() {
                       </div>
                     </>
                   )}
-                  {method !== 'cash' && (
+                  {(method !== 'cash' ||
+                    (split && secondMethod !== 'cash')) && (
                     <label>
                       Referencia del cobro (opcional)
                       <Input
@@ -1356,10 +1532,48 @@ export default function Workspace() {
                       />
                     </label>
                   )}
+                  <div className="pos-payment-summary">
+                    <div>
+                      <span>Total</span>
+                      <b>{money(estimatedTotal)}</b>
+                    </div>
+                    {estimatedTotal > base && (
+                      <div>
+                        <span>Recargo de los medios</span>
+                        <b>{money(estimatedTotal - base)}</b>
+                      </div>
+                    )}
+                    {!!cashDue && (
+                      <div>
+                        <span>Efectivo a cobrar</span>
+                        <b>{money(cashDue)}</b>
+                      </div>
+                    )}
+                    {!!cashDue && (
+                      <div className="pos-payment-balance">
+                        <span>
+                          {cashReceived >= cashDue
+                            ? 'Vuelto'
+                            : 'Falta en efectivo'}
+                        </span>
+                        <b>{money(Math.abs(cashReceived - cashDue))}</b>
+                      </div>
+                    )}
+                    {split && (
+                      <small>
+                        El primer medio cubre {money(firstBase)} de base y el
+                        segundo {money(base - firstBase)}.
+                      </small>
+                    )}
+                  </div>
                   <Button
                     className="activate"
                     disabled={
-                      busy || firstBase <= 0 || (split && firstBase >= base)
+                      busy ||
+                      pricingPending ||
+                      !!pricingError ||
+                      firstBase <= 0 ||
+                      (split && firstBase >= base)
                     }
                     onClick={review}
                   >
@@ -1454,8 +1668,7 @@ export default function Workspace() {
           {modal === 'refund' && receipt && (
             <div className="quick-form">
               <p className="quiet">
-                Indicá las cantidades. Si todas quedan en cero se devolverá todo
-                lo pendiente del ticket.
+                Seleccioná las prendas y cantidades que devuelve el cliente.
               </p>
               {receipt.items.map((item: Row) => {
                 const available = item.quantity - item.refunded;
@@ -1463,19 +1676,38 @@ export default function Workspace() {
                   <label key={item.id}>
                     {item.name} · {item.color} · {item.size} · máximo{' '}
                     {available}
-                    <Input
-                      type="number"
-                      min={0}
-                      max={available}
-                      disabled={!available}
-                      value={refundItems[item.id] ?? 0}
-                      onChange={(event) =>
-                        setRefundItems({
-                          ...refundItems,
-                          [item.id]: Number(event.target.value),
-                        })
-                      }
-                    />
+                    <div className="pos-refund-quantity">
+                      <Button
+                        variant="outline"
+                        aria-label={'Devolver menos ' + item.name}
+                        disabled={!refundItems[item.id]}
+                        onClick={() =>
+                          setRefundItems({
+                            ...refundItems,
+                            [item.id]: Math.max(
+                              0,
+                              (refundItems[item.id] ?? 0) - 1,
+                            ),
+                          })
+                        }
+                      >
+                        −
+                      </Button>
+                      <b>{refundItems[item.id] ?? 0}</b>
+                      <Button
+                        variant="outline"
+                        aria-label={'Devolver más ' + item.name}
+                        disabled={(refundItems[item.id] ?? 0) >= available}
+                        onClick={() =>
+                          setRefundItems({
+                            ...refundItems,
+                            [item.id]: (refundItems[item.id] ?? 0) + 1,
+                          })
+                        }
+                      >
+                        +
+                      </Button>
+                    </div>
                   </label>
                 );
               })}
@@ -1500,7 +1732,16 @@ export default function Workspace() {
                   onChange={(event) => setRefundReason(event.target.value)}
                   placeholder="Ej. Cambio de talle autorizado"
                   minLength={5}
+                  list="pos-refund-reasons"
                 />
+                <datalist
+                  id="pos-refund-reasons"
+                  aria-label="Motivos de devolución"
+                >
+                  <option value="Cambio de talle">Cambio de talle</option>
+                  <option value="Falla o defecto">Falla o defecto</option>
+                  <option value="Cambio de opinión">Cambio de opinión</option>
+                </datalist>
               </label>
               {['VENDEDOR', 'CAJA'].includes(session?.user?.role) && (
                 <label>
@@ -1516,6 +1757,9 @@ export default function Workspace() {
                 className="activate"
                 disabled={
                   busy ||
+                  !Object.values(refundItems).some(
+                    (quantity) => quantity > 0,
+                  ) ||
                   refundReason.trim().length < 5 ||
                   (['VENDEDOR', 'CAJA'].includes(session?.user?.role) &&
                     !refundToken.trim())

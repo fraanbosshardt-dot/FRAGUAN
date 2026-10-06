@@ -32,6 +32,7 @@ import {
 } from '@/lib/seller-commissions';
 import { supplierHistory } from '@/lib/supplier-history';
 import { argentinaDay } from '@/lib/business-date';
+import { posOverview } from '@/lib/pos-overview';
 import { customerInput } from '@/lib/validation';
 import {
   confirmSale,
@@ -163,6 +164,8 @@ function promotionRule(value: unknown) {
   }
 }
 const posReadResources = new Set([
+  'pos-summary',
+  'pos-promotions',
   'catalog',
   'methods',
   'offers',
@@ -170,6 +173,7 @@ const posReadResources = new Set([
   'pos-online-orders',
 ]);
 const posWriteResources = new Set([
+  'pos-promotions',
   'customers',
   'quote',
   'pricing',
@@ -353,6 +357,23 @@ export async function GET(
     }
     const a = await actor();
     await requireAdminPinForApi(req, resource, posReadResources, a, url);
+    if (resource === 'pos-summary')
+      return reply(
+        await posOverview(a, {
+          from: url.searchParams.get('from') ?? argentinaDay(),
+          to: url.searchParams.get('to') ?? argentinaDay(),
+        }),
+      );
+    if (resource === 'pos-promotions') {
+      requirePermission(a, 'pos');
+      return reply(
+        await rows(
+          `SELECT id,name,active,percent,startsAt,endsAt,ruleJson FROM promotions
+        ${can(a, 'promotions') ? '' : 'WHERE active=1 AND startsAt<=? AND endsAt>=?'} ORDER BY name`,
+          ...(can(a, 'promotions') ? [] : [argentinaDay(), argentinaDay()]),
+        ),
+      );
+    }
     if (resource === 'global-search')
       return reply(await globalSearch(a, url.searchParams.get('q') ?? ''));
     if (resource === 'access') return reply(await listAccess(a));
@@ -983,6 +1004,25 @@ export async function POST(
     }
     const a = await actor();
     await requireAdminPinForApi(req, resource, posWriteResources, a);
+    if (resource === 'pos-promotions') {
+      requirePermission(a, 'pos');
+      requirePermission(a, 'promotions');
+      const input = z
+        .object({
+          action: z.enum(['create', 'toggle']),
+          payload: z.record(z.string(), z.unknown()),
+        })
+        .strict()
+        .parse(body);
+      if (input.action === 'toggle')
+        return reply(
+          await adminAction(a, {
+            ...input.payload,
+            action: 'toggle-promotion',
+          }),
+        );
+      return reply(await adminWrite('promotions', a, input.payload), 201);
+    }
     if (resource === 'chatgpt-analysis')
       return reply(await generateChatGPTAnalysis(a, body));
     if (resource === 'personal-finance')
@@ -1032,11 +1072,11 @@ export async function POST(
     }
     if (resource === 'quote') {
       requirePermission(a, 'pos');
-      return reply(publicQuote(await quote(body)));
+      return reply(publicQuote(await quote(body, false, a)));
     }
     if (resource === 'pricing') {
       requirePermission(a, 'pos');
-      return reply(await priceCart(body));
+      return reply(await priceCart(body, a));
     }
     if (resource === 'sales') {
       requirePermission(a, 'pos');
