@@ -368,10 +368,16 @@ export async function adminAction(a: Actor, raw: unknown) {
     .strict()
     .parse(raw);
   let commands: D1PreparedStatement[] = [];
+  let cashSessionId: string | undefined;
   const date = now(),
     key = id();
   if (input.action === 'open-cash') {
     requirePermission(a, 'cash');
+    if (await one('SELECT id FROM cash_sessions WHERE closedAt IS NULL'))
+      throw new AppError(
+        409,
+        'Ya hay una caja abierta. Cerrala antes de abrir otra.',
+      );
     commands = [
       statement(
         'INSERT INTO cash_sessions(id,openedBy,opening,openedAt) VALUES (?,?,?,?)',
@@ -387,7 +393,43 @@ export async function adminAction(a: Actor, raw: unknown) {
       'SELECT id,opening FROM cash_sessions WHERE closedAt IS NULL',
     );
     if (!session) throw new AppError(409, 'No hay una caja abierta.');
+    if (input.id && input.id !== session.id)
+      throw new AppError(
+        409,
+        'La caja cambió. Actualizá antes de confirmar el cierre.',
+      );
+    cashSessionId = session.id;
     const counted = v.money.parse(input.amount);
+    if (usingPostgres()) {
+      const results = await db().batch([
+        statement(
+          `WITH closed AS (
+            UPDATE cash_sessions SET closedAt=?,counted=?,
+              expected=opening+(SELECT COALESCE(SUM(amount),0) FROM cash_movements WHERE sessionId=? AND methodId='cash'),
+              difference=?-opening-(SELECT COALESCE(SUM(amount),0) FROM cash_movements WHERE sessionId=? AND methodId='cash')
+            WHERE id=? AND closedAt IS NULL RETURNING id
+          )
+          INSERT INTO audit_log(id,actorId,action,entityId,before,after,createdAt)
+          SELECT ?,?,'close-cash',id,'null',?,? FROM closed`,
+          date,
+          counted,
+          session.id,
+          counted,
+          session.id,
+          session.id,
+          id(),
+          a.id,
+          JSON.stringify({ ...input, id: session.id }),
+          date,
+        ),
+      ]);
+      if (results[0]?.meta.changes !== 1)
+        throw new AppError(
+          409,
+          'La caja ya fue cerrada. Actualizá para ver el cierre.',
+        );
+      return { ok: true };
+    }
     commands = [
       statement(
         "UPDATE cash_sessions SET closedAt=?,counted=?,expected=opening+(SELECT COALESCE(SUM(amount),0) FROM cash_movements WHERE sessionId=? AND methodId='cash'),difference=?-opening-(SELECT COALESCE(SUM(amount),0) FROM cash_movements WHERE sessionId=? AND methodId='cash') WHERE id=? AND closedAt IS NULL",
@@ -566,7 +608,13 @@ export async function adminAction(a: Actor, raw: unknown) {
     ];
   }
   commands.push(
-    auditStatement(a.id, input.action, input.id ?? key, null, input),
+    auditStatement(
+      a.id,
+      input.action,
+      cashSessionId ?? input.id ?? key,
+      null,
+      input,
+    ),
   );
   await db().batch(commands);
   return { ok: true };

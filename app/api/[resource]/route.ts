@@ -756,11 +756,15 @@ export async function GET(
         ),
       );
     if (resource === 'cash') {
-      const session = await one(
-        'SELECT id,opening,openedAt,closedAt,counted,expected,difference FROM cash_sessions ORDER BY openedAt DESC LIMIT 1',
+      const history = await rows(
+        `SELECT cs.id,cs.opening,cs.openedAt,cs.closedAt,cs.counted,cs.expected,cs.difference,u.name AS openedByName,
+          (SELECT closer.name FROM audit_log l LEFT JOIN users closer ON closer.id=l.actorId WHERE l.entityId=cs.id AND l.action='close-cash' ORDER BY l.createdAt DESC LIMIT 1) AS closedByName
+         FROM cash_sessions cs LEFT JOIN users u ON u.id=cs.openedBy ORDER BY cs.openedAt DESC LIMIT 30`,
       );
+      const session = history[0] ?? null;
       return reply({
         session,
+        history,
         movements: await rows(
           'SELECT id,kind,amount,methodId,reference,createdAt FROM cash_movements WHERE sessionId=? ORDER BY createdAt DESC',
           session?.id ?? '',

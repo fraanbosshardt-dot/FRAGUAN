@@ -48,6 +48,10 @@ Las existencias, las ventas y el dinero son cosas distintas: vender reduce stock
 
 ## POS: el trabajo de venta
 
+Los dueños tienen el botón **Caja** en el encabezado del POS. Al comenzar, ingresar el efectivo inicial y pulsar **Abrir caja**. Al terminar, contar sólo el efectivo del cajón y pulsar **Confirmar cierre de caja**. Se guardan el efectivo esperado, el contado y la diferencia. Tarjetas, Pix y transferencias no forman parte de ese conteo. La caja debe estar abierta para registrar ventas o devoluciones.
+
+En ese mismo control se consulta quién abrió y quién cerró la caja, con fecha y hora, y las últimas 30 aperturas. Las operaciones también quedan en **Auditoría**, vinculadas a la caja y a la cuenta autenticada. El vendedor no tiene permiso de caja con la configuración actual; Cristian y Fran sí. Abrir **Administración** desde POS conserva la sesión de Google del dueño, sin PIN adicional.
+
 En /pos se busca una prenda o se escanea el código de barras, se elige la variante y se agrega a la venta. Se revisan cantidades, cliente y promociones, se cobra con el medio que realmente usó el cliente y se confirma la operación. El resumen permite revisar vendido bruto y su desglose. Cobrar por el posnet de Mercado Pago y registrar ese cobro en POS son acciones distintas mientras el terminal no esté integrado.
 
 Registrar el medio correcto es fundamental: efectivo, transferencia, débito, crédito y cuotas pueden tener costos y fechas de acreditación diferentes. Una comisión de vendedor y una comisión del procesador de pagos deben seguir siendo conceptos separados.

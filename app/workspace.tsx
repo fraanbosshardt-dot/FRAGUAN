@@ -43,6 +43,7 @@ import {
 import './pos/pos-proposal.css';
 import { InternalSignOut } from '@/components/internal-sign-out';
 import { PosSections } from '@/components/pos-sections';
+import { PosCash } from '@/components/pos-cash';
 export default function Workspace() {
   const { session, error: sessionError, reload } = useSession(),
     clock = useClock();
@@ -850,6 +851,11 @@ export default function Workspace() {
           ))}
         </nav>
         <div className="user-chip">
+          {session?.permissions?.includes('cash') && (
+            <Button variant="outline" onClick={() => setModal('cash')}>
+              Caja
+            </Button>
+          )}
           {session?.permissions?.includes('dashboard') && (
             <a className="admin-entry" title="Administración" href="/admin">
               <LayoutDashboard size={18} />
@@ -1349,6 +1355,7 @@ export default function Workspace() {
             {(
               {
                 customer: 'Cliente de la venta',
+                cash: 'Caja del local',
                 payment: 'Cobrar venta',
                 receipt:
                   receipt?.status === 'refunded'
@@ -1383,6 +1390,7 @@ export default function Workspace() {
               {error}
             </p>
           )}
+          {modal === 'cash' && <PosCash />}
           {modal === 'customer' && (
             <>
               <Input
