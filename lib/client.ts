@@ -43,8 +43,8 @@ export const minor = (value: string) => {
   if (!Number.isSafeInteger(result)) throw new Error('Importe fuera de rango.');
   return result;
 };
-export function useSession() {
-  const [session, setSession] = useState<Row | null>(null);
+export function useSession(initialSession: Row | null = null) {
+  const [session, setSession] = useState<Row | null>(initialSession);
   const [error, setError] = useState('');
   useEffect(() => {
     api('session')

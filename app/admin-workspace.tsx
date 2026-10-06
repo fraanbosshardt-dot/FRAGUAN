@@ -302,9 +302,17 @@ const labels: Record<string, string> = {
   two_for_one: '2×1',
   second_unit_percentage: 'Segunda unidad',
 };
-export default function Admin({ section }: { section: string }) {
-  const { session } = useSession();
-  const [data, setData] = useState<any>(null),
+export default function Admin({
+  section,
+  initialSession = null,
+  initialData = null,
+}: {
+  section: string;
+  initialSession?: Row | null;
+  initialData?: Row | null;
+}) {
+  const { session } = useSession(initialSession);
+  const [data, setData] = useState<any>(initialData),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [modal, setModal] = useState(''),
