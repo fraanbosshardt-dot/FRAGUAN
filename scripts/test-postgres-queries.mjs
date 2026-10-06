@@ -49,6 +49,18 @@ assert.equal(
   postgresSql("SELECT 'don''t replace rowid or ?' FROM products WHERE id=?"),
   "SELECT 'don''t replace rowid or ?' FROM products WHERE id=$1",
 );
+assert.equal(
+  postgresSql(
+    'SELECT MIN(warehouse.quantity,MAX(0,v.ideal-COALESCE(salon.quantity,0))) AS suggested',
+  ),
+  'SELECT LEAST(warehouse.quantity,GREATEST(0,v.ideal-COALESCE(salon.quantity,0))) AS suggested',
+);
+assert.equal(
+  postgresSql(
+    'SELECT MIN(warehouse."quantity",MAX(0,v.ideal-COALESCE(salon.quantity,0))) AS suggested',
+  ),
+  'SELECT LEAST(warehouse.quantity,GREATEST(0,v.ideal-COALESCE(salon.quantity,0))) AS suggested',
+);
 console.log(
   'PostgreSQL query checks passed: stable staff ordering, parameters and untouched string literals.',
 );

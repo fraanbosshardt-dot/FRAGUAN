@@ -176,7 +176,7 @@ function lineFacts(
                product.id AS productId,product.name AS productName,
                product.category,product.brand,product.supplierId,
                COALESCE(supplier.name,'Sin proveedor') AS supplierName,
-               user.id AS sellerIdValue,user.name AS sellerName,
+               seller_user.id AS sellerIdValue,seller_user.name AS sellerName,
                SUM(item.price*(item.quantity-item.refunded)) OVER (
                  PARTITION BY eligible_sales.id
                ) AS saleRetainedGrossMinor,
@@ -188,7 +188,7 @@ function lineFacts(
           JOIN variants variant ON variant.id=item.variantId
           JOIN products product ON product.id=variant.productId
           LEFT JOIN suppliers supplier ON supplier.id=product.supplierId
-          JOIN users user ON user.id=eligible_sales.sellerId
+          JOIN users seller_user ON seller_user.id=eligible_sales.sellerId
          WHERE item.quantity>item.refunded
       ),
       base_lines AS (

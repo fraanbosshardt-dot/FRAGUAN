@@ -434,13 +434,13 @@ export async function getStockReplenishment(
        v.size,
        v.stock AS availableUnits,
        v.minimum AS minimumUnits,
-       COALESCE(SUM(
+       CAST(COALESCE(SUM(
          CASE
            WHEN s.id IS NOT NULL AND si.quantity > si.refunded
              THEN si.quantity - si.refunded
            ELSE 0
          END
-       ), 0) AS soldUnitsWindow,
+       ), 0) AS BIGINT) AS soldUnitsWindow,
        MAX(s.createdAt) AS lastSaleAt,
        p.supplierId,
        supplier.name AS supplierName

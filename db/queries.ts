@@ -124,8 +124,8 @@ export function postgresSql(sql: string) {
     )
     .replace(/\bMAX\s*\(\s*0\s*,/gi, 'GREATEST(0,')
     .replace(
-      /\bMIN\s*\(\s*warehouse\."quantity"\s*,\s*GREATEST/gi,
-      'LEAST(warehouse."quantity",GREATEST',
+      /\bMIN\s*\(\s*warehouse\.(?:"quantity"|quantity)\s*,\s*GREATEST/gi,
+      'LEAST(warehouse.quantity,GREATEST',
     );
   const ignore = /^\s*INSERT\s+OR\s+IGNORE\s+/i.test(translated);
   if (ignore) {

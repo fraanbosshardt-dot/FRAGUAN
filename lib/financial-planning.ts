@@ -75,7 +75,7 @@ export async function listFinancialPlans(actor: Actor) {
               COALESCE(SUM(CASE WHEN i.status='paid' THEN 1 ELSE 0 END),0) AS paidInstallments
          FROM financial_obligations o LEFT JOIN suppliers s ON s.id=o.supplierId
          LEFT JOIN obligation_installments i ON i.obligationId=o.id
-        GROUP BY o.id ORDER BY o.createdAt DESC`,
+        GROUP BY o.id,s.name ORDER BY o.createdAt DESC`,
     ),
   ]);
   return { recurring, obligations };

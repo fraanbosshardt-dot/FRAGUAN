@@ -1785,7 +1785,7 @@ export async function listOnlineCatalog(actor: Actor) {
             SUM(v.stock) AS stock,COUNT(v.id) AS variants
        FROM products p JOIN online_product_profiles profile ON profile.productId=p.id
        JOIN variants v ON v.productId=p.id
-      GROUP BY p.id ORDER BY profile.sortOrder,p.name`,
+      GROUP BY p.id,profile.productId ORDER BY profile.sortOrder,p.name`,
   );
 }
 

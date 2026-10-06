@@ -687,7 +687,7 @@ export async function GET(
              FROM purchases p JOIN suppliers s ON s.id=p.supplierId
              LEFT JOIN purchase_items pi ON pi.purchaseId=p.id
              LEFT JOIN payables pa ON pa.purchaseId=p.id
-            GROUP BY p.id ORDER BY p.createdAt DESC`,
+            GROUP BY p.id,s.name,pa.status ORDER BY p.createdAt DESC`,
         ),
       );
     }
