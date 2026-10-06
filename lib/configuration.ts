@@ -2,6 +2,7 @@ import { db, id, now, one, statement, auditStatement } from '@/db/queries';
 import { Actor, requirePermission, AppError } from './auth';
 import { z } from 'zod';
 import { text, money, positiveMoney } from './validation';
+import { resolveVariantCodes } from './variant-codes';
 const methodFields = z
   .object({
     name: text,
@@ -93,8 +94,8 @@ export async function addVariant(a: Actor, raw: unknown) {
   const x = z
     .object({
       productId: text,
-      sku: text,
-      barcode: text,
+      sku: z.string().trim().max(200).default(''),
+      barcode: z.string().trim().max(200).default(''),
       color: text,
       size: text,
       price: positiveMoney,
@@ -113,14 +114,15 @@ export async function addVariant(a: Actor, raw: unknown) {
   )
     throw new AppError(404, 'Producto no encontrado.');
   const key = id();
+  const codes = await resolveVariantCodes(x);
   await db().batch([
     statement(
       `INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum,
               ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       key,
       x.productId,
-      x.sku,
-      x.barcode,
+      codes.sku,
+      codes.barcode,
       x.color,
       x.size,
       x.price,
@@ -142,7 +144,7 @@ export async function addVariant(a: Actor, raw: unknown) {
       key,
       now(),
     ),
-    auditStatement(a.id, 'Crear variante', key, null, x),
+    auditStatement(a.id, 'Crear variante', key, null, { ...x, ...codes }),
   ]);
   return { ok: true, id: key };
 }

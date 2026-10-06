@@ -205,7 +205,13 @@ export function AdminSidebar({
         <span className="avatar">{userName[0] ?? 'F'}</span>
         <span>
           {userName.split('@')[0]}
-          <small>{role}</small>
+          <small>
+            {role === 'ADMIN'
+              ? 'Dueño'
+              : role === 'VENDEDOR'
+                ? 'Vendedor · POS'
+                : role}
+          </small>
         </span>
         {!session?.openAccess && <InternalSignOut />}
       </div>

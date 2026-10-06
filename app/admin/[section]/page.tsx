@@ -66,7 +66,7 @@ export default async function AdminPage({
     redirect(adminEntryPath(`/admin/${section}`));
   }
   const permission = section === 'stock-movements' ? 'stock' : section;
-  if (!can(a, permission))
+  if (a.role === 'VENDEDOR' || !can(a, permission))
     return (
       <main className="empty-state">
         <h1>Acceso denegado</h1>

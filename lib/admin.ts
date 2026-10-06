@@ -15,6 +15,8 @@ import {
   dashboardSql,
 } from './dashboard-metrics';
 import * as v from './validation';
+import { businessOwnerEmails, isBusinessOwner } from './business-owners';
+import { resolveVariantCodes } from './variant-codes';
 import { z } from 'zod';
 async function cashEntry(
   a: Actor,
@@ -53,6 +55,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
   let commands: D1PreparedStatement[] = [];
   if (resource === 'products') {
     const x = v.productInput.parse(raw);
+    const codes = await resolveVariantCodes(x);
     if (x.ideal < x.minimum)
       throw new AppError(400, 'El stock ideal no puede ser menor al mínimo.');
     if (
@@ -85,8 +88,8 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
                 ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         `${key}-v`,
         key,
-        x.sku,
-        x.barcode,
+        codes.sku,
+        codes.barcode,
         x.color,
         x.size,
         x.price,
@@ -283,11 +286,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
     ];
   } else if (resource === 'users') {
     const x = v.userInput.parse(raw);
-    const owner = await one<{ value: string }>(
-      'SELECT value FROM settings WHERE key=?',
-      'owner',
-    );
-    if (x.role === 'ADMIN' && a.email.toLowerCase() !== owner?.value)
+    if (x.role === 'ADMIN' && !(await isBusinessOwner(a)))
       throw new AppError(
         403,
         'Solo el propietario puede crear otra cuenta administradora.',
@@ -539,12 +538,12 @@ export async function adminAction(a: Actor, raw: unknown) {
         'SELECT email,role FROM users WHERE id=?',
         input.id,
       ),
-      one<{ value: string }>('SELECT value FROM settings WHERE key=?', 'owner'),
+      businessOwnerEmails(),
     ]);
     if (!target) throw new AppError(404, 'Usuario no encontrado.');
-    if (target.email.toLowerCase() === owner?.value)
+    if (owner.includes(target.email.toLowerCase()))
       throw new AppError(403, 'La cuenta propietaria no puede desactivarse.');
-    if (target.role === 'ADMIN' && a.email.toLowerCase() !== owner?.value)
+    if (target.role === 'ADMIN' && !(await isBusinessOwner(a)))
       throw new AppError(
         403,
         'Solo el propietario puede desactivar otra cuenta administradora.',

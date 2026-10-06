@@ -2442,6 +2442,11 @@ export default function Admin({
               <h2 className="spaced-heading">
                 Medios de pago y planes de cuotas
               </h2>
+              <p className="settings-copy">
+                Point de Mercado Pago: las tasas cargadas no incluyen IVA ni
+                retenciones. El neto con estas tasas es estimado. Los planes con
+                interés quedan pendientes de analizar y no se habilitan.
+              </p>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2464,7 +2469,7 @@ export default function Admin({
                     <tr>
                       <th>Medio</th>
                       <th>Recargo al cliente</th>
-                      <th>Comisión interna</th>
+                      <th>Comisión del cobro</th>
                       <th>Acreditación</th>
                       <th>Cuotas</th>
                       <th>Disponible</th>
@@ -2477,7 +2482,9 @@ export default function Admin({
                         <td>{m.name}</td>
                         <td>{m.surchargeBps / 100}%</td>
                         <td>{m.commissionBps / 100}%</td>
-                        <td>{m.days} días</td>
+                        <td>
+                          {m.days === 0 ? 'Al instante' : `${m.days} días`}
+                        </td>
                         <td>{m.installments}</td>
                         <td>{m.active ? 'Sí' : 'No'}</td>
                         <td>
@@ -4557,7 +4564,7 @@ export default function Admin({
                     type: 'number',
                     value: selected?.surchargeBps / 100,
                   })}
-                  {field('commission', 'Comisión interna (%)', {
+                  {field('commission', 'Comisión del cobro (%)', {
                     type: 'number',
                     value: selected?.commissionBps / 100,
                   })}
@@ -4576,8 +4583,19 @@ export default function Admin({
                   <p>{selected?.name}</p>
                   {field('color', 'Color')}
                   {field('size', 'Talle')}
-                  {field('sku', 'SKU')}
-                  {field('barcode', 'Código de barras')}
+                  {field('sku', 'SKU (automático si queda vacío)', {
+                    optional: true,
+                  })}
+                  {field(
+                    'barcode',
+                    'Código de barras (automático si queda vacío)',
+                    { optional: true },
+                  )}
+                  <p className="quiet">
+                    Se genera un código propio para esta combinación de talle y
+                    color. Después podés imprimir sus etiquetas desde Productos
+                    y stock.
+                  </p>
                   {field('price', 'Precio (pesos)')}
                   {field('cost', 'Costo (pesos)')}
                   {field('stock', 'Stock inicial', { type: 'number' })}
@@ -4817,8 +4835,19 @@ export default function Admin({
                       })}
                       {field('color', 'Color')}
                       {field('size', 'Talle')}
-                      {field('sku', 'SKU')}
-                      {field('barcode', 'Código de barras')}
+                      {field('sku', 'SKU (automático si queda vacío)', {
+                        optional: true,
+                      })}
+                      {field(
+                        'barcode',
+                        'Código de barras (automático si queda vacío)',
+                        { optional: true },
+                      )}
+                      <p className="quiet">
+                        Se genera un código propio para esta combinación de
+                        talle y color. Después podés imprimir sus etiquetas
+                        desde Productos y stock.
+                      </p>
                       {field('price', 'Precio (pesos)')}
                       {field('cost', 'Costo (pesos)')}
                       {field('stock', 'Stock inicial', { type: 'number' })}
@@ -5202,21 +5231,19 @@ export default function Admin({
                   {section === 'users' && (
                     <>
                       {field('name', 'Nombre')}
-                      {field('email', 'Email de la cuenta ChatGPT', {
+                      {field('email', 'Email de la cuenta Google', {
                         type: 'email',
                       })}
                       {field('role', 'Rol', {
                         choices: [
-                          'VENDEDOR',
-                          'CAJA',
-                          'STOCK',
-                          'GERENTE',
-                          'ADMIN',
-                        ].map((x) => [x, x]),
+                          ['VENDEDOR', 'Vendedor · sólo POS'],
+                          ['ADMIN', 'Dueño · acceso completo'],
+                        ],
                       })}
                       <p className="quiet">
-                        Además del rol, la cuenta debe estar autorizada para
-                        acceder al sitio privado.
+                        El email debe coincidir con la cuenta de Google
+                        habilitada. La configuración de Google Auth está
+                        pendiente.
                       </p>
                     </>
                   )}
