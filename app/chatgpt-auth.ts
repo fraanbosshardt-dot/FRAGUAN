@@ -29,6 +29,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
     requestHeaders.get('cookie') ?? '',
   );
   if (internalSession) return internalSession;
+  if (runtimeEnv.INTERNAL_AUTH_MODE === 'google') return null;
   if (!import.meta.env.DEV && runtimeEnv.INTERNAL_AUTH_TRUST_PROXY !== 'true')
     return null;
   const userId = requestHeaders.get(USER_ID_HEADER);

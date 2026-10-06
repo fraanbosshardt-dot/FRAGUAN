@@ -943,8 +943,12 @@ export async function POST(
         id: string;
         email: string;
         name: string;
+        role: string;
         active: number;
-      }>('SELECT id,email,name,active FROM users WHERE email=?', profile.email);
+      }>(
+        'SELECT id,email,name,role,active FROM users WHERE email=?',
+        profile.email,
+      );
       const owner = await one<{ value: string }>(
         'SELECT value FROM settings WHERE key=?',
         'owner',
@@ -973,6 +977,21 @@ export async function POST(
         'Set-Cookie',
         internalSessionSetCookie(token, secure),
       );
+      if (
+        runtime.INTERNAL_AUTH_MODE === 'google' &&
+        internalUser?.role === 'ADMIN'
+      ) {
+        // Google has verified this enabled owner; authorize admin for this account only.
+        response.headers.append(
+          'Set-Cookie',
+          adminPinSetCookie(await createAdminPinToken(internalUser.id), secure),
+        );
+      } else {
+        response.headers.append(
+          'Set-Cookie',
+          `fraguan_admin_access=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict${secure ? '; Secure' : ''}`,
+        );
+      }
       return response;
     }
     if (resource === 'setup') {

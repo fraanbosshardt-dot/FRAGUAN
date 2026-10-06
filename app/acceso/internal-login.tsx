@@ -59,11 +59,13 @@ export function InternalLogin({
           {area === 'admin' ? 'Ingresá a Administración' : 'Ingresá a FRAGUAN'}
         </h1>
         <p className="admin-access-copy">
-          {localAccess
-            ? 'Entrá al POS o a Administración con la cuenta local. Administración conserva su PIN de acceso.'
-            : area === 'admin'
-              ? 'Ingresá con tu email y contraseña. Luego confirmá tu PIN para acceder al panel.'
-              : 'Usá tu email y contraseña para entrar al POS. Administración conserva su PIN adicional de acceso.'}
+          {clientId && !passwordAccess
+            ? 'Ingresá con tu cuenta de Google habilitada. Los dueños pueden acceder a Administración y POS; los vendedores, sólo al POS.'
+            : localAccess
+              ? 'Entrá al POS o a Administración con la cuenta local. Administración conserva su PIN de acceso.'
+              : area === 'admin'
+                ? 'Ingresá con tu email y contraseña. Luego confirmá tu PIN para acceder al panel.'
+                : 'Usá tu email y contraseña para entrar al POS. Administración conserva su PIN adicional de acceso.'}
         </p>
         {passwordAccess ? (
           <form onSubmit={submit}>

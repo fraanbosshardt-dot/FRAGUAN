@@ -43,7 +43,7 @@ export default defineConfig({
   define: {
     'process.env.FRAGUAN_SURFACE': JSON.stringify('business'),
     'process.env.FRAGUAN_STAFF_OPEN_ACCESS': JSON.stringify(
-      process.env.FRAGUAN_STAFF_OPEN_ACCESS ?? 'true',
+      process.env.FRAGUAN_STAFF_OPEN_ACCESS ?? 'false',
     ),
     'process.env.FRAGUAN_DEPLOY_ENABLED': JSON.stringify('true'),
   },

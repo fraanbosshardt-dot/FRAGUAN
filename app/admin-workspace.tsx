@@ -5244,8 +5244,8 @@ export default function Admin({
                       })}
                       <p className="quiet">
                         El email debe coincidir con la cuenta de Google
-                        habilitada. La configuración de Google Auth está
-                        pendiente.
+                        habilitada. Los dueños entran a Administración y POS;
+                        los vendedores sólo al POS.
                       </p>
                     </>
                   )}

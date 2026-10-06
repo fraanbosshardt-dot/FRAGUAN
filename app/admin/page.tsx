@@ -57,8 +57,20 @@ export default async function Administration({
       </main>
     );
   const token = (await cookies()).get(adminPinCookie)?.value ?? '';
-  if (!(await verifyAdminPinToken(token, current.id)))
+  if (!(await verifyAdminPinToken(token, current.id))) {
+    const runtime = env as unknown as Record<string, string | undefined>;
+    if (runtime.INTERNAL_AUTH_MODE === 'google')
+      return (
+        <InternalLogin
+          localAccess={false}
+          passwordAccess={false}
+          clientId={runtime.INTERNAL_GOOGLE_CLIENT_ID ?? ''}
+          returnTo={entry}
+          area="admin"
+        />
+      );
     return <AdminPinForm returnTo={entry} />;
+  }
   if (target !== '/admin') redirect(target);
   const initial = await adminPageData('dashboard');
   return (

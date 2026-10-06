@@ -6,6 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 // Start the actual Node production build with test-only secrets, no database.
 const origin = 'http://127.0.0.1:3001';
 const publicOrigin = 'https://www.fraguan.com';
+const googleMode = process.argv.includes('--google');
 const salt = randomBytes(16).toString('hex');
 const hash = pbkdf2Sync(
   randomBytes(24).toString('hex'),
@@ -25,6 +26,11 @@ const server = spawn(process.execPath, ['.output/server/index.mjs'], {
     FRAGUAN_API_ORIGIN: '',
     SITE_ORIGIN: publicOrigin,
     INTERNAL_AUTH_TRUST_PROXY: 'false',
+    INTERNAL_AUTH_MODE: googleMode ? 'google' : 'password',
+    INTERNAL_GOOGLE_CLIENT_ID: googleMode
+      ? 'test.apps.googleusercontent.com'
+      : '',
+    FRAGUAN_STAFF_OPEN_ACCESS: 'false',
     INTERNAL_SESSION_SECRET: randomBytes(32).toString('base64'),
     INTERNAL_PASSWORD_HASH: `pbkdf2-sha256:600000:${salt}:${hash}`,
   },
@@ -64,7 +70,10 @@ try {
   assert.equal(adminEntry.status, 200, 'Unified admin entry must render login');
   const adminHtml = await adminEntry.text();
   assert.match(adminHtml, /Ingresá a Administración/);
-  assert.match(adminHtml, /current-password/);
+  if (googleMode) {
+    assert.doesNotMatch(adminHtml, /current-password/);
+    assert.match(adminHtml, /cuenta de Google habilitada/);
+  } else assert.match(adminHtml, /current-password/);
   assert.equal(
     (await get('/admin/products')).headers.get('location'),
     '/admin?returnTo=%2Fadmin%2Fproducts',
@@ -100,7 +109,18 @@ try {
     email: 'staff@example.test',
     password: 'incorrect-password-for-test',
   };
-  assert.equal((await post('/api/internal-auth', invalidLogin)).status, 401);
+  assert.equal(
+    (await post('/api/internal-auth', invalidLogin)).status,
+    googleMode ? 503 : 401,
+  );
+  if (googleMode) {
+    const invalidGoogle = await post('/api/internal-auth', {
+      action: 'google',
+      credential: 'invalid'.repeat(20),
+    });
+    assert.equal(invalidGoogle.status, 401);
+    assert.equal(invalidGoogle.headers.getSetCookie().length, 0);
+  }
   assert.equal(
     (
       await post(
@@ -123,7 +143,8 @@ try {
   for (const cookie of logout.headers.getSetCookie())
     assert.match(cookie, /Max-Age=0/);
   const loginHtml = await (await get('/acceso')).text();
-  assert.match(loginHtml, /current-password/);
+  if (googleMode) assert.doesNotMatch(loginHtml, /current-password/);
+  else assert.match(loginHtml, /current-password/);
   console.log(
     'Production staff route checks passed: redirects, denied APIs, spoofed headers, Origin and logout.',
   );

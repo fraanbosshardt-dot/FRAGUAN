@@ -4,9 +4,9 @@ const encoder = new TextEncoder();
 const ITERATIONS = 600000;
 
 function configuredHash() {
-  const value = (
-    env as unknown as Record<string, string | undefined>
-  ).INTERNAL_PASSWORD_HASH?.trim();
+  const runtime = env as unknown as Record<string, string | undefined>;
+  if (runtime.INTERNAL_AUTH_MODE === 'google') return null;
+  const value = runtime.INTERNAL_PASSWORD_HASH?.trim();
   return value && /^pbkdf2-sha256:600000:[a-f0-9]{32}:[a-f0-9]{64}$/.test(value)
     ? value
     : null;

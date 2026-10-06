@@ -4,14 +4,18 @@ La aplicación usa dos servicios del mismo repositorio en el dominio existente
 `https://www.fraguan.com`. El build publica la superficie `business`: tienda,
 `/pos` y `/admin`. `/admin-access` y `/admin/dashboard` redirigen al único acceso `/admin`.
 
-**Estado actual solicitado por el propietario: acceso directo temporal, sin contraseña ni PIN.**
-`FRAGUAN_STAFF_OPEN_ACCESS=true` se usa por defecto en el build actual. Cualquier
-visitante puede operar el POS y Administración con los permisos del propietario
-activo existente. No se crea ni cambia el usuario del negocio. Las operaciones de
-este modo comparten ese usuario; no permiten identificar a cada visitante.
-Para cerrar nuevamente el acceso, configurar `FRAGUAN_STAFF_OPEN_ACCESS=false`
-en Vercel y Railway y reconstruir ambos servicios. Recuperar las credenciales del
-apartado siguiente. Las cuentas de clientes no se alteran.
+**Acceso del personal con Google.** El build usa `FRAGUAN_STAFF_OPEN_ACCESS=false`
+por defecto. Railway requiere `INTERNAL_AUTH_MODE=google`, el cliente existente
+`INTERNAL_GOOGLE_CLIENT_ID` del personal, `INTERNAL_SESSION_SECRET` y
+`ADMIN_SESSION_SECRET` aleatorios de al menos 32 caracteres. No guardar secretos
+en el repositorio. Los orígenes autorizados del cliente incluyen
+`https://fraguan.com` y `https://www.fraguan.com`.
+
+Google debe verificar el token y el email debe corresponder a un usuario activo
+de FRAGUAN. Un dueño recibe también la sesión de Administración, sin pedir PIN;
+un vendedor sólo puede entrar al POS. Las sesiones duran ocho horas. El modo
+Google deshabilita el login por contraseña y la identidad basada en encabezados.
+Las cuentas de clientes usan su cliente OAuth separado y no se alteran.
 
 ## Vercel: fraguan-store
 

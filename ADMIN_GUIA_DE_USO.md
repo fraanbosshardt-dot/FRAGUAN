@@ -54,7 +54,7 @@ Registrar el medio correcto es fundamental: efectivo, transferencia, débito, cr
 
 ## Roles existentes
 
-La operación definida para FRAGUAN usa **dos roles**: Dueño (Cristian y Fran, acceso completo) y Vendedor (sólo POS, para futuros empleados). El local 1 está en Isla Verde, Córdoba, Argentina; Cristian realiza ventas, compras y control de stock. Google Auth queda pendiente de configurar a pedido del propietario. Los nombres internos históricos que se describen abajo siguen existiendo en el código; no implican que esos roles estén dados de alta ni que haya empleados.
+La operación definida para FRAGUAN usa **dos roles**: Dueño (Cristian y Fran, acceso completo) y Vendedor (sólo POS, para futuros empleados). El local 1 está en Isla Verde, Córdoba, Argentina; Cristian realiza ventas, compras y control de stock. El ingreso del personal se realiza con Google y exige una cuenta habilitada en Equipo. El dueño entra a Administración y POS sin PIN adicional. Las sesiones duran ocho horas; usar Cerrar sesión al terminar. Los nombres internos históricos que se describen abajo siguen existiendo en el código; no implican que esos roles estén dados de alta ni que haya empleados.
 
 - **ADMIN:** acceso completo a la administración.
 - **GERENTE:** gestión comercial, productos, compras, caja y varias áreas financieras y de análisis; no equivale a administrador total del sistema.
@@ -92,7 +92,7 @@ Estos cuatro medios se configuran en **Configuración → Medios de pago y plane
 | Point · Prepaga | 3,68%                                 | 3 días       | 1                   |
 | Point · Pix     | 3,40%                                 | Al instante  | 1                   |
 
-Los valores fueron indicados por el dueño para su cuenta; no se reemplazan por una tarifa genérica publicada en internet. No incluyen IVA ni retenciones. Hasta completar esos conceptos el importe neto del sistema es **estimado**, no una conciliación del dinero efectivamente acreditado. Los planes con interés y los procesadores antiguos que no se confirmaron quedan pausados. Google Auth sigue pendiente.
+Los valores fueron indicados por el dueño para su cuenta; no se reemplazan por una tarifa genérica publicada en internet. No incluyen IVA ni retenciones. Hasta completar esos conceptos el importe neto del sistema es **estimado**, no una conciliación del dinero efectivamente acreditado. Los planes con interés y los procesadores antiguos que no se confirmaron quedan pausados.
 
 ### Códigos y etiquetas
 

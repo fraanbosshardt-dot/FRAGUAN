@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 
 export const internalSessionCookie = 'fraguan_internal_session';
-const SESSION_SECONDS = 12 * 60 * 60;
+const SESSION_SECONDS = 8 * 60 * 60;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
