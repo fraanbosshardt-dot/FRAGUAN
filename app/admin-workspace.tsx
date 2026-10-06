@@ -1499,7 +1499,7 @@ export default function Admin({
                       {data.trend.length ? (
                         <ChartContainer
                           config={{
-                            total: { label: 'Ventas', color: '#60764c' },
+                            total: { label: 'Ventas', color: 'var(--primary)' },
                           }}
                           className="sales-chart"
                         >
@@ -1514,12 +1514,12 @@ export default function Admin({
                               >
                                 <stop
                                   offset="0%"
-                                  stopColor="#78935e"
+                                  stopColor="var(--primary)"
                                   stopOpacity={0.28}
                                 />
                                 <stop
                                   offset="100%"
-                                  stopColor="#78935e"
+                                  stopColor="var(--primary)"
                                   stopOpacity={0}
                                 />
                               </linearGradient>
@@ -1545,7 +1545,7 @@ export default function Admin({
                             <Area
                               type="monotone"
                               dataKey="total"
-                              stroke="#60764c"
+                              stroke="var(--primary)"
                               strokeWidth={2}
                               fill="url(#salesGradient)"
                             />
@@ -1725,7 +1725,7 @@ export default function Admin({
                       config={{
                         revenueMinor: {
                           label: 'Venta neta',
-                          color: '#60764c',
+                          color: 'var(--primary)',
                         },
                       }}
                       className="sales-chart"
@@ -1741,12 +1741,12 @@ export default function Admin({
                           >
                             <stop
                               offset="0%"
-                              stopColor="#78935e"
+                              stopColor="var(--primary)"
                               stopOpacity={0.3}
                             />
                             <stop
                               offset="100%"
-                              stopColor="#78935e"
+                              stopColor="var(--primary)"
                               stopOpacity={0}
                             />
                           </linearGradient>
@@ -1771,7 +1771,7 @@ export default function Admin({
                         <Area
                           type="monotone"
                           dataKey="revenueMinor"
-                          stroke="#60764c"
+                          stroke="var(--primary)"
                           strokeWidth={2}
                           fill="url(#reportGradient)"
                         />
@@ -2015,7 +2015,7 @@ export default function Admin({
                     config={{
                       projectedKnownFundsMinor: {
                         label: 'Fondos proyectados',
-                        color: '#60764c',
+                        color: 'var(--primary)',
                       },
                     }}
                     className="sales-chart"
@@ -2041,7 +2041,7 @@ export default function Admin({
                       <Area
                         type="monotone"
                         dataKey="projectedKnownFundsMinor"
-                        stroke="#60764c"
+                        stroke="var(--primary)"
                         strokeWidth={2}
                         fill="url(#salesGradient)"
                       />

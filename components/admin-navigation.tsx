@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import {
   ArrowUpRight,
   BarChart3,
@@ -8,6 +10,7 @@ import {
   ClipboardList,
   Globe2,
   LayoutDashboard,
+  Menu,
   Package,
   PackageCheck,
   Plus,
@@ -124,6 +127,7 @@ export function AdminSidebar({
   session: AdminSession;
   section: string;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const permissions = Array.isArray(session?.permissions)
     ? session.permissions
     : [];
@@ -131,14 +135,28 @@ export function AdminSidebar({
   const role = String(session?.user?.role ?? '');
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${menuOpen ? ' menu-open' : ''}`}>
       <a className="wordmark" href="/admin">
         FRAGUAN<span>ADMINISTRACIÓN</span>
       </a>
+      <button
+        className="admin-menu-toggle"
+        type="button"
+        aria-label={
+          menuOpen
+            ? 'Cerrar áreas de administración'
+            : 'Abrir áreas de administración'
+        }
+        aria-expanded={menuOpen}
+        aria-controls="admin-area-navigation"
+        onClick={() => setMenuOpen((value) => !value)}
+      >
+        <Menu size={18} /> Áreas
+      </button>
       <a className="new-sale-link" href="/pos">
         <Plus size={16} /> Nueva venta <ArrowUpRight size={15} />
       </a>
-      <nav aria-label="Áreas de administración">
+      <nav id="admin-area-navigation" aria-label="Áreas de administración">
         {navigationGroups.map((group) => {
           const items = group.items.filter(([key]) =>
             permissions.includes(key === 'stock-movements' ? 'stock' : key),
