@@ -17,6 +17,18 @@ un vendedor sólo puede entrar al POS. Las sesiones duran ocho horas. El modo
 Google deshabilita el login por contraseña y la identidad basada en encabezados.
 Las cuentas de clientes usan su cliente OAuth separado y no se alteran.
 
+## Google para clientes de la tienda
+
+`/cuenta` usa el cliente OAuth existente **FRAGUAN Tienda**, independiente de
+**FRAGUAN Personal**. Configurar `GOOGLE_CLIENT_ID` en Railway y mantener
+`STORE_PASSWORD_AUTH_ENABLED=false`. El endpoint `/api/store-account` devuelve
+el Client ID público para que la tienda cargue el botón aunque Vercel no tenga
+una copia de la variable. No devuelve secretos ni tokens.
+
+El backend verifica la credencial de Google, crea o vincula la cuenta de cliente
+y emite la cookie del cliente. Esta cookie no autoriza Administración ni POS.
+La navegación de la tienda y el checkout de invitados siguen disponibles.
+
 ## Vercel: fraguan-store
 
 - Instalación: `npm ci`.

@@ -49,6 +49,8 @@ export default function Account({
   passwordAuthEnabled: boolean;
 }) {
   const [data, setData] = useState<any>(null);
+  const [accountGoogleClientId, setAccountGoogleClientId] =
+    useState(googleClientId);
   const [panel, setPanel] = useState('datos');
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState('');
@@ -60,6 +62,7 @@ export default function Account({
   const load = () =>
     storeApi('store-account').then((result) => {
       setData(result);
+      if (result.googleClientId) setAccountGoogleClientId(result.googleClientId);
       dispatchEvent(
         new CustomEvent('fraguan-account', { detail: result.customer }),
       );
@@ -422,12 +425,20 @@ export default function Account({
                 </button>
               </>
             )}
-            {googleClientId && (
+            {accountGoogleClientId && (
               <div style={{ marginTop: 24 }}>
-                <GoogleSignIn clientId={googleClientId} onError={setError} />
+                <GoogleSignIn
+                  clientId={accountGoogleClientId}
+                  onError={setError}
+                />
               </div>
             )}
-            {!passwordAuthEnabled && !googleClientId && (
+            {!passwordAuthEnabled && error && (
+              <p className="err" role="alert">
+                {error}
+              </p>
+            )}
+            {!passwordAuthEnabled && data && !accountGoogleClientId && (
               <p className="err">
                 El acceso a cuentas todavía no está configurado.
               </p>

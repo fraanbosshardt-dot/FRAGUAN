@@ -992,9 +992,17 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
 }
 
 export async function storeAccount(req: Request) {
+  // This public OAuth client ID is safe to expose; tokens and secrets stay server-side.
+  const googleClientId = env.GOOGLE_CLIENT_ID?.trim() ?? '';
   const customer = await currentStoreCustomer(req);
   if (!customer)
-    return { customer: null, orders: [], addresses: [], benefits: [] };
+    return {
+      customer: null,
+      orders: [],
+      addresses: [],
+      benefits: [],
+      googleClientId,
+    };
   const cutoff = new Date(Date.now() - 365 * 86400000).toISOString();
   const [orders, addresses, activity, config] = await Promise.all([
     rows(
@@ -1035,6 +1043,7 @@ export async function storeAccount(req: Request) {
     config,
   );
   return {
+    googleClientId,
     customer: {
       ...customer,
       level,
