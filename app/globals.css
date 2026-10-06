@@ -1327,7 +1327,8 @@ h1 span {
 }
 .print-labels {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 48mm;
+  justify-content: center;
   gap: 10px;
   padding: 10px 0;
 }
@@ -1335,7 +1336,8 @@ h1 span {
   display: grid;
   gap: 4px;
   min-height: 125px;
-  padding: 12px;
+  width: 48mm;
+  padding: 12px 0;
   border: 1px dashed var(--foreground);
   background: var(--card);
   color: var(--foreground);
@@ -2295,13 +2297,14 @@ select {
     font-size: 12px;
   }
   .print-labels {
-    position: fixed;
+    position: absolute;
     inset: 0;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 48mm;
+    width: 58mm;
     align-content: start;
-    gap: 8mm;
-    padding: 8mm;
+    gap: 0;
+    padding: 0 5mm;
     background: white !important;
     color: black !important;
   }

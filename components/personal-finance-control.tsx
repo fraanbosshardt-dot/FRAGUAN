@@ -551,13 +551,6 @@ export function PersonalFinanceControl({
             label="Negocio pago único"
             value={pesos(expenses.businessOneTimeMinor)}
           />
-          <Metric
-            label="Diferencia contra $3.440.000 informado"
-            value={pesos(Math.abs(344_000_000 - expenses.personalMinor))}
-            tone={
-              expenses.personalMinor === 344_000_000 ? 'positive' : 'negative'
-            }
-          />
         </div>
         <div className="finance-expense-groups">
           {expenseGroups.map(([key, items]) => {

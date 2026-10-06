@@ -3537,7 +3537,9 @@ export default function Admin({
                 })}
                 <p className="quiet">
                   Se imprime una etiqueta por unidad. El máximo de esta tanda es
-                  100.
+                  100. Nictom IT02: papel de 58 mm, área impresa de 48 mm, en
+                  una sola columna. Elegí papel de 58 mm en el controlador,
+                  escala 100% y desactivá los encabezados y pies de página.
                 </p>
                 <Button type="button" onClick={() => printCommerce('labels')}>
                   <Printer /> Imprimir etiquetas
