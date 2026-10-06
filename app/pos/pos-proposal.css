@@ -1062,6 +1062,37 @@
   margin-top: 14px;
   font-size: 13px;
 }
+.pos-gross-breakdown summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--pp-ac);
+}
+.pos-gross-breakdown .summary-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--pp-bd);
+}
+.pos-gross-breakdown b {
+  white-space: nowrap;
+  color: var(--pp-tx);
+}
+.pos-gross-breakdown .quiet {
+  text-align: left;
+  font-style: normal;
+  margin: 12px 0;
+}
+.pos-gross-breakdown .summary-line:nth-of-type(4) {
+  color: var(--pp-ac);
+  font-weight: 700;
+}
+.pos-gross-breakdown small {
+  display: block;
+  color: var(--pp-mu);
+  margin-top: 12px;
+}
 .pos-proposal-dialog .payment-methods {
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
@@ -1076,6 +1107,14 @@
   background: var(--pp-sf2);
   border-radius: 10px;
   padding: 10px 12px;
+}
+.pos-payment-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
 }
 .pos-payment-summary > div {
   display: flex;

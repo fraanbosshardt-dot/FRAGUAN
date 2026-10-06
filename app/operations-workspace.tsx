@@ -51,10 +51,15 @@ const labels: Record<string, string> = {
   'customer-intelligence': 'Inteligencia de clientes',
   'customer-credits': 'Saldos a favor',
 };
-export default function Operations({ section }: { section: string }) {
-  const { session } = useSession();
-  const [data, setData] = useState<Row | null>(null),
-    [error, setError] = useState(''),
+export default function Operations({
+  section, initialSession = null, initialData = null, initialError = '',
+}: {
+  section: string; initialSession?: Row | null;
+  initialData?: Row | null; initialError?: string;
+}) {
+  const { session } = useSession(initialSession);
+  const [data, setData] = useState<Row | null>(initialData),
+    [error, setError] = useState(initialError),
     [success, setSuccess] = useState(''),
     [busy, setBusy] = useState(false),
     [dialog, setDialog] = useState<{

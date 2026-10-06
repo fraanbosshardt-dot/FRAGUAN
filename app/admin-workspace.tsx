@@ -306,14 +306,18 @@ export default function Admin({
   section,
   initialSession = null,
   initialData = null,
+  initialPlans = null,
+  initialError = '',
 }: {
   section: string;
   initialSession?: Row | null;
   initialData?: Row | null;
+  initialPlans?: Row | null;
+  initialError?: string;
 }) {
   const { session } = useSession(initialSession);
   const [data, setData] = useState<any>(initialData),
-    [error, setError] = useState(''),
+    [error, setError] = useState(initialError),
     [busy, setBusy] = useState(false),
     [modal, setModal] = useState(''),
     [selected, setSelected] = useState<Row | null>(null),
@@ -332,10 +336,12 @@ export default function Admin({
         timeZone: 'America/Argentina/Cordoba',
       }).format(new Date()),
     ),
-    [financialPlans, setFinancialPlans] = useState<Row>({
-      recurring: [],
-      obligations: [],
-    });
+    [financialPlans, setFinancialPlans] = useState<Row>(
+      initialPlans ?? {
+        recurring: [],
+        obligations: [],
+      },
+    );
   const title = navigation.find((n) => n[0] === section)?.[1] ?? 'FRAGUAN';
   const load = useCallback(async () => {
     if (section === 'financial-calendar') {

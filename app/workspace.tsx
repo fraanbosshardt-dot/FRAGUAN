@@ -38,6 +38,7 @@ import {
   useSession,
   useClock,
   Row,
+  ApiError,
 } from '@/lib/client';
 import './pos/pos-proposal.css';
 import { InternalSignOut } from '@/components/internal-sign-out';
@@ -52,6 +53,7 @@ export default function Workspace() {
     [sectionRevision, setSectionRevision] = useState(0),
     [cartPricing, setCartPricing] = useState<Row | null>(null),
     [pricingPending, setPricingPending] = useState(false),
+    [pricingRevision, setPricingRevision] = useState(0),
     [pricingError, setPricingError] = useState(''),
     [manualDiscountType, setManualDiscountType] = useState('%'),
     [manualDiscountValue, setManualDiscountValue] = useState(''),
@@ -84,6 +86,7 @@ export default function Workspace() {
     [onlineOrders, setOnlineOrders] = useState<Row[]>([]),
     [onlineOrder, setOnlineOrder] = useState<Row | null>(null),
     [quote, setQuote] = useState<Row | null>(null),
+    [pendingSale, setPendingSale] = useState<Row | null>(null),
     [dark, setDark] = useState(false),
     [reference, setReference] = useState(''),
     [creditBalance, setCreditBalance] = useState(0),
@@ -92,12 +95,42 @@ export default function Workspace() {
     [refundMethod, setRefundMethod] = useState('original'),
     [refundItems, setRefundItems] = useState<Record<string, number>>({});
   const searchRef = useRef<HTMLInputElement>(null),
-    requestKey = useRef('');
+    reviewedInput = useRef<Row | null>(null),
+    submittedInput = useRef<Row | null>(null);
+  const recoveryKey = session?.user?.id
+    ? `fraguan-pos-pending:${session.user.id}`
+    : '';
+  useEffect(() => {
+    if (!recoveryKey) return;
+    const restore = () => {
+      const saved = localStorage.getItem(recoveryKey);
+      if (!saved) return;
+      try {
+        const pending = JSON.parse(saved);
+        if (!pending.payload?.idempotencyKey || !pending.quote?.payments)
+          throw new Error('invalid');
+        submittedInput.current = pending;
+        setPendingSale(pending);
+        setQuote(pending.quote);
+        setModal('payment');
+      } catch {
+        setError(
+          'No se pudo recuperar el cobro pendiente. Revisá las ventas recientes antes de volver a cobrar.',
+        );
+      }
+    };
+    restore();
+    window.addEventListener('storage', restore);
+    return () => window.removeEventListener('storage', restore);
+  }, [recoveryKey]);
   const focusScanner = useCallback(() => {
+    if (submittedInput.current) return;
     setView('sale');
     setCategory('Todos');
-    searchRef.current?.focus();
-    searchRef.current?.select();
+    requestAnimationFrame(() => {
+      searchRef.current?.focus();
+      searchRef.current?.select();
+    });
   }, []);
   const refresh = async () => {
     const [c, m, o] = await Promise.all([
@@ -182,7 +215,8 @@ export default function Workspace() {
           .includes(search.toLowerCase()),
       ),
   );
-  const subtotal = cart.reduce((n, i) => n + i.price * i.quantity, 0);
+  const subtotal =
+    cartPricing?.subtotal ?? cart.reduce((n, i) => n + i.price * i.quantity, 0);
   const canDiscount = session?.permissions?.includes('promotions');
   const manualDiscountMinor = (() => {
     if (!manualDiscountValue.trim() || !canDiscount) return 0;
@@ -195,6 +229,20 @@ export default function Workspace() {
       return -1;
     }
   })();
+  const manualDiscountInput = useMemo(() => {
+    if (!manualDiscountValue.trim() || !canDiscount)
+      return { manualDiscountMinor: 0 };
+    try {
+      const value = minor(manualDiscountValue);
+      return manualDiscountType === '%'
+        ? { manualDiscountBps: value }
+        : { manualDiscountMinor: value };
+    } catch {
+      return { manualDiscountMinor: -1 };
+    }
+  }, [manualDiscountValue, manualDiscountType, canDiscount]);
+  const currentPrice = (item: Row) =>
+    cartPricing?.items?.find((v: Row) => v.id === item.id)?.price ?? item.price;
   const promotion =
       offerIds.length === 1 ? offers.find((o) => o.id === offerIds[0]) : null,
     estimatedDiscount =
@@ -202,17 +250,21 @@ export default function Workspace() {
         ? Math.floor((subtotal * promotion.percent) / 100)
         : 0,
     discount = cartPricing?.discount ?? estimatedDiscount,
-    base = subtotal - discount;
+    base = cartPricing?.base ?? subtotal - discount;
   useEffect(() => {
+    if (submittedInput.current) return;
     setQuote(null);
+    reviewedInput.current = null;
     setCartPricing(null);
     setPricingError('');
-    requestKey.current = '';
     if (!cart.length || !session?.user) {
       setPricingPending(false);
       return;
     }
-    if (manualDiscountMinor < 0) {
+    if (
+      (manualDiscountInput.manualDiscountMinor ?? 0) < 0 ||
+      (manualDiscountInput.manualDiscountBps ?? 0) > 10000
+    ) {
       setPricingError('Ingresá un descuento válido.');
       setPricingPending(false);
       return;
@@ -229,7 +281,7 @@ export default function Workspace() {
         promotionId: null,
         promotionIds: offerIds,
         couponCode: couponCode.trim() || undefined,
-        manualDiscountMinor,
+        ...manualDiscountInput,
         autoPromotions: true,
         excludedPromotionIds,
         methodIds: split ? [method, secondMethod] : [method],
@@ -253,13 +305,42 @@ export default function Workspace() {
     customer?.id,
     offerIds,
     couponCode,
-    manualDiscountMinor,
+    manualDiscountInput,
     method,
     secondMethod,
     split,
     excludedPromotionIds,
     session?.user,
+    pricingRevision,
   ]);
+  useEffect(() => {
+    if (!cart.length || quote || pendingSale) return;
+    const update = () => {
+      if (!document.hidden && !submittedInput.current)
+        setPricingRevision((n) => n + 1);
+    };
+    const timer = setInterval(update, 30000);
+    window.addEventListener('focus', update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', update);
+    };
+  }, [cart.length, quote, pendingSale]);
+  useEffect(() => {
+    if (submittedInput.current) return;
+    const available = methods.filter(
+      (m) =>
+        m.id !== 'cashback' && (m.id !== 'store_credit' || Boolean(customer)),
+    );
+    if (!available.length) return;
+    const first = available.some((m) => m.id === method)
+      ? method
+      : available[0].id;
+    if (first !== method) setMethod(first);
+    if (secondMethod === first || !available.some((m) => m.id === secondMethod))
+      setSecondMethod(available.find((m) => m.id !== first)?.id ?? '');
+    if (split && available.length < 2) setSplit(false);
+  }, [method, secondMethod, methods, customer, split]);
   const firstBase = split
     ? (() => {
         try {
@@ -290,6 +371,7 @@ export default function Workspace() {
     }
   })();
   const add = (variant: Row) => {
+    if (submittedInput.current) return;
     setError('');
     setCart((current) => {
       const existing = current.find((x) => x.id === variant.id);
@@ -304,20 +386,25 @@ export default function Workspace() {
         : [...current, { ...variant, quantity: 1 }];
     });
     setSelected(null);
-    requestKey.current = '';
     setSearch('');
     searchRef.current?.focus();
   };
   const openPayment = useCallback(() => {
+    if (submittedInput.current) {
+      setModal('payment');
+      return;
+    }
     if (cart.length && !pricingPending && !pricingError) {
       setQuote(null);
       setReceived('');
       setError('');
       setModal('payment');
+      setPricingRevision((n) => n + 1);
     }
   }, [cart.length, pricingPending, pricingError]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (submittedInput.current) return;
       if (
         e.key === 'F2' ||
         e.code === 'F2' ||
@@ -404,7 +491,7 @@ export default function Workspace() {
       promotionId: null,
       promotionIds: offerIds,
       couponCode: couponCode.trim() || undefined,
-      manualDiscountMinor,
+      ...manualDiscountInput,
       autoPromotions: true,
       excludedPromotionIds,
       payments,
@@ -423,12 +510,15 @@ export default function Workspace() {
         promotionId: null,
         promotionIds: offerIds,
         couponCode: couponCode.trim() || undefined,
-        manualDiscountMinor,
+        ...manualDiscountInput,
         autoPromotions: true,
         excludedPromotionIds,
         methodIds: split ? [method, secondMethod] : [method],
       });
-      const q = await api('quote', paymentInput(pricing.base));
+      setCartPricing(pricing);
+      const input = paymentInput(pricing.base);
+      const q = await api('quote', input);
+      reviewedInput.current = input;
       setQuote(q);
     } catch (e: any) {
       setError(e.message);
@@ -436,28 +526,95 @@ export default function Workspace() {
       setBusy(false);
     }
   }
+  function resetNewSale() {
+    setCart([]);
+    setCustomer(null);
+    setCustomerQuery('');
+    setCustomers([]);
+    setOfferIds([]);
+    setCouponCode('');
+    setManualDiscountValue('');
+    setManualDiscountType('%');
+    setExcludedPromotionIds([]);
+    setQuote(null);
+    setCartPricing(null);
+    setMethod(
+      methods.some((m) => m.id === 'cash')
+        ? 'cash'
+        : (methods.find((m) => m.id !== 'cashback' && m.id !== 'store_credit')
+            ?.id ?? 'cash'),
+    );
+    setSecondMethod(
+      methods.find(
+        (m) =>
+          m.id !== 'cash' && m.id !== 'cashback' && m.id !== 'store_credit',
+      )?.id ?? 'debit',
+    );
+    setSplit(false);
+    setSplitAmount('');
+    setReceived('');
+    setReference('');
+    setCreditBalance(0);
+    setSearch('');
+    setCategory('Todos');
+    setSelected(null);
+    setColor('');
+    setSize('');
+    reviewedInput.current = null;
+  }
+  function clearSubmittedSale() {
+    if (recoveryKey) localStorage.removeItem(recoveryKey);
+    submittedInput.current = null;
+    setPendingSale(null);
+  }
   async function confirm() {
     setBusy(true);
     setError('');
     try {
-      requestKey.current ||= crypto.randomUUID();
-      const result = await api('sales', {
-        ...paymentInput(quote?.base),
-        idempotencyKey: requestKey.current,
-      });
+      let pending = submittedInput.current;
+      if (!pending && localStorage.getItem(recoveryKey)) {
+        pending = JSON.parse(localStorage.getItem(recoveryKey)!);
+        submittedInput.current = pending;
+        setPendingSale(pending);
+        setQuote(pending?.quote ?? null);
+        throw new Error(
+          'Hay un cobro pendiente de otra pestaña. Recuperá primero ese ticket.',
+        );
+      }
+      if (!pending) {
+        if (!reviewedInput.current || !quote)
+          throw new Error('Revisá el pago antes de confirmar.');
+        pending = {
+          payload: {
+            ...reviewedInput.current,
+            expectedTotalMinor: quote.total,
+            idempotencyKey: crypto.randomUUID(),
+          },
+          quote,
+        };
+        // Persist before sending. Retrying or reloading must submit exactly the
+        // same payload and key until the server establishes the outcome.
+        localStorage.setItem(recoveryKey, JSON.stringify(pending));
+        submittedInput.current = pending;
+        setPendingSale(pending);
+      }
+      const result = await api('sales', pending.payload);
+      clearSubmittedSale();
+      resetNewSale();
       setReceipt(result);
       setModal('receipt');
-      setCart([]);
-      setCustomer(null);
-      setOfferIds([]);
-      setCouponCode('');
-      setManualDiscountValue('');
-      setExcludedPromotionIds([]);
-      setQuote(null);
-      requestKey.current = '';
-      await refresh();
+      await refresh().catch(() =>
+        setError(
+          'Venta registrada. No se pudo actualizar el catálogo; actualizá antes de la próxima venta.',
+        ),
+      );
       setSectionRevision((n) => n + 1);
     } catch (e: any) {
+      if (e instanceof ApiError && e.saleNotCommitted) {
+        clearSubmittedSale();
+        setQuote(null);
+        reviewedInput.current = null;
+      }
       setError(e.message);
     } finally {
       setBusy(false);
@@ -642,15 +799,22 @@ export default function Workspace() {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   const code = search.trim();
+                  if (!code) return;
                   const v = catalog.find(
                     (x) => x.barcode === code || x.sku === code,
                   );
                   if (v) add(v);
                   else if (filtered.length === 1) {
+                    setError('');
                     setSelected(filtered[0]);
                     setColor(filtered[0].variants[0].color);
                     setSize('');
-                  }
+                  } else
+                    setError(
+                      filtered.length
+                        ? 'Hay varios productos. Elegí la variante o escaneá su código exacto.'
+                        : `No se encontró el código “${code}”. Revisá el producto o buscá por nombre.`,
+                    );
                 }
               }}
               placeholder="Buscar producto (F2)"
@@ -912,7 +1076,6 @@ export default function Workspace() {
                                   : [x],
                               ),
                             );
-                            requestKey.current = '';
                           }}
                         >
                           <Minus size={12} />
@@ -929,14 +1092,13 @@ export default function Workspace() {
                       </div>
                     </div>
                     <div className="item-price">
-                      <strong>{money(i.price * i.quantity)}</strong>
+                      <strong>{money(currentPrice(i) * i.quantity)}</strong>
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         aria-label="Quitar producto"
                         onClick={() => {
                           setCart(cart.filter((x) => x.id !== i.id));
-                          requestKey.current = '';
                         }}
                       >
                         <Trash2 size={13} />
@@ -1045,11 +1207,7 @@ export default function Workspace() {
                 variant="outline"
                 disabled={!cart.length || busy}
                 onClick={() => {
-                  setCart([]);
-                  setOfferIds([]);
-                  setCouponCode('');
-                  setQuote(null);
-                  requestKey.current = '';
+                  if (!submittedInput.current) resetNewSale();
                 }}
               >
                 Vaciar
@@ -1172,7 +1330,7 @@ export default function Workspace() {
       <Dialog
         open={!!modal}
         onOpenChange={(o) => {
-          if (!o && !busy) {
+          if (!o && !busy && !submittedInput.current) {
             setModal('');
             setError('');
           }
@@ -1192,7 +1350,12 @@ export default function Workspace() {
               {
                 customer: 'Cliente de la venta',
                 payment: 'Cobrar venta',
-                receipt: 'Venta completada',
+                receipt:
+                  receipt?.status === 'refunded'
+                    ? 'Venta devuelta'
+                    : receipt?.status === 'partially_refunded'
+                      ? 'Venta con devolución parcial'
+                      : 'Venta completada',
                 recent: 'Ventas recientes',
                 'online-orders': 'Pedidos de la tienda online',
                 'online-order': onlineOrder
@@ -1311,7 +1474,22 @@ export default function Workspace() {
             </>
           )}
           {modal === 'payment' && (
-            <>
+            <fieldset className="pos-payment-fields" disabled={busy}>
+              {pendingSale && (
+                <output className="notice">
+                  El resultado de este cobro está pendiente. Reintentá la misma
+                  operación para recuperar el ticket sin duplicar la venta.
+                  Mantené esta pestaña abierta.
+                </output>
+              )}
+              {pricingPending && !pendingSale && (
+                <output>Actualizando precios y promociones…</output>
+              )}
+              {pricingError && !pendingSale && (
+                <p className="notice" role="alert">
+                  {pricingError}
+                </p>
+              )}
               <div className="payment-total">
                 <span>TOTAL A COBRAR</span>
                 <strong>{money(quote?.total ?? estimatedTotal)}</strong>
@@ -1344,15 +1522,19 @@ export default function Workspace() {
                     disabled={busy}
                     onClick={confirm}
                   >
-                    {busy ? 'Guardando venta…' : 'Confirmar venta'}
+                    {busy
+                      ? 'Guardando venta…'
+                      : pendingSale
+                        ? 'Reintentar y recuperar ticket'
+                        : 'Confirmar venta'}
                     <Check />
                   </Button>
                   <Button
                     variant="ghost"
-                    disabled={busy}
+                    disabled={busy || !!pendingSale}
                     onClick={() => {
                       setQuote(null);
-                      requestKey.current = '';
+                      reviewedInput.current = null;
                     }}
                   >
                     Volver al pago
@@ -1582,7 +1764,7 @@ export default function Workspace() {
                   </Button>
                 </>
               )}
-            </>
+            </fieldset>
           )}
           {modal === 'receipt' && receipt && (
             <>
@@ -1608,6 +1790,8 @@ export default function Workspace() {
                         {i.name}
                         <small>
                           {i.color} · {i.size} · {i.quantity} × {money(i.price)}
+                          {i.refunded > 0 &&
+                            ` · ${i.refunded} devuelta${i.refunded === 1 ? '' : 's'}`}
                         </small>
                       </span>
                       <strong>{money(i.quantity * i.price)}</strong>
@@ -1622,7 +1806,9 @@ export default function Workspace() {
                     <span>−{money(receipt.discount)}</span>
                   </div>
                   <div className="total-line">
-                    <span>Total</span>
+                    <span>
+                      {receipt.returned > 0 ? 'Total original' : 'Total'}
+                    </span>
                     <strong>{money(receipt.total)}</strong>
                   </div>
                   {receipt.payments?.map((payment: Row, index: number) => (
@@ -1631,6 +1817,31 @@ export default function Workspace() {
                       <span>{money(payment.amount)}</span>
                     </div>
                   ))}
+                  {receipt.returned > 0 && (
+                    <>
+                      <div className="summary-line">
+                        <span>Devuelto</span>
+                        <b>−{money(receipt.returned)}</b>
+                      </div>
+                      <div className="total-line">
+                        <span>Venta menos devoluciones</span>
+                        <strong>{money(receipt.remaining)}</strong>
+                      </div>
+                      {receipt.refunds?.map((r: Row) => (
+                        <div className="receipt-line" key={r.id}>
+                          <span>
+                            {date(r.createdAt)} · {r.reason}
+                            <small>
+                              {r.method === 'credit'
+                                ? 'Saldo a favor'
+                                : 'Medio original'}
+                            </small>
+                          </span>
+                          <b>−{money(r.amount)}</b>
+                        </div>
+                      ))}
+                    </>
+                  )}
                   <p className="quiet">
                     Comprobante interno · No válido como factura fiscal.
                   </p>
@@ -1720,7 +1931,7 @@ export default function Workspace() {
                   <option value="original">
                     Reintegrar por el medio original
                   </option>
-                  {receipt.customerName && (
+                  {receipt.customerId && (
                     <option value="credit">Emitir saldo a favor</option>
                   )}
                 </select>

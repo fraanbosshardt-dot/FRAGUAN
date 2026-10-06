@@ -83,6 +83,9 @@ export async function posOverview(a: Actor, raw: unknown) {
   ]);
   const gross = sales.reduce((n, s) => n + Number(s.total), 0);
   const returned = refunds.reduce((n, r) => n + Number(r.amount), 0);
+  const merchandise = sales.reduce((n, s) => n + Number(s.subtotal), 0);
+  const discounts = sales.reduce((n, s) => n + Number(s.discount), 0);
+  const surcharges = gross - (merchandise - discounts);
   const trend = [];
   for (let at = Date.parse(from); at < Date.parse(until); at += 86400000) {
     const day = new Date(at).toISOString().slice(0, 10);
@@ -98,9 +101,8 @@ export async function posOverview(a: Actor, raw: unknown) {
     );
     trend.push({
       day,
-      amount:
-        daySales.reduce((n, s) => n + Number(s.total), 0) -
-        dayRefunds.reduce((n, r) => n + Number(r.amount), 0),
+      amount: daySales.reduce((n, s) => n + Number(s.total), 0),
+      returned: dayRefunds.reduce((n, r) => n + Number(r.amount), 0),
       count: daySales.length,
     });
   }
@@ -112,6 +114,9 @@ export async function posOverview(a: Actor, raw: unknown) {
     products,
     trend,
     gross,
+    merchandise,
+    discounts,
+    surcharges,
     returned,
     net: gross - returned,
     tickets: sales.length,

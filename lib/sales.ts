@@ -132,8 +132,17 @@ export async function quote(
   actor?: Actor,
 ): Promise<any> {
   const data = quoteInput.parse(raw);
-  if (data.manualDiscountMinor && (!actor || !can(actor, 'promotions')))
+  if (
+    (data.manualDiscountMinor || data.manualDiscountBps) &&
+    (!actor || !can(actor, 'promotions'))
+  )
     throw new AppError(403, 'Tu usuario no puede aplicar descuentos manuales.');
+  if (data.manualDiscountMinor && data.manualDiscountBps)
+    throw new AppError(400, 'Elegí un importe o un porcentaje de descuento.');
+  if (
+    new Set(data.payments.map((p) => p.methodId)).size !== data.payments.length
+  )
+    throw new AppError(400, 'Elegí medios distintos para dividir el pago.');
   const unique = new Set(data.items.map((x) => x.variantId));
   if (unique.size !== data.items.length)
     throw new AppError(400, 'Agrupá las cantidades por variante.');
@@ -219,7 +228,10 @@ export async function quote(
     )
   )
     throw new AppError(403, 'El cupón no es válido para esta venta.');
-  const manualDiscount = data.manualDiscountMinor ?? 0;
+  const manualDiscount =
+    data.manualDiscountBps !== undefined
+      ? Math.round((subtotal * data.manualDiscountBps) / 10000)
+      : (data.manualDiscountMinor ?? 0);
   if (
     manualDiscount >= subtotal - commercialResult.discountTotalCents &&
     manualDiscount > 0
@@ -235,6 +247,11 @@ export async function quote(
       subtotal,
       discount,
       base,
+      items: items.map((item) => ({
+        id: item.id,
+        price: item.price,
+        stock: item.stock,
+      })),
       appliedDiscounts: commercialResult.appliedDiscounts,
     };
   if (data.payments.reduce((n, p) => n + p.baseMinor, 0) !== base)
@@ -321,6 +338,7 @@ const pricingInput = z
     promotionIds: saleInput.shape.promotionIds,
     couponCode: saleInput.shape.couponCode,
     manualDiscountMinor: saleInput.shape.manualDiscountMinor,
+    manualDiscountBps: saleInput.shape.manualDiscountBps,
     autoPromotions: saleInput.shape.autoPromotions,
     excludedPromotionIds: saleInput.shape.excludedPromotionIds,
     methodIds: z.array(z.string().trim().min(1).max(200)).min(1).max(4),
@@ -336,6 +354,7 @@ export async function priceCart(raw: unknown, actor?: Actor) {
       promotionIds: data.promotionIds,
       couponCode: data.couponCode,
       manualDiscountMinor: data.manualDiscountMinor,
+      manualDiscountBps: data.manualDiscountBps,
       autoPromotions: data.autoPromotions,
       excludedPromotionIds: data.excludedPromotionIds,
       payments: data.methodIds.map((methodId) => ({
@@ -350,6 +369,7 @@ export async function priceCart(raw: unknown, actor?: Actor) {
     subtotal: result.subtotal,
     discount: result.discount,
     base: result.base,
+    items: result.items,
     appliedDiscounts: result.appliedDiscounts.map((discount: any) => ({
       promotionId: discount.promotionId,
       name: discount.promotionName,
@@ -386,7 +406,7 @@ export async function saleDetail(a: Actor, saleId: string) {
     createdAt: string;
     [key: string]: unknown;
   }>(
-    'SELECT s.id,s.ticket,s.sellerId,s.createdAt,s.subtotal,s.discount,s.total,s.status,c.name AS customerName,c.surname AS customerSurname,u.name AS sellerName FROM sales s LEFT JOIN customers c ON c.id=s.customerId JOIN users u ON u.id=s.sellerId WHERE s.id=?',
+    'SELECT s.id,s.ticket,s.sellerId,s.customerId,s.createdAt,s.subtotal,s.discount,s.total,s.status,c.name AS customerName,c.surname AS customerSurname,u.name AS sellerName FROM sales s LEFT JOIN customers c ON c.id=s.customerId JOIN users u ON u.id=s.sellerId WHERE s.id=?',
     saleId,
   );
   const recent = Number(
@@ -413,9 +433,57 @@ export async function saleDetail(a: Actor, saleId: string) {
     'SELECT p.amount,p.reference,m.name FROM payments p JOIN payment_methods m ON m.id=p.methodId WHERE p.saleId=?',
     saleId,
   );
-  return { ...s, items, payments };
+  const refunds = await rows<{
+    id: string;
+    amount: number;
+    reason: string;
+    method: string;
+    createdAt: string;
+  }>(
+    'SELECT id,amount,reason,method,createdAt FROM refunds WHERE saleId=? ORDER BY createdAt',
+    saleId,
+  );
+  const returned = refunds.reduce(
+    (sum, refund) => sum + Number(refund.amount),
+    0,
+  );
+  return {
+    ...s,
+    items,
+    payments,
+    refunds,
+    returned,
+    remaining: Number(s.total) - returned,
+  };
 }
 export async function confirmSale(a: Actor, raw: unknown) {
+  const state = { attempted: false, existing: true };
+  try {
+    return await executeSale(a, raw, state);
+  } catch (error) {
+    // Only the service knows whether a commit was attempted. A lost response
+    // or post-commit read error must keep the client's original request key.
+    if (!state.attempted && !state.existing) {
+      const known =
+        error instanceof AppError
+          ? error
+          : new AppError(
+              error instanceof Error && error.name === 'ZodError' ? 400 : 409,
+              error instanceof Error && error.name === 'ZodError'
+                ? 'Revisá los campos ingresados.'
+                : 'No se registró la venta. Actualizá los datos y revisá el cobro.',
+            );
+      known.headers = { ...known.headers, 'X-Sale-Not-Committed': '1' };
+      throw known;
+    }
+    throw error;
+  }
+}
+async function executeSale(
+  a: Actor,
+  raw: unknown,
+  state: { attempted: boolean; existing: boolean },
+) {
   const data = saleInput.parse(raw);
   const hash = Array.from(
     new Uint8Array(
@@ -435,13 +503,20 @@ export async function confirmSale(a: Actor, raw: unknown) {
     'SELECT id,requestHash,sellerId FROM sales WHERE idempotencyKey=?',
     data.idempotencyKey,
   );
+  state.existing = Boolean(previous);
   if (previous) {
+    state.existing = true;
     if (previous.sellerId !== a.id || previous.requestHash !== hash)
       throw new AppError(409, 'La operación ya existe con otros datos.');
     return saleDetail(a, previous.id);
   }
-  const { idempotencyKey, ...input } = data;
+  const { idempotencyKey, expectedTotalMinor, ...input } = data;
   const q = await quote(input, false, a);
+  if (expectedTotalMinor !== undefined && q.total !== expectedTotalMinor)
+    throw new AppError(
+      409,
+      'El importe cambió. Revisá los precios y el pago antes de confirmar.',
+    );
   const session = await one<{ id: string }>(
     'SELECT id FROM cash_sessions WHERE closedAt IS NULL',
   );
@@ -623,9 +698,11 @@ export async function confirmSale(a: Actor, raw: unknown) {
     auditStatement(a.id, 'Venta confirmada', saleId, null, {
       total: q.total,
       manualDiscountMinor: data.manualDiscountMinor ?? 0,
+      manualDiscountBps: data.manualDiscountBps ?? 0,
     }),
   );
   try {
+    state.attempted = true;
     await db().batch(commands);
   } catch (e) {
     const duplicate = await one<{

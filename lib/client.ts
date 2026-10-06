@@ -1,6 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
 export type Row = Record<string, any>;
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public saleNotCommitted = false,
+  ) {
+    super(message);
+  }
+}
 export async function api<T = any>(
   resource: string,
   body?: unknown,
@@ -13,7 +22,11 @@ export async function api<T = any>(
   });
   const data: any = await r.json();
   if (!r.ok)
-    throw new Error(data.error || 'No se pudo completar la operación.');
+    throw new ApiError(
+      data.error || 'No se pudo completar la operación.',
+      r.status,
+      r.headers.get('X-Sale-Not-Committed') === '1',
+    );
   return data;
 }
 export const money = (n: number = 0) =>

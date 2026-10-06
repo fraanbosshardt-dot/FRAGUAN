@@ -6,30 +6,11 @@ import { Input } from '@/components/ui/input';
 import { api, date, money, Row } from '@/lib/client';
 import { LoadingState } from '@/components/loading-state';
 import { printCommerce } from '@/lib/printing';
-
-function today() {
-  return new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
-}
-function period(key: string) {
-  const end = today();
-  const day = (offset: number) =>
-    new Date(Date.parse(end + 'T12:00:00Z') - offset * 86400000)
-      .toISOString()
-      .slice(0, 10);
-  return {
-    from:
-      key === 'ayer'
-        ? day(1)
-        : key === '7'
-          ? day(6)
-          : key === '30'
-            ? day(29)
-            : key === 'mes'
-              ? end.slice(0, 7) + '-01'
-              : end,
-    to: key === 'ayer' ? day(1) : end,
-  };
-}
+import {
+  posDay as today,
+  posPeriod as period,
+  promotionStatus,
+} from '@/lib/pos-display';
 
 export function PosSections({
   view,
@@ -44,6 +25,7 @@ export function PosSections({
 }) {
   const [range, setRange] = useState(period('hoy'));
   const [preset, setPreset] = useState('hoy');
+  const [currentDay, setCurrentDay] = useState(today);
   const [data, setData] = useState<Row | null>(null);
   const [promotions, setPromotions] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +35,20 @@ export function PosSections({
   const [revision, setRevision] = useState(0);
   const [kind, setKind] = useState('percentage');
   const canManage = session.permissions?.includes('promotions');
+  useEffect(() => {
+    const update = () => setCurrentDay(today());
+    const timer = setInterval(update, 30000);
+    window.addEventListener('focus', update);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', update);
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, []);
+  useEffect(() => {
+    if (preset) setRange(period(preset));
+  }, [currentDay, preset]);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -211,8 +207,15 @@ export function PosSections({
                 <li key={p.id}>
                   <span>
                     <b>{p.name}</b>{' '}
-                    <span className={'pos-badge ' + (p.active ? 'active' : '')}>
-                      {p.active ? 'Activa' : 'Pausada'}
+                    <span
+                      className={
+                        'pos-badge ' +
+                        (promotionStatus(p, currentDay) === 'Vigente'
+                          ? 'active'
+                          : '')
+                      }
+                    >
+                      {promotionStatus(p, currentDay)}
                     </span>
                     <small>
                       {date(p.startsAt)} — {date(p.endsAt)}
@@ -256,7 +259,10 @@ export function PosSections({
                     endsAt: fields.get('endsAt'),
                     ...(coupon ? { couponCode: fields.get('couponCode') } : {}),
                   };
-                  if (await savePromotion('create', payload)) form.reset();
+                  if (await savePromotion('create', payload)) {
+                    form.reset();
+                    setKind('percentage');
+                  }
                 }}
               >
                 <label htmlFor="pos-promo-name">
@@ -357,7 +363,7 @@ export function PosSections({
               <>
                 <div className="pos-day-stats">
                   {[
-                    ['Vendido neto', money(data.net)],
+                    ['Vendido bruto', money(data.gross)],
                     ['Ventas', data.tickets],
                     ['Ticket promedio', money(data.average)],
                     ['Prendas vendidas', data.units],
@@ -369,9 +375,38 @@ export function PosSections({
                     </article>
                   ))}
                 </div>
+                <details className="pos-gross-breakdown pos-report-card">
+                  <summary>¿Qué incluye el vendido bruto? Ver desglose</summary>
+                  <p className="quiet">
+                    Total de las ventas registradas en el período, con
+                    descuentos y recargos. Las devoluciones se muestran aparte;
+                    no se restan costos ni comisiones de los medios.
+                  </p>
+                  {[
+                    ['Productos antes de descuentos', money(data.merchandise)],
+                    ['Descuentos aplicados', '−' + money(data.discounts)],
+                    ['Recargos de los medios', '+' + money(data.surcharges)],
+                    ['Vendido bruto', money(data.gross)],
+                    [
+                      'Devoluciones registradas en el período',
+                      '−' + money(data.returned),
+                    ],
+                    ['Ventas menos devoluciones', money(data.net)],
+                  ].map(([label, value]) => (
+                    <div className="summary-line" key={label}>
+                      <span>{label}</span>
+                      <b>{value}</b>
+                    </div>
+                  ))}
+                  <small>
+                    Una devolución puede corresponder a una venta de otro
+                    período. El saldo a favor utilizado también forma parte del
+                    total de ventas.
+                  </small>
+                </details>
                 <div className="pos-report-columns">
                   <article className="pos-report-card">
-                    <h2>Ventas por día</h2>
+                    <h2>Vendido bruto por día</h2>
                     <div className="pos-sales-chart">
                       {bars.map((r: Row) => (
                         <button

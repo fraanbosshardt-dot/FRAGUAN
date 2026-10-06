@@ -141,7 +141,7 @@ export function AdminSidebar({
       <nav aria-label="Áreas de administración">
         {navigationGroups.map((group) => {
           const items = group.items.filter(([key]) =>
-            permissions.includes(key),
+            permissions.includes(key === 'stock-movements' ? 'stock' : key),
           );
           if (!items.length) return null;
           const primary = items.slice(0, group.primaryCount);

@@ -20,6 +20,7 @@ export const saleInput = z
     promotionIds: z.array(text).max(10).optional(),
     couponCode: z.string().trim().max(50).optional(),
     manualDiscountMinor: money.optional(),
+    manualDiscountBps: z.number().int().min(0).max(10000).optional(),
     autoPromotions: z.boolean().optional(),
     excludedPromotionIds: z.array(text).max(100).optional(),
     payments: z
@@ -36,9 +37,13 @@ export const saleInput = z
       .min(1)
       .max(4),
     idempotencyKey: z.uuid(),
+    expectedTotalMinor: money.optional(),
   })
   .strict();
-export const quoteInput = saleInput.omit({ idempotencyKey: true });
+export const quoteInput = saleInput.omit({
+  idempotencyKey: true,
+  expectedTotalMinor: true,
+});
 export const customerInput = z
   .object({
     name: text,

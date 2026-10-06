@@ -15,7 +15,7 @@ export function printCommerce(kind: 'receipt' | 'labels' | 'pos-day') {
     kind === 'labels'
       ? 'Etiquetas FRAGUAN'
       : kind === 'pos-day'
-        ? 'Resumen diario FRAGUAN'
+        ? 'Resumen de ventas FRAGUAN'
         : 'Ticket FRAGUAN';
   frame.style.cssText = 'position:fixed;width:0;height:0;border:0';
   document.body.appendChild(frame);
@@ -29,6 +29,7 @@ export function printCommerce(kind: 'receipt' | 'labels' | 'pos-day') {
     .receipt{max-width:72mm;margin:auto}.receipt p{text-align:center}
     .receipt-line,.total-line,.summary-line{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed #aaa;break-inside:avoid}
     .pos-day-stats{display:flex;flex-wrap:wrap;gap:16px}.pos-day-stats b{display:block}.pos-day-report .recent-list button{display:flex;justify-content:space-between;gap:16px;border:0;border-bottom:1px dashed #aaa;background:#fff;color:#000;width:100%;padding:8px 0;text-align:left}.pos-day-report svg{display:none}small{display:block;font-size:10px} .receipt-footer{text-align:center;margin-top:12px}
+    .pos-report-card{margin:16px 0;break-inside:avoid}.pos-report-card h2{text-align:left;font-size:16px}.pos-records{list-style:none;padding:0}.pos-records li,.pos-records button{width:100%;display:flex;justify-content:space-between;gap:16px;text-align:left;border:0;background:#fff;color:#000;padding:6px 0}.pos-records li{border-bottom:1px dashed #aaa;break-inside:avoid}.pos-meter{display:flex;justify-content:space-between;gap:12px;padding:6px 0}.pos-meter meter{display:none}.pos-sales-chart{display:flex;align-items:end;gap:4px;flex-wrap:wrap}.pos-sales-chart button{display:flex;flex-direction:column;align-items:center;border:0;background:#fff;color:#000;min-width:50px;max-width:80px;font-size:9px;break-inside:avoid}.pos-sales-chart i{display:block;width:16px;background:#aaa;print-color-adjust:exact}.pos-gross-breakdown summary{font-weight:bold}.pos-gross-breakdown small{margin-top:8px}
     .label-sheet{display:grid;grid-template-columns:repeat(2,1fr);gap:5mm;break-after:page}
     .label-sheet:last-child{break-after:auto}
     .print-label{display:flex;flex-direction:column;justify-content:center;gap:1mm;height:55mm;padding:3mm;border:1px solid #ccc;text-align:center;break-inside:avoid;overflow-wrap:anywhere}
@@ -46,7 +47,13 @@ export function printCommerce(kind: 'receipt' | 'labels' | 'pos-day') {
         .forEach((label) => page.appendChild(label.cloneNode(true)));
       doc.body.appendChild(page);
     }
-  } else doc.body.appendChild(source.cloneNode(true));
+  } else {
+    const copy = source.cloneNode(true) as Element;
+    copy
+      .querySelectorAll('details')
+      .forEach((detail) => detail.setAttribute('open', ''));
+    doc.body.appendChild(copy);
+  }
   frame.contentWindow!.addEventListener('afterprint', () => frame.remove(), {
     once: true,
   });
