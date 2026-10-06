@@ -117,12 +117,9 @@ export const DEFAULT_CUSTOMER_INTELLIGENCE_CONFIG: CustomerIntelligenceConfig =
       cashbackExpiryDays: 365,
       benefits: {
         FRAGUAN: [],
-        Silver: ['Acceso a promociones del Club'],
-        Gold: ['Promociones exclusivas'],
-        Black: [
-          'Acceso anticipado',
-          'Beneficio de cumpleaños',
-        ],
+        Silver: [],
+        Gold: [],
+        Black: [],
       },
     },
     historyLimit: 50,

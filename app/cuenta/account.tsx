@@ -7,7 +7,6 @@ import {
   AnimatedForm,
   RollingText,
 } from '@/components/store-motion';
-import TarjetaClub from '@/components/fraguan-animaciones/TarjetaClub';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import {
   StoreProduct,
@@ -57,7 +56,6 @@ export default function Account({
   const [busy, setBusy] = useState(false);
   const [catalog, setCatalog] = useState<StoreProduct[]>([]);
   const [profileState, setProfileState] = useState('');
-  const [createdCustomer, setCreatedCustomer] = useState<any>(null);
   const { favorites } = useStoreFavorites();
   const load = () =>
     storeApi('store-account').then((result) => {
@@ -95,8 +93,7 @@ export default function Account({
           marketingConsent: Boolean(f.get('marketingConsent')),
         }),
       });
-      const account = await load();
-      if (mode === 'register') setCreatedCustomer(account.customer);
+      await load();
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -109,7 +106,6 @@ export default function Account({
       body: JSON.stringify({ action: 'logout' }),
     });
     dispatchEvent(new CustomEvent('fraguan-account', { detail: null }));
-    setCreatedCustomer(null);
     setData({ customer: null, orders: [], addresses: [], benefits: [] });
   }
   async function updateProfile(event: React.SyntheticEvent<HTMLFormElement>) {
@@ -161,18 +157,11 @@ export default function Account({
     </AnimatedLabel>
   );
   return (
-    <section className={`sec lt pg${data?.customer ? '' : ' account-entry'}`}>
+    <section className={`sec lt pg ${data?.customer ? 'account-profile' : 'account-entry'}`}>
       {data?.customer ? (
-        <>
-          <b className="k">CLUB FRAGUAN</b>
-          <h1 className="d h1">Hola, {data.customer.name}</h1>
-          {createdCustomer && (
-            <TarjetaClub
-              nombre={[createdCustomer.name, createdCustomer.surname]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          )}
+        <div className="account-profile-content">
+          <b className="k">MI FRAGUAN</b>
+          <h1 className="d account-profile-title">Hola, {data.customer.name}</h1>
           <div className="pills">
             <button
               className={panel === 'datos' ? 'on' : ''}
@@ -204,11 +193,11 @@ export default function Account({
           {panel === 'datos' && (
             <>
               <p style={{ marginBottom: 16 }}>
-                Estos datos se completan solos cuando pagás.
+                Completá tus datos para tus próximas compras. También podés actualizarlos al hacer un pedido.
               </p>
               <AnimatedForm
                 onSubmit={updateProfile}
-                style={{ maxWidth: 680 }}
+                className="account-profile-form"
                 key={data.customer.id}
               >
                 <div className="row">
@@ -248,18 +237,20 @@ export default function Account({
                     autoComplete: 'address-level2',
                     maxLength: 60,
                   })}
-                  <AnimatedLabel className="fi">
-                    PROVINCIA
+                  <label className="fi account-province">
+                    <span>PROVINCIA</span>
                     <select
                       name="province"
-                      defaultValue={primaryAddress?.province || 'Córdoba'}
+                      defaultValue={primaryAddress?.province || ''}
+                      autoComplete="address-level1"
                       required
                     >
+                      <option value="" disabled>Elegí tu provincia</option>
                       {ARGENTINA_PROVINCES.map((p) => (
                         <option key={p}>{p}</option>
                       ))}
                     </select>
-                  </AnimatedLabel>
+                  </label>
                   {field(
                     'CÓD. POSTAL',
                     'postalCode',
@@ -289,10 +280,11 @@ export default function Account({
               </AnimatedForm>
               <div className="design-benefits">
                 <b className="k">TUS BENEFICIOS</b>
-                <p>{data.customer.level || 'Club FRAGUAN'}</p>
-                {data.benefits?.map((b: string) => (
-                  <p key={b}>{b}</p>
-                ))}
+                {data.benefits?.length ? (
+                  data.benefits.map((b: string) => <p key={b}>{b}</p>)
+                ) : (
+                  <p>Todavía no tenemos beneficios disponibles para vos.</p>
+                )}
               </div>
               {data.addresses?.length > 1 && (
                 <details>
@@ -340,7 +332,7 @@ export default function Account({
           {panel === 'favoritos' && (
             <DesignProductGrid products={savedProducts} />
           )}
-        </>
+        </div>
       ) : (
         <div className="account-entry-content">
           <b className="k">MI FRAGUAN</b>
