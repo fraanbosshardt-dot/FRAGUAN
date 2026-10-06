@@ -161,7 +161,7 @@ export default function Account({
     </AnimatedLabel>
   );
   return (
-    <section className="sec lt pg">
+    <section className={`sec lt pg${data?.customer ? '' : ' account-entry'}`}>
       {data?.customer ? (
         <>
           <b className="k">CLUB FRAGUAN</b>
@@ -342,29 +342,41 @@ export default function Account({
           )}
         </>
       ) : (
-        <>
-          <h1 className="d h1">Tu cuenta</h1>
-          <div className="pills">
+        <div className="account-entry-content">
+          <b className="k">MI FRAGUAN</b>
+          <h1 className="d account-entry-title">
+            {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+          </h1>
+          <p className="account-entry-description">
+            {mode === 'login'
+              ? 'Entrá para ver tus pedidos, tus favoritos y tus datos.'
+              : 'Creá tu cuenta con Google y guardá tus pedidos, favoritos y datos para tu próxima compra.'}
+          </p>
+          <div className="account-entry-tabs" aria-label="Opciones de acceso">
             <button
+              type="button"
+              aria-pressed={mode === 'login'}
               className={mode === 'login' ? 'on' : ''}
               onClick={() => {
                 setMode('login');
                 setError('');
               }}
             >
-              INGRESAR
+              Iniciar sesión
             </button>
             <button
+              type="button"
+              aria-pressed={mode === 'register'}
               className={mode === 'register' ? 'on' : ''}
               onClick={() => {
                 setMode('register');
                 setError('');
               }}
             >
-              CREAR CUENTA
+              Crear cuenta
             </button>
           </div>
-          <AnimatedForm onSubmit={submit} style={{ maxWidth: 560 }} key={mode}>
+          <AnimatedForm onSubmit={submit} key={mode}>
             {passwordAuthEnabled && (
               <>
                 {mode === 'register' && (
@@ -426,13 +438,16 @@ export default function Account({
               </>
             )}
             {accountGoogleClientId && (
-              <div style={{ marginTop: 24 }}>
+              <div className="account-entry-google">
+                {passwordAuthEnabled && <p className="account-entry-separator">O continuá con Google</p>}
                 <GoogleSignIn
                   clientId={accountGoogleClientId}
                   onError={setError}
+                  buttonText={mode === 'login' ? 'signin_with' : 'signup_with'}
                 />
               </div>
             )}
+            {!data && !error && <output>Cargando opciones de acceso…</output>}
             {!passwordAuthEnabled && error && (
               <p className="err" role="alert">
                 {error}
@@ -448,8 +463,15 @@ export default function Account({
               <a href="/informacion/terminos">Términos</a> y la{' '}
               <a href="/informacion/privacidad">Política de privacidad</a>.
             </p>
+            {!passwordAuthEnabled && accountGoogleClientId && (
+              <p className="account-entry-help">
+                {mode === 'login'
+                  ? '¿Es tu primera vez? Elegí Crear cuenta. Si continuás con Google y todavía no tenés cuenta, se crea automáticamente.'
+                  : 'Si ya tenés una cuenta con este email, Google te permite entrar sin crear otra.'}
+              </p>
+            )}
           </AnimatedForm>
-        </>
+        </div>
       )}
     </section>
   );

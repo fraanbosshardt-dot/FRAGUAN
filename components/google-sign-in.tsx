@@ -19,11 +19,13 @@ export function GoogleSignIn({
   onError,
   resource = 'store-account',
   successPath,
+  buttonText = 'continue_with',
 }: {
   clientId: string;
   onError: (message: string) => void;
   resource?: 'store-account' | 'internal-auth';
   successPath?: string;
+  buttonText?: 'continue_with' | 'signin_with' | 'signup_with';
 }) {
   const target = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,7 @@ export function GoogleSignIn({
         theme: 'outline',
         size: 'large',
         shape: 'rectangular',
-        text: 'continue_with',
+        text: buttonText,
         logo_alignment: 'left',
         width: Math.min(390, target.current.clientWidth || 390),
         locale: 'es',
@@ -77,7 +79,7 @@ export function GoogleSignIn({
     script.onload = render;
     script.onerror = () => onError('No pudimos cargar Google Login.');
     document.head.appendChild(script);
-  }, [clientId, onError, resource, successPath]);
+  }, [clientId, onError, resource, successPath, buttonText]);
 
   if (!clientId)
     return <button className="store-google-placeholder" type="button" disabled>Continuar con Google · listo para configurar</button>;

@@ -493,13 +493,17 @@ try {
     await initialize(pool);
     await installIntegrity(pool);
   } else if (command === 'verify') await verifyPostgres(pool);
+  else if (command === 'migrate') {
+    await installIntegrity(pool);
+    await verifyPostgres(pool);
+  }
   else if (command === 'status') await status(pool);
   else if (command === 'smoke') await smoke(pool);
   else if (command === 'import-sqlite')
     await importSqlite(pool, process.argv[3]);
   else
     throw new Error(
-      'Uso: postgres-database.mjs <init|verify|status|smoke|import-sqlite> [archivo.sqlite]',
+      'Uso: postgres-database.mjs <init|migrate|verify|status|smoke|import-sqlite> [archivo.sqlite]',
     );
 } finally {
   await pool.end();

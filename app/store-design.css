@@ -1045,6 +1045,61 @@
   .design-form-note a {
     text-decoration: underline;
   }
+  .account-entry {
+    min-height: 0;
+    padding: clamp(40px, 7vh, 72px) 24px clamp(48px, 8vh, 80px);
+  }
+  .account-entry-content {
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+  }
+  .account-entry-title {
+    font-size: clamp(40px, 7vw, 64px);
+    line-height: 1.12;
+    margin: 14px 0 18px;
+  }
+  .account-entry-description {
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 440px;
+  }
+  .account-entry-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 28px 0;
+    border-bottom: 1px solid var(--sand);
+  }
+  .account-entry-tabs button {
+    min-height: 48px;
+    padding: 10px 8px;
+    font-weight: 700;
+    border-bottom: 3px solid transparent;
+  }
+  .account-entry-tabs button.on {
+    color: var(--acc);
+    border-bottom-color: var(--acc);
+  }
+  .account-entry-tabs button:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+  }
+  .account-entry-google {
+    margin-top: 20px;
+  }
+  .account-entry-google .store-google-signin > div {
+    place-items: start;
+  }
+  .account-entry-separator {
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+  .account-entry-help {
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
   .design-text-title {
     font-size: 17px;
     font-weight: 700;
