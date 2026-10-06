@@ -1,6 +1,7 @@
 'use client';
 import './checkout-proposal.css';
 import { CheckoutPanel } from '@/components/checkout-panel';
+import { FREE_SHIPPING_MINIMUM_MINOR } from '@/lib/store-shipping-policy';
 import BarraEnvioGratis from '@/components/fraguan-animaciones/BarraEnvioGratis';
 import TarjetaClub from '@/components/fraguan-animaciones/TarjetaClub';
 import {
@@ -17,7 +18,6 @@ import {
   Odometer,
   RollingText,
   CheckoutSteps,
-  AnimatedLabel,
   useAnimatedFields,
 } from '@/components/store-motion';
 import PagoAprobado from '@/components/PagoAprobado';
@@ -36,6 +36,17 @@ import {
 } from '@/lib/store-client';
 
 const STORE_PICKUP_POSTAL_CODE = '2661';
+function CheckoutField({
+  children,
+  className = '',
+  ...props
+}: React.ComponentProps<'label'>) {
+  return (
+    <label className={'cp-field ' + className} {...props}>
+      {children}
+    </label>
+  );
+}
 const recipientAutocomplete = {
   firstName: 'given-name',
   surname: 'family-name',
@@ -531,7 +542,7 @@ export default function Checkout({
                 </dl>
               </div>
               <form onSubmit={report} className="store-report-transfer">
-                <AnimatedLabel>
+                <CheckoutField>
                   ¿Ya transferiste?
                   <input
                     name="transactionId"
@@ -540,7 +551,7 @@ export default function Checkout({
                     maxLength={80}
                     placeholder="Número de operación bancaria"
                   />
-                </AnimatedLabel>
+                </CheckoutField>
                 <button disabled={busy}>
                   {busy ? 'Registrando…' : 'Avisar transferencia'}{' '}
                   <ArrowRight />
@@ -639,7 +650,7 @@ export default function Checkout({
           >
             <div className="cp-email">
               <div className="cp-email-row">
-                <AnimatedLabel>
+                <CheckoutField>
                   Email
                   <input
                     name="email"
@@ -655,7 +666,7 @@ export default function Checkout({
                     }}
                     required
                   />
-                </AnimatedLabel>
+                </CheckoutField>
                 {!session?.customer && (
                   <button
                     type="button"
@@ -762,8 +773,8 @@ export default function Checkout({
               ))}
             </fieldset>
             <div className="store-fields cp-recipient">
-              <AnimatedLabel>
-                NOMBRE
+              <CheckoutField>
+                Nombre
                 <input
                   name="firstName"
                   type="text"
@@ -772,9 +783,9 @@ export default function Checkout({
                   maxLength={80}
                   required
                 />
-              </AnimatedLabel>
-              <AnimatedLabel>
-                APELLIDO
+              </CheckoutField>
+              <CheckoutField>
+                Apellido
                 <input
                   name="surname"
                   type="text"
@@ -783,9 +794,9 @@ export default function Checkout({
                   maxLength={80}
                   required
                 />
-              </AnimatedLabel>
+              </CheckoutField>
 
-              <AnimatedLabel>
+              <CheckoutField>
                 Teléfono
                 <input
                   name="phone"
@@ -795,8 +806,8 @@ export default function Checkout({
                   maxLength={25}
                   required
                 />
-              </AnimatedLabel>
-              <AnimatedLabel>
+              </CheckoutField>
+              <CheckoutField>
                 DNI <small>Para identificar la entrega</small>
                 <input
                   name="document"
@@ -810,7 +821,7 @@ export default function Checkout({
                       .slice(0, 11);
                   }}
                 />
-              </AnimatedLabel>
+              </CheckoutField>
             </div>
             <fieldset
               className="store-fields cp-address"
@@ -818,7 +829,7 @@ export default function Checkout({
               disabled={shippingMethod === 'pickup'}
             >
               {!!session?.addresses?.length && (
-                <AnimatedLabel className="wide">
+                <CheckoutField className="wide">
                   Dirección guardada
                   <select
                     value={selectedAddressId}
@@ -840,10 +851,10 @@ export default function Checkout({
                   <small>
                     Podés modificar estos datos solo para esta compra.
                   </small>
-                </AnimatedLabel>
+                </CheckoutField>
               )}
               <input type="hidden" name="country" value="Argentina" />
-              <AnimatedLabel>
+              <CheckoutField>
                 Código postal
                 <input
                   name="postalCode"
@@ -857,8 +868,8 @@ export default function Checkout({
                   maxLength={4}
                   required
                 />
-              </AnimatedLabel>
-              <AnimatedLabel>
+              </CheckoutField>
+              <CheckoutField>
                 Dirección
                 <input
                   name="address"
@@ -867,16 +878,16 @@ export default function Checkout({
                   maxLength={100}
                   required
                 />
-              </AnimatedLabel>
-              <AnimatedLabel>
+              </CheckoutField>
+              <CheckoutField>
                 Piso / departamento <small>Opcional</small>
                 <input
                   name="addressExtra"
                   autoComplete="address-line2"
                   maxLength={50}
                 />
-              </AnimatedLabel>
-              <AnimatedLabel>
+              </CheckoutField>
+              <CheckoutField>
                 Ciudad
                 <input
                   name="city"
@@ -884,8 +895,8 @@ export default function Checkout({
                   maxLength={60}
                   required
                 />
-              </AnimatedLabel>
-              <AnimatedLabel>
+              </CheckoutField>
+              <CheckoutField>
                 Provincia
                 <select
                   name="province"
@@ -925,7 +936,7 @@ export default function Checkout({
                     <option key={province}>{province}</option>
                   ))}
                 </select>
-              </AnimatedLabel>
+              </CheckoutField>
             </fieldset>
             {shipping && (
               <p className="store-shipping-result">
@@ -937,10 +948,10 @@ export default function Checkout({
               </p>
             )}
             {session?.customer && shippingMethod !== 'pickup' && (
-              <AnimatedLabel className="store-checkout-consent">
+              <CheckoutField className="store-checkout-consent">
                 <input name="saveAddress" type="checkbox" defaultChecked />
                 <span>Guardar esta dirección en Mi FRAGUAN.</span>
-              </AnimatedLabel>
+              </CheckoutField>
             )}
             <button type="button" className="cp-go" onClick={advance}>
               <RollingText>CONTINUAR AL PAGO</RollingText>
@@ -995,7 +1006,7 @@ export default function Checkout({
             <details className="cp-optional">
               <summary>¿Tenés un código de descuento?</summary>{' '}
               <div className="store-coupon">
-                <AnimatedLabel htmlFor="coupon">¿Tenés un cupón?</AnimatedLabel>
+                <CheckoutField htmlFor="coupon">¿Tenés un cupón?</CheckoutField>
                 <div>
                   <input
                     id="coupon"
@@ -1035,7 +1046,7 @@ export default function Checkout({
             </details>
             {!session?.customer && (
               <>
-                <AnimatedLabel className="design-consent">
+                <CheckoutField className="design-consent">
                   <input
                     type="checkbox"
                     checked={createAccount}
@@ -1050,9 +1061,9 @@ export default function Checkout({
                         : 'El registro todavía no está habilitado. Podés continuar como invitado.'}
                     </small>
                   </span>
-                </AnimatedLabel>
+                </CheckoutField>
                 {createAccount && (
-                  <AnimatedLabel className="fi">
+                  <CheckoutField className="fi">
                     CONTRASEÑA (8+)
                     <input
                       name="accountPassword"
@@ -1062,11 +1073,11 @@ export default function Checkout({
                       maxLength={128}
                       required
                     />
-                  </AnimatedLabel>
+                  </CheckoutField>
                 )}
               </>
             )}
-            <AnimatedLabel className="store-checkout-consent cp-terms">
+            <CheckoutField className="store-checkout-consent cp-terms">
               <input name="termsConsent" type="checkbox" required />
               <span>
                 Confirmo que los datos son correctos y acepto los{' '}
@@ -1087,8 +1098,8 @@ export default function Checkout({
                 </a>
                 .
               </span>
-            </AnimatedLabel>
-            <AnimatedLabel className="store-checkout-consent">
+            </CheckoutField>
+            <CheckoutField className="store-checkout-consent">
               <input
                 name="marketingRecovery"
                 type="checkbox"
@@ -1131,7 +1142,7 @@ export default function Checkout({
               <span>
                 Quiero recibir ayuda por email si dejo esta compra sin terminar.
               </span>
-            </AnimatedLabel>
+            </CheckoutField>
             {!session?.customer &&
               !emailVerificationToken &&
               !createAccount && (
@@ -1275,11 +1286,16 @@ export default function Checkout({
                   </dd>
                 </div>
               </dl>
-              <BarraEnvioGratis
-                subtotal={subtotal / 100}
-                meta={150000}
-                ready={hydrated}
-              />
+              {shippingMethod !== 'pickup' && (
+                <BarraEnvioGratis
+                  subtotal={
+                    Math.max(0, (pricing?.subtotal ?? subtotal) - discount) /
+                    100
+                  }
+                  meta={FREE_SHIPPING_MINIMUM_MINOR / 100}
+                  ready={hydrated}
+                />
+              )}
               <a className="cp-edit cp-back-cart" href="/carrito">
                 Modificar carrito →
               </a>

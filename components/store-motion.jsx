@@ -26,32 +26,17 @@ export function RollingText({ children }) {
 }
 
 export function Odometer({ value }) {
-  const text = '$ ' + Math.round(value).toLocaleString('es-AR');
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  const text = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
   return (
-    <span className="fg-odo" aria-label={text}>
-      <span className="fg-sr-only">{text}</span>
-      {Array.from(text).map((char, i) =>
-        /\d/.test(char) ? (
-          <span className="fg-odo__col" key={i} aria-hidden="true">
-            <span
-              className="fg-odo__strip"
-              style={{
-                transform: `translateY(-${ready ? Number(char) * 10 : 0}%)`,
-              }}
-            >
-              {Array.from({ length: 10 }, (_, d) => (
-                <span key={d}>{d}</span>
-              ))}
-            </span>
-          </span>
-        ) : (
-          <span className="fg-odo__sep" key={i} aria-hidden="true">
-            {char === ' ' ? '\u00a0' : char}
-          </span>
-        ),
-      )}
+    <span className="fg-odo">
+      <span className="fg-odo__value" key={text}>
+        {text}
+      </span>
     </span>
   );
 }

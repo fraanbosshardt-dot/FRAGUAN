@@ -33,6 +33,7 @@ import {
   trackStore,
 } from '@/lib/store-client';
 import { StoreProductTrust } from '@/components/store-product-trust';
+import { FREE_SHIPPING_MINIMUM_MINOR } from '@/lib/store-shipping-policy';
 const route = (h) =>
   h?.startsWith('#/')
     ? h
@@ -72,7 +73,7 @@ const html = htm.bind((tag, props, ...children) => {
 const C = createContext(null),
   useC = () => useContext(C);
 const $ = (n) => '$ ' + Math.round(n).toLocaleString('es-AR'),
-  FREE = 150000,
+  FREE = FREE_SHIPPING_MINIMUM_MINOR / 100,
   TONE = { Blanco: 'bone', Arena: 'sand', Negro: 'ink', Celeste: 'b2' },
   go = (h) => location.assign(route(h));
 const T = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
@@ -626,7 +627,11 @@ function CartPage() {
     </section>`;
   return html`<section class="sec lt pg">
     <h1 class="d h1">Tu carrito</h1>
-    <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} ready=${ready} />
+    <${BarraEnvioGratis}
+      subtotal=${sub - Math.floor(sub * 10) / 100}
+      meta=${FREE}
+      ready=${ready}
+    />
     ${
       cart.length
         ? html`<div class="ck">
@@ -680,7 +685,11 @@ function Cart({ o, close }) {
       <header class="d">
         Tu carrito<button onClick=${close}>CERRAR ✕</button>
       </header>
-      <${BarraEnvioGratis} subtotal=${sub} meta=${FREE} ready=${ready} />
+      <${BarraEnvioGratis}
+        subtotal=${sub - Math.floor(sub * 10) / 100}
+        meta=${FREE}
+        ready=${ready}
+      />
       <div class="it" key=${o ? 'open' : 'closed'}>
         <${Lines} stagger=${o} />
       </div>

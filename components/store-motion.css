@@ -44,13 +44,34 @@
 }
 .fraguan-design .fg-odo {
   position: relative;
-  display: inline-flex;
+  display: inline-block;
   height: 1.3em;
   line-height: 1.3;
   overflow: hidden;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  letter-spacing: 0;
+}
+.fraguan-design .fg-odo__value {
+  display: inline-block;
+  letter-spacing: 0;
+  animation: fg-amount-update 350ms var(--fg-ease);
+}
+@keyframes fg-amount-update {
+  from {
+    opacity: 0.35;
+    transform: translateY(0.18em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design .fg-odo__value {
+    animation: none;
+  }
 }
 .fraguan-design .fg-odo__col {
   display: inline-block;
