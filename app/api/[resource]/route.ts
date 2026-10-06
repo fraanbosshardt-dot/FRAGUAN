@@ -642,7 +642,7 @@ export async function GET(
         }),
       );
     }
-    requirePermission(a, resource);
+    requirePermission(a, resource === 'stock-movements' ? 'stock' : resource);
     if (['dashboard', 'insights'].includes(resource))
       return reply(await dashboard());
     if (resource === 'products' || resource === 'stock')
