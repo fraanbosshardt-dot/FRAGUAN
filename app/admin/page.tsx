@@ -66,7 +66,9 @@ export default async function Administration({
   // execute JavaScript receive the real overview; browser actions still hydrate.
   let initialData: Awaited<ReturnType<typeof dashboard>> | null = null;
   try {
-    initialData = await dashboard();
+    // Match the existing JSON API contract: PostgreSQL date columns may arrive
+    // as Date objects, while chart labels expect ISO strings in the browser.
+    initialData = JSON.parse(JSON.stringify(await dashboard()));
   } catch {
     // Keep the interactive panel available to retry through its existing API.
   }
