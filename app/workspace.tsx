@@ -1230,40 +1230,48 @@ export default function Workspace() {
                       {money(surcharge(firstBase, selectedMethod))}
                     </p>
                   )}
-                  <label>Promociones autorizadas</label>
-                  <div className="promotion-options">
-                    {offers.map((promotion) => {
-                      const selectedPromotion = offerIds.includes(promotion.id);
-                      return (
-                        <Button
-                          key={promotion.id}
-                          type="button"
-                          variant={selectedPromotion ? 'default' : 'outline'}
-                          onClick={() =>
-                            setOfferIds(
-                              selectedPromotion
-                                ? offerIds.filter((id) => id !== promotion.id)
-                                : [...offerIds, promotion.id],
-                            )
-                          }
-                        >
-                          {promotion.name}
-                        </Button>
-                      );
-                    })}
-                    {!offers.length && (
-                      <p className="quiet">No hay promociones vigentes.</p>
-                    )}
-                  </div>
-                  <label>
-                    Cupón (opcional)
-                    <Input
-                      value={couponCode}
-                      onChange={(event) => setCouponCode(event.target.value)}
-                      placeholder="Ingresar código"
-                      maxLength={50}
-                    />
-                  </label>
+                  <details className="pos-discounts">
+                    <summary>
+                      Descuentos y cupones
+                      {offerIds.length || couponCode ? ' · seleccionados' : ''}
+                    </summary>
+                    <label>Promociones autorizadas</label>
+                    <div className="promotion-options">
+                      {offers.map((promotion) => {
+                        const selectedPromotion = offerIds.includes(
+                          promotion.id,
+                        );
+                        return (
+                          <Button
+                            key={promotion.id}
+                            type="button"
+                            variant={selectedPromotion ? 'default' : 'outline'}
+                            onClick={() =>
+                              setOfferIds(
+                                selectedPromotion
+                                  ? offerIds.filter((id) => id !== promotion.id)
+                                  : [...offerIds, promotion.id],
+                              )
+                            }
+                          >
+                            {promotion.name}
+                          </Button>
+                        );
+                      })}
+                      {!offers.length && (
+                        <p className="quiet">No hay promociones vigentes.</p>
+                      )}
+                    </div>
+                    <label>
+                      Cupón (opcional)
+                      <Input
+                        value={couponCode}
+                        onChange={(event) => setCouponCode(event.target.value)}
+                        placeholder="Ingresar código"
+                        maxLength={50}
+                      />
+                    </label>
+                  </details>
                   <Button
                     variant="ghost"
                     onClick={() => {
@@ -1308,15 +1316,34 @@ export default function Workspace() {
                   )}
                   {(method === 'cash' ||
                     (split && secondMethod === 'cash')) && (
-                    <label>
-                      Efectivo recibido
-                      <Input
-                        inputMode="decimal"
-                        value={received}
-                        onChange={(e) => setReceived(e.target.value)}
-                        placeholder="Ej. 60000"
-                      />
-                    </label>
+                    <>
+                      <label>
+                        Efectivo recibido
+                        <Input
+                          inputMode="decimal"
+                          value={received}
+                          onChange={(e) => setReceived(e.target.value)}
+                          placeholder="Ej. 60000"
+                        />
+                      </label>
+                      <div className="pos-cash-quick">
+                        {[
+                          ...new Set([
+                            Math.ceil(estimatedTotal / 100),
+                            Math.ceil(estimatedTotal / 1000000) * 10000,
+                            Math.ceil(estimatedTotal / 5000000) * 50000,
+                          ]),
+                        ].map((amount) => (
+                          <Button
+                            key={amount}
+                            variant="outline"
+                            onClick={() => setReceived(String(amount))}
+                          >
+                            {money(amount * 100)}
+                          </Button>
+                        ))}
+                      </div>
+                    </>
                   )}
                   {method !== 'cash' && (
                     <label>
