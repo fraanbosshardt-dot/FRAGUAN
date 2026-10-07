@@ -107,6 +107,7 @@ export const customers = table(
   (t) => [index('customer_phone').on(t.phone)],
 );
 export const methods = table('payment_methods', {
+  destination: text().notNull().default(''),
   id: text().primaryKey(),
   name: text().notNull(),
   surchargeBps: integer().notNull().default(0),
@@ -201,6 +202,7 @@ export const saleItems = table(
   ],
 );
 export const payments = table('payments', {
+  destination: text().notNull().default(''),
   id: text().primaryKey(),
   saleId: text()
     .notNull()

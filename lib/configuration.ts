@@ -6,6 +6,7 @@ import { resolveVariantCodes } from './variant-codes';
 const methodFields = z
   .object({
     name: text,
+    destination: z.string().trim().max(200).default(''),
     surchargeBps: z.number().int().min(0).max(10000),
     commissionBps: z.number().int().min(0).max(10000),
     days: z.number().int().min(0).max(365),
@@ -19,13 +20,14 @@ export async function createMethod(a: Actor, raw: unknown) {
     key = id();
   await db().batch([
     statement(
-      'INSERT INTO payment_methods(id,name,surchargeBps,commissionBps,days,installments) VALUES (?,?,?,?,?,?)',
+      'INSERT INTO payment_methods(id,name,surchargeBps,commissionBps,days,installments,destination) VALUES (?,?,?,?,?,?,?)',
       key,
       x.name,
       x.surchargeBps,
       x.commissionBps,
       x.days,
       x.installments,
+      x.destination,
     ),
     auditStatement(a.id, 'Crear medio de pago', key, null, x),
   ]);
@@ -60,7 +62,7 @@ export async function configureMethod(a: Actor, raw: unknown) {
   requirePermission(a, 'settings');
   const x = methodFields.extend({ id: text }).parse(raw);
   const before = await one(
-    'SELECT id,name,surchargeBps,commissionBps,days,installments FROM payment_methods WHERE id=?',
+    'SELECT id,name,surchargeBps,commissionBps,days,installments,destination FROM payment_methods WHERE id=?',
     x.id,
   );
   if (!before) throw new AppError(404, 'Medio de pago no encontrado.');
@@ -77,12 +79,13 @@ export async function configureMethod(a: Actor, raw: unknown) {
     );
   await db().batch([
     statement(
-      'UPDATE payment_methods SET name=?,surchargeBps=?,commissionBps=?,days=?,installments=? WHERE id=?',
+      'UPDATE payment_methods SET name=?,surchargeBps=?,commissionBps=?,days=?,installments=?,destination=? WHERE id=?',
       x.name,
       x.surchargeBps,
       x.commissionBps,
       x.days,
       x.installments,
+      x.destination,
       x.id,
     ),
     auditStatement(a.id, 'Configurar medio de pago', x.id, before, x),
@@ -109,9 +112,11 @@ export async function addVariant(a: Actor, raw: unknown) {
     .parse(raw);
   if (x.ideal < x.minimum)
     throw new AppError(400, 'El stock ideal no puede ser menor al mínimo.');
-  const product = await one<{ name: string }>('SELECT name FROM products WHERE id=? AND active=1', x.productId);
-  if (!product)
-    throw new AppError(404, 'Producto no encontrado.');
+  const product = await one<{ name: string }>(
+    'SELECT name FROM products WHERE id=? AND active=1',
+    x.productId,
+  );
+  if (!product) throw new AppError(404, 'Producto no encontrado.');
   const key = id();
   const codes = await resolveVariantCodes(x);
   await db().batch([
@@ -145,7 +150,19 @@ export async function addVariant(a: Actor, raw: unknown) {
     ),
     auditStatement(a.id, 'Crear variante', key, null, { ...x, ...codes }),
   ]);
-  return { ok: true, id: key, variant: { id: key, productId: x.productId,
-    name: product.name, color: x.color, size: x.size, price: x.price,
-    sku: codes.sku, barcode: codes.barcode, stock: x.stock } };
+  return {
+    ok: true,
+    id: key,
+    variant: {
+      id: key,
+      productId: x.productId,
+      name: product.name,
+      color: x.color,
+      size: x.size,
+      price: x.price,
+      sku: codes.sku,
+      barcode: codes.barcode,
+      stock: x.stock,
+    },
+  };
 }

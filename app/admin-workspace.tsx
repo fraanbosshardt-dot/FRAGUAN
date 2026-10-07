@@ -399,18 +399,23 @@ export default function Admin({
               : {}),
           }
         : type === 'variant' && row
-          ? { price: Number(row.price ?? 0) / 100, cost: Number(row.cost ?? 0) / 100,
-              stock: 0, minimum: row.minimum ?? 3, ideal: row.ideal ?? 6 }
-        : type === 'labels'
-          ? { labelCount: 1 }
-          : type === 'storage-transfer' && row
-            ? {
-                variantId: row.id,
-                fromLocationId: row.locationId,
-                toLocationId: row.toLocationId || '',
-                quantity: row.suggested || 1,
-              }
-            : {},
+          ? {
+              price: Number(row.price ?? 0) / 100,
+              cost: Number(row.cost ?? 0) / 100,
+              stock: 0,
+              minimum: row.minimum ?? 3,
+              ideal: row.ideal ?? 6,
+            }
+          : type === 'labels'
+            ? { labelCount: 1 }
+            : type === 'storage-transfer' && row
+              ? {
+                  variantId: row.id,
+                  fromLocationId: row.locationId,
+                  toLocationId: row.toLocationId || '',
+                  quantity: row.suggested || 1,
+                }
+              : {},
     );
     setSelected(row);
     setError('');
@@ -475,15 +480,27 @@ export default function Admin({
       const result = await api(resource, payload);
       if (['products', 'variants'].includes(resource) && result.variant) {
         setSelected(result.variant);
-        setForm({ labelCount: Math.min(100, Math.max(1, Number(result.variant.stock) || 1)), justCreated: true });
+        setForm({
+          labelCount: Math.min(
+            100,
+            Math.max(1, Number(result.variant.stock) || 1),
+          ),
+          justCreated: true,
+        });
         setModal('labels');
-        setSuccess('Prenda cargada correctamente. Sus etiquetas están listas para imprimir.');
+        setSuccess(
+          'Prenda cargada correctamente. Sus etiquetas están listas para imprimir.',
+        );
       } else {
         setModal('');
         setSuccess('Operación guardada correctamente.');
       }
       // A failed list refresh must not make a committed creation look unsaved.
-      await load().catch(() => setError('La operación se guardó, pero no pudimos actualizar el listado. Usá Actualizar.'));
+      await load().catch(() =>
+        setError(
+          'La operación se guardó, pero no pudimos actualizar el listado. Usá Actualizar.',
+        ),
+      );
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -637,13 +654,33 @@ export default function Admin({
       value?: any;
     },
   ) {
-    const suggest = section === 'products' &&
+    const suggest =
+      section === 'products' &&
       ['create', 'variant', 'edit-product', 'edit-variant'].includes(modal) &&
-      ['name', 'subcategory', 'brand', 'season', 'collection', 'location', 'color', 'size'].includes(name);
-    const suggestions = suggest ? Array.from(new Set(list
-      .filter((row) => row.active !== 0 && typeof row[name] === 'string' && row[name].trim())
-      .map((row) => String(row[name]).trim())))
-      .sort((a, b) => a.localeCompare(b, 'es')) : [];
+      [
+        'name',
+        'subcategory',
+        'brand',
+        'season',
+        'collection',
+        'location',
+        'color',
+        'size',
+      ].includes(name);
+    const suggestions = suggest
+      ? Array.from(
+          new Set(
+            list
+              .filter(
+                (row) =>
+                  row.active !== 0 &&
+                  typeof row[name] === 'string' &&
+                  row[name].trim(),
+              )
+              .map((row) => String(row[name]).trim()),
+          ),
+        ).sort((a, b) => a.localeCompare(b, 'es'))
+      : [];
     const suggestionId = `product-suggestions-${name}`;
     return (
       <label key={name}>
@@ -663,17 +700,26 @@ export default function Admin({
           </select>
         ) : (
           <>
-          <Input
-            type={options?.type ?? 'text'}
-            step={options?.type === 'number' ? 'any' : undefined}
-            value={form[name] ?? options?.value ?? ''}
-            required={!options?.optional}
-            list={suggestions.length ? suggestionId : undefined}
-            onChange={(e) => setForm({ ...form, [name]: e.target.value })}
-          />
-          {suggestions.length > 0 && <datalist id={suggestionId} aria-label={`Sugerencias de ${label}`}>
-            {suggestions.map((value) => <option key={value} value={value}>{value}</option>)}
-          </datalist>}
+            <Input
+              type={options?.type ?? 'text'}
+              step={options?.type === 'number' ? 'any' : undefined}
+              value={form[name] ?? options?.value ?? ''}
+              required={!options?.optional}
+              list={suggestions.length ? suggestionId : undefined}
+              onChange={(e) => setForm({ ...form, [name]: e.target.value })}
+            />
+            {suggestions.length > 0 && (
+              <datalist
+                id={suggestionId}
+                aria-label={`Sugerencias de ${label}`}
+              >
+                {suggestions.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </datalist>
+            )}
           </>
         )}
       </label>
@@ -885,6 +931,7 @@ export default function Admin({
         await mutate(selected?.id ? 'configure-method' : 'create-method', {
           ...(selected?.id ? { id: selected.id } : {}),
           name: form.name ?? selected?.name,
+          destination: form.destination ?? selected?.destination ?? '',
           surchargeBps: Math.round(
             Number(form.surcharge ?? selected?.surchargeBps / 100) * 100,
           ),
@@ -2495,6 +2542,7 @@ export default function Admin({
                       <th>Medio</th>
                       <th>Recargo al cliente</th>
                       <th>Comisión del cobro</th>
+                      <th>Destino del cobro</th>
                       <th>Acreditación</th>
                       <th>Cuotas</th>
                       <th>Disponible</th>
@@ -2507,6 +2555,7 @@ export default function Admin({
                         <td>{m.name}</td>
                         <td>{m.surchargeBps / 100}%</td>
                         <td>{m.commissionBps / 100}%</td>
+                        <td>{m.destination || 'Sin configurar'}</td>
                         <td>
                           {m.days === 0 ? 'Al instante' : `${m.days} días`}
                         </td>
@@ -3556,10 +3605,13 @@ export default function Admin({
           ) : modal === 'labels' && selected ? (
             <div className="quick-form">
               <div className="no-print">
-                {form.justCreated && <output className="quiet">
-                  Prenda cargada: {selected.name} · {selected.color} · {selected.size}.
-                  Código generado: {selected.barcode}. Elegí cuántas etiquetas imprimir.
-                </output>}
+                {form.justCreated && (
+                  <output className="quiet">
+                    Prenda cargada: {selected.name} · {selected.color} ·{' '}
+                    {selected.size}. Código generado: {selected.barcode}. Elegí
+                    cuántas etiquetas imprimir.
+                  </output>
+                )}
                 {field('labelCount', 'Cantidad de etiquetas', {
                   type: 'number',
                   value: 1,
@@ -4591,6 +4643,14 @@ export default function Admin({
               {modal === 'method' && (
                 <>
                   {field('name', 'Nombre', { value: selected?.name })}
+                  {field('destination', 'Destino del cobro', {
+                    value: selected?.destination,
+                    optional: true,
+                  })}
+                  <p>
+                    El destino identifica dónde se recibe el dinero; no confirma
+                    acreditaciones ni calcula IVA o retenciones.
+                  </p>
                   {field('surcharge', 'Recargo al cliente (%)', {
                     type: 'number',
                     value: selected?.surchargeBps / 100,
@@ -4837,10 +4897,33 @@ export default function Admin({
                   {section === 'products' && (
                     <>
                       {field('name', 'Nombre')}
-                      {list.some((row) => row.active !== 0 && row.name?.trim().toLocaleLowerCase('es') === String(form.name ?? '').trim().toLocaleLowerCase('es')) && (
+                      {list.some(
+                        (row) =>
+                          row.active !== 0 &&
+                          row.name?.trim().toLocaleLowerCase('es') ===
+                            String(form.name ?? '')
+                              .trim()
+                              .toLocaleLowerCase('es'),
+                      ) && (
                         <div className="quiet">
-                          Ya existe un producto con ese nombre. Si es la misma prenda, agregá su talle/color.
-                          <Button type="button" onClick={() => openForm('variant', list.find((row) => row.active !== 0 && row.name?.trim().toLocaleLowerCase('es') === String(form.name ?? '').trim().toLocaleLowerCase('es')) ?? null)}>
+                          Ya existe un producto con ese nombre. Si es la misma
+                          prenda, agregá su talle/color.
+                          <Button
+                            type="button"
+                            onClick={() =>
+                              openForm(
+                                'variant',
+                                list.find(
+                                  (row) =>
+                                    row.active !== 0 &&
+                                    row.name?.trim().toLocaleLowerCase('es') ===
+                                      String(form.name ?? '')
+                                        .trim()
+                                        .toLocaleLowerCase('es'),
+                                ) ?? null,
+                              )
+                            }
+                          >
                             Agregar talle/color al producto existente
                           </Button>
                         </div>

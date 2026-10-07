@@ -1552,15 +1552,18 @@ export default function Workspace() {
                 <>
                   <div className="payment-methods">
                     {methods
-                      .filter(
-                        (m) =>
-                          m.id !== 'cashback' &&
-                          (m.id !== 'store_credit' || Boolean(customer)),
+                      .filter((m) =>
+                        ['debit', 'credit', 'cash', 'transfer'].includes(m.id),
                       )
                       .map((m) => (
                         <Button
                           key={m.id}
-                          variant={method === m.id ? 'default' : 'outline'}
+                          variant={
+                            method === m.id ||
+                            (m.id === 'debit' && method === 'point-prepaid')
+                              ? 'default'
+                              : 'outline'
+                          }
                           onClick={() => {
                             setMethod(m.id);
                             setOfferIds([]);
@@ -1573,6 +1576,36 @@ export default function Workspace() {
                         </Button>
                       ))}
                   </div>
+                  {(method === 'debit' || method === 'point-prepaid') && (
+                    <label>
+                      Tipo de tarjeta
+                      <select
+                        value={method}
+                        onChange={(e) => {
+                          setMethod(e.target.value);
+                          setOfferIds([]);
+                        }}
+                      >
+                        {methods
+                          .filter((m) =>
+                            ['debit', 'point-prepaid'].includes(m.id),
+                          )
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.id === 'point-prepaid' ? 'Prepaga' : 'Débito'}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  )}
+                  {selectedMethod?.destination && (
+                    <p className="variant-info">
+                      Destino: {selectedMethod.destination}
+                      {split && second?.destination
+                        ? ' · Resto: ' + second.destination
+                        : ''}
+                    </p>
+                  )}
                   {selectedMethod && selectedMethod.installments > 1 && (
                     <p className="variant-info">
                       {selectedMethod?.installments} cuotas de{' '}

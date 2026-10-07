@@ -419,7 +419,7 @@ export async function GET(
       requirePermission(a, 'pos');
       return reply(
         await rows(
-          'SELECT id,name,surchargeBps,installments FROM payment_methods WHERE active=1',
+          'SELECT id,name,surchargeBps,installments,destination FROM payment_methods WHERE active=1',
         ),
       );
     }
@@ -786,7 +786,7 @@ export async function GET(
           )?.value ?? 0,
         ),
         methods: await rows(
-          'SELECT id,name,surchargeBps,commissionBps,days,installments,active FROM payment_methods',
+          'SELECT id,name,surchargeBps,commissionBps,days,installments,active,destination FROM payment_methods',
         ),
       });
     throw new AppError(403, 'Acceso denegado.');

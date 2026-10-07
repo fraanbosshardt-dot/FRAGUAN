@@ -31,6 +31,7 @@ type Variant = {
   brand: string;
 };
 type Method = {
+  destination: string;
   id: string;
   name: string;
   surchargeBps: number;
@@ -298,7 +299,7 @@ export async function quote(
   const payments = [];
   for (const p of data.payments) {
     const m = await one<Method>(
-      'SELECT id,name,surchargeBps,commissionBps,days,installments FROM payment_methods WHERE id=? AND active=1',
+      'SELECT id,name,surchargeBps,commissionBps,days,installments,destination FROM payment_methods WHERE id=? AND active=1',
       p.methodId,
     );
     if (!m) throw new AppError(400, 'Medio de pago no disponible.');
@@ -392,6 +393,7 @@ export function publicQuote(q: Awaited<ReturnType<typeof quote>>) {
     })),
     payments: q.payments.map((p: any) => ({
       methodId: p.id,
+      destination: p.destination,
       name: p.name,
       amount: p.amount,
       installments: p.installments,
@@ -430,7 +432,7 @@ export async function saleDetail(a: Actor, saleId: string) {
     saleId,
   );
   const payments = await rows(
-    'SELECT p.amount,p.reference,m.name FROM payments p JOIN payment_methods m ON m.id=p.methodId WHERE p.saleId=?',
+    'SELECT p.amount,p.reference,p.destination,m.name FROM payments p JOIN payment_methods m ON m.id=p.methodId WHERE p.saleId=?',
     saleId,
   );
   const refunds = await rows<{
@@ -574,7 +576,7 @@ async function executeSale(
   for (const payment of q.payments) {
     commands.push(
       statement(
-        'INSERT INTO payments(id,saleId,methodId,amount,commission,net,dueAt,reference) VALUES (?,?,?,?,?,?,?,?)',
+        'INSERT INTO payments(id,saleId,methodId,amount,commission,net,dueAt,reference,destination) VALUES (?,?,?,?,?,?,?,?,?)',
         id(),
         saleId,
         payment.id,
@@ -583,6 +585,7 @@ async function executeSale(
         payment.net,
         payment.dueAt,
         payment.reference,
+        payment.destination,
       ),
     );
     if (payment.id !== 'store_credit' && payment.id !== 'cashback')
