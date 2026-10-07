@@ -37,7 +37,7 @@ formulario con datos productivos. No se enviaron campañas de prueba a clientes.
 
 | Prioridad | Evidencia | Riesgo / siguiente trabajo |
 |---|---|---|
-| Alta | `lib/sales.ts`, venta lee `v.stock`; reservas online en `lib/online-store.ts` | POS no descuenta reservas vigentes al validar disponibilidad. Puede vender una unidad comprometida online. Unificar validación atómica de disponibilidad en POS/online, incluyendo controles PostgreSQL. No corregido en esta revisión. |
+| Corregido | `lib/sales.ts`, catálogo POS y migraciones `0024` / PostgreSQL `0005` | POS descuenta reservas vigentes al mostrar/cotizar. La base valida disponibilidad al guardar, compartiendo bloqueo de variante con creación de reservas. Un pedido online exige su reserva válida y excluye únicamente la propia; las demás siguen protegidas. |
 | Alta | `lib/online-store.ts`, `MAX(orderNumber)+1` | Dos pedidos simultáneos pueden elegir el mismo número. Usar secuencia/contador atómico y probar concurrencia. Riesgo por lectura de código; no provocado con compras reales. |
 | Media | `lib/online-store.ts`, preferencia de pago posterior a persistir pedido | Sin Mercado Pago configurado, puede quedar pedido pendiente sin enlace para pagar. Integración pospuesta; controlar disponibilidad del método y ofrecer recuperación/reintento desde Admin. |
 | Media | `lib/store-growth.ts`, reseña comprobada por email y orderId | Reforzar prueba de compra con sesión o token del pedido antes de marcar una reseña como verificada. No se observó explotación. |
@@ -111,3 +111,29 @@ proveedor, presupuesto diario y carrito vacío. TypeScript y lint de archivos
 modificados. Builds finales de API Railway y frontend Vercel completados con éxito.
 La prueba HTTP pública inicial es anterior
 a esta publicación; no certifica las interacciones privadas de Admin.
+
+## Stock compartido — continuación del 07/10/2026
+
+Se conserva stock físico en inventario; POS muestra el disponible sin reservas
+vigentes. Reservas vencidas/canceladas dejan de inmovilizar unidades. El guard de
+venta protege el guardado aun si el catálogo/cotización quedaron desactualizados;
+rollback de ventas, artículos, pagos y movimientos si falta disponibilidad.
+Precio online conservado según el pedido y costo validado según variante.
+La confirmación de pago consume la reserva dentro de la misma transacción.
+
+Pruebas nuevas: seis escenarios con servicios reales y SQLite descartable,
+incluyendo dos llamadas simultáneas y reserva creada después de cotizar.
+`scripts/test-shared-stock-postgres.mjs` ejecuta los guards PostgreSQL reales
+en un motor local WASM y prueba disponibilidad, reserva propia, vencimiento,
+precio y rollback. Este motor tiene una sola conexión: no certifica interleaving
+de dos conexiones PostgreSQL productivas. La protección PostgreSQL utiliza
+el bloqueo de variante existente en creación de reservas y venta (`FOR UPDATE`).
+No se insertan datos ni se hacen cobros de prueba en producción. Las migraciones
+solo reemplazan la regla; no alteran cantidades ni ventas históricas.
+
+La suite antigua `tests-cashback-regressions.mjs` contiene fixtures que solicitan
+un medio cashback actualmente deshabilitado; al importarla, esas pruebas fallan
+por «Medio de pago no disponible». No se reactivó ese medio en producción.
+Las nuevas pruebas usan un fixture independiente con los métodos vigentes.
+Runtime opcional del test PostgreSQL: `@electric-sql/pglite`, instalado solamente
+en `outputs/pg-stock-tests`; no se añade al despliegue ni a dependencias del negocio.

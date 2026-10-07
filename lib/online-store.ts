@@ -1943,10 +1943,12 @@ export async function confirmOnlinePayment(
       order.total,
       timestamp,
       paymentReference,
-      (await one<{ destination: string }>(
-        'SELECT destination FROM payment_methods WHERE id=?',
-        order.paymentMethod === 'transfer' ? 'transfer' : 'credit',
-      ))?.destination ?? '',
+      (
+        await one<{ destination: string }>(
+          'SELECT destination FROM payment_methods WHERE id=?',
+          order.paymentMethod === 'transfer' ? 'transfer' : 'credit',
+        )
+      )?.destination ?? '',
     ),
     statement(
       'INSERT INTO cash_movements(id,sessionId,kind,amount,methodId,reference,actorId,createdAt) VALUES (?,NULL,?,?,?,?,?,?)',
@@ -2066,6 +2068,15 @@ export async function confirmOnlinePayment(
       throw new AppError(
         409,
         'La referencia de pago ya fue utilizada o el pedido ya fue acreditado.',
+      );
+    if (
+      /insufficient_stock|online_stock_unavailable/i.test(
+        String((cause as Error)?.message ?? cause),
+      )
+    )
+      throw new AppError(
+        409,
+        'La reserva o el stock cambió. Revisá el pedido antes de confirmar el pago. No se guardó la venta.',
       );
     throw cause;
   }

@@ -431,7 +431,8 @@ export async function GET(
       requirePermission(a, 'pos');
       return reply(
         await rows(
-          'SELECT v.id,v.productId,p.name,p.category,p.brand,v.sku,v.barcode,v.color,v.size,v.price,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE p.active=1 ORDER BY p.name,p.id,v.sku',
+          "SELECT v.id,v.productId,p.name,p.category,p.brand,v.sku,v.barcode,v.color,v.size,v.price,MAX(0,v.stock-COALESCE((SELECT SUM(r.quantity) FROM stock_reservations r WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0)) AS stock FROM variants v JOIN products p ON p.id=v.productId WHERE p.active=1 ORDER BY p.name,p.id,v.sku",
+          now(),
         ),
       );
     }

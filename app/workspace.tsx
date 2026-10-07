@@ -615,6 +615,7 @@ export default function Workspace() {
         clearSubmittedSale();
         setQuote(null);
         reviewedInput.current = null;
+        await refresh().catch(() => undefined);
       }
       setError(e.message);
     } finally {
@@ -921,7 +922,7 @@ export default function Workspace() {
           </div>
           <div className="catalog-caption">
             <span>{filtered.length} productos disponibles</span>
-            <span>Elegí un producto para seleccionar color y talle</span>
+            <span>El stock disponible excluye reservas online</span>
           </div>
           <div className="product-grid">
             {filtered.map((p) => (
@@ -1310,7 +1311,7 @@ export default function Workspace() {
                   (v: Row) => v.color === color && v.size === size,
                 )?.price,
               )}{' '}
-              · Stock:{' '}
+              · Stock disponible:{' '}
               {
                 selected?.variants.find(
                   (v: Row) => v.color === color && v.size === size,

@@ -124,6 +124,8 @@ horarios y presupuesto desde Crecimiento online. Inicial: 30 recordatorios/día,
 900/mes; posponer a 80 envíos/día o 2.400/mes registrados para dejar margen.
 Conteos locales orientativos; contrastar con Resend. Si volumen requiere pago,
 el dueño acepta evaluarlo; no contratar automáticamente.
-CyberMonday reversible no implementado. Priorizar stock compartido POS/reservas
-online y número de pedido concurrente. SEO/Search Console y decisiones pendientes
+CyberMonday reversible no implementado. Stock compartido POS/reservas online
+corregido: disponibilidad descontada, validación transaccional y reserva propia
+al confirmar pago; detalles y pruebas en REVISION_SISTEMA.md.
+Siguiente prioridad: número de pedido concurrente. SEO/Search Console y decisiones pendientes
 detallados en REVISION_SISTEMA.md. Mantener Meta Ads y Google Maps para después.

@@ -151,11 +151,15 @@ export async function quote(
   let subtotal = 0;
   for (const line of data.items) {
     const v = await one<Variant>(
-      'SELECT v.id,p.name,p.category,p.brand,v.color,v.size,v.price,v.cost,v.stock FROM variants v JOIN products p ON p.id=v.productId WHERE v.id=? AND p.active=1',
+      "SELECT v.id,p.name,p.category,p.brand,v.color,v.size,v.price,v.cost,MAX(0,v.stock-COALESCE((SELECT SUM(r.quantity) FROM stock_reservations r WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0)) AS stock FROM variants v JOIN products p ON p.id=v.productId WHERE v.id=? AND p.active=1",
+      now(),
       line.variantId,
     );
     if (!v || v.stock < line.quantity)
-      throw new AppError(409, 'Una variante no tiene stock suficiente.');
+      throw new AppError(
+        409,
+        'Una variante no tiene stock disponible suficiente. Las reservas online no están disponibles para vender en el local.',
+      );
     items.push({ ...v, quantity: line.quantity });
     subtotal += v.price * line.quantity;
   }
@@ -718,6 +722,20 @@ async function executeSale(
     );
     if (duplicate?.sellerId === a.id && duplicate.requestHash === hash)
       return saleDetail(a, duplicate.id);
+    if (
+      /insufficient_stock|online_stock_unavailable/i.test(
+        String((e as Error)?.message ?? e),
+      )
+    )
+      throw new AppError(
+        409,
+        'El stock disponible cambió o quedó reservado online. Actualizá las prendas y revisá el cobro. No se guardó la venta.',
+        ['P0001', 'ERR_SQLITE_ERROR', 'SQLITE_CONSTRAINT_TRIGGER'].includes(
+          String((e as { code?: string })?.code),
+        )
+          ? { 'X-Sale-Not-Committed': '1' }
+          : undefined,
+      );
     throw e;
   }
   return saleDetail(a, saleId);
