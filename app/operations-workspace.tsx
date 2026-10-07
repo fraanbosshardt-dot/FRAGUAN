@@ -1,4 +1,5 @@
 'use client';
+import { ScheduledCollections } from '@/components/scheduled-collections';
 import { useCallback, useEffect, useState } from 'react';
 import { api, money, minor, date, Row, useSession } from '@/lib/client';
 import { Button } from '@/components/ui/button';
@@ -240,6 +241,7 @@ export default function Operations({
       )}
       {section === 'banking' && data && (
         <>
+          {data.collections && <ScheduledCollections data={data.collections} refresh={load} />}
           <p>
             Saldo registrado de cada cuenta. Contrastá los movimientos con el
             extracto bancario antes de conciliarlos.

@@ -123,3 +123,23 @@ Los valores fueron indicados por el dueño para su cuenta; no se reemplazan por 
 En **Productos y stock → Crear producto** o **Agregar variante**, dejar vacíos SKU y código de barras para asignarlos automáticamente al guardar. Cada variante de talle y color obtiene su propio código interno numérico. Para reimprimir etiquetas se conserva el mismo código, sin generar otro. La opción **Imprimir etiquetas** permite indicar la cantidad y ver nombre, precio, talle, color, SKU y barras.
 
 La impresora confirmada es una **Nictom IT02**, con papel de **58 mm** y ancho de impresión de **48 mm**. Las etiquetas se preparan en una sola columna para el rollo, con 5 mm a cada lado y altura adaptable al contenido. En el controlador elegir papel de 58 mm; en el diálogo de impresión usar escala 100%, sin encabezados ni pies de página. El sistema no ordena un corte automático. Queda pendiente la prueba física de impresión y lectura con la impresora y el lector del local.
+
+## Acreditaciones según plazo
+
+En **Bancos**, la sección **Acreditaciones según plazo** separa cobros pendientes
+ y acreditados automáticamente según la fecha guardada al cobrar. Débito: 2 días;
+crédito: 10 días; prepaga: 3 días, con los plazos configurados actualmente.
+Se usa el día de Argentina, sin confirmar manualmente las tarjetas. Un cambio
+posterior en los plazos no cambia las fechas de ventas anteriores.
+
+Las transferencias del local se consideran ingresadas al confirmar la venta.
+Las transferencias de compras online requieren **Confirmar pago** en **Pedidos
+online**, luego de verificar el dinero recibido. Un pedido pendiente no aparece
+como cobro ingresado. El efectivo se consulta en **Caja**.
+
+La vista permite buscar por ticket, destino o método y filtrar por método.
+Muestra bruto, comisión, neto estimado y fecha de ingreso. No agrega IVA, no
+consulta saldos reales de Mercado Pago ni genera movimientos bancarios duplicados.
+Los importes mostrados son los cobros originales: las devoluciones se registran
+por separado y las filas relacionadas se señalan. La vista muestra hasta 1.000
+pendientes y los últimos 250 acreditados; los contadores incluyen todos los cobros.

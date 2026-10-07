@@ -1929,7 +1929,7 @@ export async function confirmOnlinePayment(
       timestamp,
     ),
     statement(
-      'INSERT INTO payments(id,saleId,methodId,amount,commission,net,dueAt,reference) VALUES (?,?,?,?,?,?,?,?)',
+      'INSERT INTO payments(id,saleId,methodId,amount,commission,net,dueAt,reference,destination) VALUES (?,?,?,?,?,?,?,?,?)',
       id(),
       saleId,
       order.paymentMethod === 'transfer' ? 'transfer' : 'credit',
@@ -1938,6 +1938,10 @@ export async function confirmOnlinePayment(
       order.total,
       timestamp,
       paymentReference,
+      (await one<{ destination: string }>(
+        'SELECT destination FROM payment_methods WHERE id=?',
+        order.paymentMethod === 'transfer' ? 'transfer' : 'credit',
+      ))?.destination ?? '',
     ),
     statement(
       'INSERT INTO cash_movements(id,sessionId,kind,amount,methodId,reference,actorId,createdAt) VALUES (?,NULL,?,?,?,?,?,?)',

@@ -75,11 +75,22 @@ reglas aprobadas para implementar sin definir sus datos y condiciones.
     Administración y conservado en cada nuevo cobro. Falta conectar/reconciliar
     saldos reales de las cuentas: registrar el destino no confirma acreditación.
     Comisiones sin IVA ni retenciones: débito 2,88%/2 días; crédito 4,40%/10 días;
-    prepaga 3,68%/3 días. IVA y retenciones quedan pendientes de configurar.
+    prepaga 3,68%/3 días. Por decisión del dueño (07/10/2026), se retira
+    el registro de IVA del alcance; no sumar IVA automáticamente ni presentar
+    estas comisiones como costo final con impuestos incluidos.
 
 ## Ya implementado: productos y etiquetas
 
 Autocompletado basado en valores reales de prendas activas. Después del alta de
 un producto o variante, confirmación de guardado y vista previa para imprimir
 etiquetas con los códigos y precios de esa variante. Nictom IT02: papel de 58 mm,
-área impresa de 48 mm. La prueba física de impresión y lectura sigue pendiente.
+área impresa de 48 mm. El dueño confirmó etiquetas listas el 07/10/2026.
+
+
+## Decisiones del 07/10/2026
+
+Caja diaria: el dueño da por suficiente la implementación existente.
+Acreditaciones: el dueño confirmó usar automáticamente el día previsto según
+el plazo guardado al cobrar, sin confirmación manual de tarjetas. Transferencia
+del local ingresada al confirmar la venta. Solo transferencias de compras online
+requieren confirmar el pago en Pedidos online. Vista en Admin → Bancos.

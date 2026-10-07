@@ -1,3 +1,4 @@
+import { scheduledCollections } from './scheduled-collections';
 import { z } from 'zod';
 import { Actor, AppError, requirePermission } from './auth';
 import {
@@ -20,7 +21,7 @@ export async function banking(a: Actor) {
       'SELECT e.*,a.name AS account FROM bank_entries e JOIN bank_accounts a ON a.id=e.accountId ORDER BY e.occurredAt DESC,e.createdAt DESC LIMIT 250',
     ),
   ]);
-  return { accounts, entries };
+  return { accounts, entries, collections: await scheduledCollections(a) };
 }
 export async function bankingWrite(a: Actor, raw: unknown) {
   requirePermission(a, 'banking');
