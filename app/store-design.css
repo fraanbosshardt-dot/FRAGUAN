@@ -1002,7 +1002,7 @@
     top: 12px;
   }
   :focus-visible {
-    outline: 2px solid var(--ink);
+    outline: none;
     outline-offset: 3px;
   }
   button:disabled {
@@ -1093,7 +1093,7 @@
     border-bottom-color: var(--acc);
   }
   .account-entry-tabs button:focus-visible {
-    outline: 2px solid var(--ink);
+    outline: none;
     outline-offset: 2px;
   }
   .account-entry-google {
@@ -1926,14 +1926,14 @@ body:has(.fraguan-design) .store-toast {
   border-color: var(--ink);
 }
 .fraguan-design .pd .chips button:not(:disabled):hover {
-  border-color: var(--acc);
+  border-color: var(--sand);
 }
 .fraguan-design .pd .chips button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 .fraguan-design .pd .chips button:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: none;
   outline-offset: 3px;
 }
 .fraguan-design .design-size-help summary {
@@ -2233,7 +2233,7 @@ body:has(.fraguan-design) .store-toast {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .fraguan-design .purchase-cart :focus-visible {
-  outline: 2px solid var(--purchase-ink);
+  outline: none;
   outline-offset: 3px;
 }
 @media (max-width: 860px) {
