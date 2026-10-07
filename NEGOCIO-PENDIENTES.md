@@ -127,5 +127,15 @@ el dueño acepta evaluarlo; no contratar automáticamente.
 CyberMonday reversible no implementado. Stock compartido POS/reservas online
 corregido: disponibilidad descontada, validación transaccional y reserva propia
 al confirmar pago; detalles y pruebas en REVISION_SISTEMA.md.
-Siguiente prioridad: número de pedido concurrente. SEO/Search Console y decisiones pendientes
+Numeración concurrente de pedidos y tickets corregida con contador transaccional,
+conservando números existentes y referencias. Próxima prioridad: reintentos y estados
+de emails de pedidos. SEO/Search Console y decisiones pendientes
 detallados en REVISION_SISTEMA.md. Mantener Meta Ads y Google Maps para después.
+
+## Reserva durante el pago — 07/10/2026
+
+El usuario pidió evaluar reserva temporal mientras completa la compra. Actualmente
+se reserva por 30 minutos al crear pedido, no al seleccionar/agregar al carrito.
+Propuesta pendiente de implementación: contador visible, aviso al vencer y
+revalidación de stock sin perder carrito. Definir plazo específico para transferencia
+con el dueño antes de modificarlo; no se cambió la vigencia existente.

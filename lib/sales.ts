@@ -8,6 +8,7 @@ import {
   auditStatement,
 } from '@/db/queries';
 import { Actor, AppError, can } from './auth';
+import { allocateDocumentNumber } from './document-numbers';
 import { saleInput, quoteInput } from './validation';
 import { z } from 'zod';
 import { argentinaDay } from './business-date';
@@ -534,8 +535,9 @@ async function executeSale(
   const saleId = id(),
     date = now();
   const commands = [
+    allocateDocumentNumber('sale'),
     statement(
-      'INSERT INTO sales(id,ticket,sellerId,customerId,subtotal,discount,total,promotionId,couponCode,idempotencyKey,requestHash,createdAt) VALUES (?,(SELECT COALESCE(MAX(ticket),0)+1 FROM sales),?,?,?,?,?,?,?,?,?,?)',
+      "INSERT INTO sales(id,ticket,sellerId,customerId,subtotal,discount,total,promotionId,couponCode,idempotencyKey,requestHash,createdAt) VALUES (?,(SELECT value FROM document_counters WHERE name='sale'),?,?,?,?,?,?,?,?,?,?)",
       saleId,
       a.id,
       data.customerId,

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { allocateDocumentNumber } from './document-numbers';
 import { FREE_SHIPPING_MINIMUM_MINOR } from './store-shipping-policy';
 import { storeApiOrigin, publicStoreData } from './store-api';
 import { env } from 'cloudflare:workers';
@@ -1290,27 +1291,20 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
     ? `${customer.name} ${customer.surname}`
     : input.customerName;
   const effectivePhone = customer?.phone || input.phone;
-  const orderNumber = Number(
-    (
-      await one<{ next: number }>(
-        'SELECT COALESCE(MAX(orderNumber),1000)+1 AS next FROM online_orders',
-      )
-    )?.next ?? 1001,
-  );
   const orderId = input.idempotencyKey,
     createdAt = now();
   const expiresAt = new Date(Date.now() + 30 * 60000).toISOString();
-  const transferReference = `FRG-${orderNumber}-${randomToken(3).toUpperCase()}`;
+  const transferSuffix = randomToken(3).toUpperCase();
   const commands = [
+    allocateDocumentNumber('online_order'),
     statement(
       "UPDATE stock_reservations SET status='expired' WHERE status='active' AND expiresAt<=?",
       createdAt,
     ),
     statement(
       `INSERT INTO online_orders(id,orderNumber,customerId,email,customerName,phone,document,status,paymentStatus,paymentMethod,fulfillmentStatus,subtotal,discount,shipping,total,shippingMethod,postalCode,address,addressExtra,city,province,country,notes,couponCode,attributionJson,accessTokenHash,transferReference,expiresAt,createdAt,updatedAt)
-       VALUES (?,?,?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,(SELECT value FROM document_counters WHERE name='online_order'),?,?,?,?,?,'awaiting_payment','pending',?,'unfulfilled',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId,
-      orderNumber,
       customer?.customerId ?? null,
       effectiveEmail,
       effectiveName,
@@ -1332,10 +1326,14 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
       input.couponCode,
       JSON.stringify({ ...input.attribution, sessionId: input.sessionId }),
       await sha256(input.accessToken),
-      transferReference,
+      transferSuffix,
       expiresAt,
       createdAt,
       createdAt,
+    ),
+    statement(
+      "UPDATE online_orders SET transferReference='FRG-' || orderNumber || '-' || transferReference WHERE id=?",
+      orderId,
     ),
     statement(
       'INSERT INTO online_order_events(id,orderId,kind,detail,createdAt) VALUES (?,?,?,?,?)',
@@ -1918,9 +1916,10 @@ export async function confirmOnlinePayment(
   const saleId = id(),
     timestamp = now();
   const commands = [
+    allocateDocumentNumber('sale'),
     statement(
       `INSERT INTO sales(id,ticket,sellerId,customerId,subtotal,discount,total,status,idempotencyKey,requestHash,couponCode,channel,onlineOrderId,createdAt)
-       VALUES (?,(SELECT COALESCE(MAX(ticket),0)+1 FROM sales),?,?,?,?,?,'confirmed',?,?,?,'online',?,?)`,
+       VALUES (?,(SELECT value FROM document_counters WHERE name='sale'),?,?,?,?,?,'confirmed',?,?,?,'online',?,?)`,
       saleId,
       actor.id,
       order.customerId,
