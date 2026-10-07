@@ -48,6 +48,16 @@
     --fd: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
     --fb: 'DM Sans', system-ui, sans-serif;
     --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Shared cart/checkout tokens: actual FRAGUAN theme, rectangular controls. */
+    --purchase-ink: var(--ink);
+    --purchase-background: var(--bone);
+    --purchase-soft: var(--bone-2);
+    --purchase-line: var(--sand);
+    --purchase-muted: #67635c;
+    --purchase-field: #fff;
+    --purchase-font: var(--fb);
+    --purchase-display: var(--fd);
+    --purchase-radius: 0px;
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -2056,4 +2066,212 @@ body:has(.fraguan-design) .store-toast {
   .fraguan-design .card:hover .im {
     transform: none;
   }
+}
+
+/* Purchase layout: scoped independently from product grids and cart drawer. */
+.fraguan-design .purchase-cart {
+  max-width: 1080px;
+  margin: auto;
+  padding: 44px 24px 64px;
+  color: var(--purchase-ink);
+  font-family: var(--purchase-font);
+}
+.fraguan-design .purchase-title {
+  font: 500 26px/1.3 var(--purchase-font);
+  margin-bottom: 32px;
+}
+.fraguan-design .purchase-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: start;
+}
+.fraguan-design .purchase-item {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  gap: 16px;
+  border-bottom: 1px solid var(--purchase-line);
+  padding-bottom: 28px;
+  margin-bottom: 28px;
+}
+.fraguan-design .purchase-photo {
+  width: 104px;
+  height: 104px;
+  display: grid;
+  place-items: center;
+  background: var(--purchase-soft);
+  border-radius: var(--purchase-radius);
+  overflow: hidden;
+}
+.fraguan-design .purchase-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.fraguan-design .purchase-photo span {
+  padding: 10px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--purchase-muted);
+}
+.fraguan-design .purchase-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.fraguan-design .purchase-muted {
+  color: var(--purchase-muted);
+  font-size: 14px;
+}
+.fraguan-design .purchase-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.fraguan-design .purchase-quantity {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--purchase-line);
+  border-radius: var(--purchase-radius);
+}
+.fraguan-design .purchase-quantity button,
+.fraguan-design .purchase-favorite {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  color: var(--purchase-ink);
+  cursor: pointer;
+}
+.fraguan-design .purchase-quantity button {
+  border: 0;
+  font-size: 18px;
+}
+.fraguan-design .purchase-quantity span {
+  min-width: 26px;
+  text-align: center;
+}
+.fraguan-design .purchase-favorite {
+  border: 1px solid var(--purchase-line);
+  border-radius: var(--purchase-radius);
+  font-size: 22px;
+}
+.fraguan-design .purchase-remove {
+  border: 0;
+  background: none;
+  color: var(--purchase-ink);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px;
+}
+.fraguan-design .purchase-delivery {
+  margin-top: 18px;
+  font-size: 13px;
+}
+.fraguan-design .purchase-delivery span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.fraguan-design .purchase-price {
+  white-space: nowrap;
+  font-weight: 500;
+  text-align: right;
+}
+.fraguan-design .purchase-summary {
+  position: sticky;
+  top: 100px;
+  min-width: 0;
+  --fa-accent: var(--purchase-ink);
+  --fa-line: var(--purchase-line);
+}
+.fraguan-design .purchase-summary h2,
+.fraguan-design .purchase-suggestions h2 {
+  font: 500 22px/1.4 var(--purchase-font);
+  margin-bottom: 20px;
+}
+.fraguan-design .purchase-summary dl > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 14px;
+}
+.fraguan-design .purchase-summary dd {
+  margin: 0;
+  text-align: right;
+}
+.fraguan-design .purchase-summary .purchase-total {
+  border-top: 1px solid var(--purchase-line);
+  margin-top: 10px;
+  padding-top: 16px;
+  font-weight: 700;
+  font-size: 16px;
+}
+.fraguan-design .purchase-button {
+  display: block;
+  margin-top: 14px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid var(--purchase-ink);
+  border-radius: var(--purchase-radius);
+  background: var(--purchase-ink);
+  color: var(--purchase-background);
+  font-size: 14px;
+  font-weight: 600;
+}
+.fraguan-design .purchase-button.purchase-secondary {
+  background: transparent;
+  color: var(--purchase-ink);
+}
+.fraguan-design .purchase-suggestions {
+  margin-top: 64px;
+}
+.fraguan-design .purchase-suggestions .grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.fraguan-design .purchase-cart :focus-visible {
+  outline: 2px solid var(--purchase-ink);
+  outline-offset: 3px;
+}
+@media (max-width: 860px) {
+  .fraguan-design .purchase-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+  .fraguan-design .purchase-summary {
+    position: static;
+  }
+  .fraguan-design .purchase-suggestions .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .fraguan-design .purchase-cart {
+    padding: 28px 16px 40px;
+  }
+  .fraguan-design .purchase-item {
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .fraguan-design .purchase-photo {
+    width: 84px;
+    height: 84px;
+    grid-row: 1 / span 2;
+  }
+  .fraguan-design .purchase-price {
+    grid-column: 2;
+    text-align: left;
+  }
+  .fraguan-design .purchase-summary dl > div {
+    flex-wrap: wrap;
+  }
+  .fraguan-design .purchase-suggestions {
+    margin-top: 40px;
+  }
+}
+
+.fraguan-design.cart-surface {
+  background: var(--purchase-background);
 }

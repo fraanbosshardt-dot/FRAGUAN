@@ -599,56 +599,140 @@ function Lines({ ro, stagger = false }) {
       )
     : html`<p class="em0">Tu carrito está vacío.</p>`;
 }
-function Sum({ ship = 0, disc = 0, est }) {
-  const { sub } = useC();
-  return html`<div class="sum">
-    <h3 class="d">Resumen</h3>
-    <${Lines} ro=${true} />
-    <div class="tot">
-      <span>Subtotal</span><span><${Odometer} value=${sub} /></span>
-    </div>
-    <div class="tot">
-      <span>Envío</span
-      ><span>${est ? 'Se calcula al pagar' : ship ? $(ship) : 'Gratis'}</span>
-    </div>
-    ${disc > 0 && html`<div class="tot"><span>Descuento transferencia</span><span>− ${$(disc)}</span></div>`}
-    <div class="tot g">
-      <span>Total</span><span><${Odometer} value=${sub + ship - disc} /></span>
-    </div>
-  </div>`;
-}
 function CartPage() {
-  const { cart, sub, ready } = useC();
-  if (!ready)
-    return html`<section class="sec lt pg">
-      <h1 class="d h1">Tu carrito</h1>
-      <p class="em0" aria-busy="true">Cargando tu selección…</p>
-    </section>`;
-  return html`<section class="sec lt pg">
-    <h1 class="d h1">Tu carrito</h1>
-    <${BarraEnvioGratis}
-      subtotal=${sub - Math.floor(sub * 10) / 100}
-      meta=${FREE}
-      ready=${ready}
-    />
+  const { cart, sub, ready, products, chg, rm, favs, tf } = useC();
+  const suggestions = products
+    .filter(
+      (p) =>
+        !cart.some((i) => i.id === p.id) && p.variants.some((v) => v.stock > 0),
+    )
+    .slice(0, 4);
+  return html`<section class="sec lt pg purchase-cart">
+    <h1 class="purchase-title">Tu carrito</h1>
     ${
-      cart.length
-        ? html`<div class="ck">
-            <div>
-              <${Lines} />
-              <p style=${{ margin: '20px 0' }}>
-                <a href="#/c/todo" class="k">← SEGUIR COMPRANDO</a>
-              </p>
-            </div>
-            <div>
-              <${Sum} est=${true} />
-              <a class="btn a w" href="#/checkout">IR A PAGAR</a>
-            </div>
-          </div>`
-        : html`<p class="em0">
-            Todavía no agregaste nada.
-            <a class="k" href="#/c/todo">VER COLECCIÓN →</a>
-          </p>`
+      !ready
+        ? html`<p aria-busy="true">Cargando tu selección…</p>`
+        : cart.length
+          ? html`
+              <div class="purchase-layout">
+                <div class="purchase-products">
+                  ${cart.map((i) => {
+                    const product = products.find((p) => p.id === i.id);
+                    return html`<article class="purchase-item" key=${i.k}>
+                      <a
+                        class="purchase-photo"
+                        href=${product ? '/producto/' + product.slug : '/tienda'}
+                        aria-label=${'Ver ' + i.n}
+                      >
+                        ${product?.img ? html`<img src=${product.img} alt=${i.n} />` : html`<span>Foto no disponible</span>`}
+                      </a>
+                      <div class="purchase-description">
+                        <a
+                          class="purchase-name"
+                          href=${product ? '/producto/' + product.slug : '/tienda'}
+                          >${i.n}</a
+                        >
+                        <p class="purchase-muted">${i.col} · Talle ${i.s}</p>
+                        <div class="purchase-controls">
+                          <div class="purchase-quantity">
+                            <button
+                              type="button"
+                              onClick=${() => chg(i.k, -1)}
+                              aria-label=${'Quitar una unidad de ' + i.n}
+                            >
+                              −
+                            </button>
+                            <span aria-label="Cantidad">${i.q}</span>
+                            <button
+                              type="button"
+                              onClick=${() => chg(i.k, 1)}
+                              aria-label=${'Agregar una unidad de ' + i.n}
+                            >
+                              +
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            class="purchase-favorite"
+                            aria-pressed=${favs.includes(i.id)}
+                            aria-label=${(favs.includes(i.id) ? 'Quitar de favoritos: ' : 'Guardar en favoritos: ') + i.n}
+                            onClick=${() => tf(i.id)}
+                          >
+                            ${favs.includes(i.id) ? '♥' : '♡'}
+                          </button>
+                          <button
+                            type="button"
+                            class="purchase-remove"
+                            onClick=${() => rm(i.k)}
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                        <p class="purchase-delivery">
+                          Envío a domicilio o retiro en el local<span
+                            class="purchase-muted"
+                            >Elegís la entrega al finalizar la compra.</span
+                          >
+                        </p>
+                      </div>
+                      <strong class="purchase-price"
+                        ><${Odometer} value=${i.p * i.q}
+                      /></strong>
+                    </article>`;
+                  })}
+                </div>
+                <aside
+                  class="purchase-summary"
+                  aria-label="Resumen del carrito"
+                >
+                  <h2>Resumen</h2>
+                  <dl>
+                    <div>
+                      <dt>Subtotal</dt>
+                      <dd><${Odometer} value=${sub} /></dd>
+                    </div>
+                    <div>
+                      <dt>Descuento</dt>
+                      <dd>Se calcula al pagar</dd>
+                    </div>
+                    <div>
+                      <dt>Envío</dt>
+                      <dd>Se calcula al pagar</dd>
+                    </div>
+                    <div class="purchase-total">
+                      <dt>Total estimado</dt>
+                      <dd><${Odometer} value=${sub} /></dd>
+                    </div>
+                  </dl>
+                  <${BarraEnvioGratis}
+                    subtotal=${sub - Math.floor(sub * 10) / 100}
+                    meta=${FREE}
+                    ready=${ready}
+                  />
+                  <a class="purchase-button" href="/checkout"
+                    >Finalizar compra</a
+                  >
+                  <a class="purchase-button purchase-secondary" href="/tienda"
+                    >Seguir comprando</a
+                  >
+                </aside>
+              </div>
+            `
+          : html`<p class="em0">
+              Todavía no agregaste nada.
+              <a class="k" href="/tienda">VER COLECCIÓN →</a>
+            </p>`
+    }
+    ${
+      ready && suggestions.length > 0
+        ? html`<section
+            class="purchase-suggestions"
+            aria-label="Productos sugeridos"
+          >
+            <h2>Completá tu look</h2>
+            <${Grid} L=${suggestions} />
+          </section>`
+        : null
     }
   </section>`;
 }
@@ -881,7 +965,11 @@ function PublicStore({ children }) {
       <div
         className={
           'fraguan-design' +
-          (pathname === '/checkout' ? ' checkout-surface' : '')
+          (pathname === '/checkout'
+            ? ' checkout-surface'
+            : pathname === '/carrito'
+              ? ' cart-surface'
+              : '')
         }
         ref={root}
       >
