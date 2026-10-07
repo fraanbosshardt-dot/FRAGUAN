@@ -744,3 +744,19 @@
     opacity 0.25s,
     transform 0.12s ease-out;
 }
+
+.fraguan-design .fa-hero-title {
+  position: sticky;
+  top: 80px;
+}
+@media (max-width: 700px) {
+  .fraguan-design .fa-hero-title {
+    top: 72px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design .fa-hero-title {
+    position: relative;
+    top: auto;
+  }
+}

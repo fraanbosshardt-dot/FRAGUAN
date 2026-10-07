@@ -27,12 +27,18 @@ import {
 import { usePathname } from 'next/navigation';
 import {
   storeApi,
+  storeMoney,
   useStoreCart,
   useStoreFavorites,
   trackStore,
 } from '@/lib/store-client';
 import { StoreProductTrust } from '@/components/store-product-trust';
 import { FREE_SHIPPING_MINIMUM_MINOR } from '@/lib/store-shipping-policy';
+const matchText = (value) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-AR');
 const route = (h) =>
   h?.startsWith('#/')
     ? h
@@ -401,11 +407,6 @@ function Home() {
 function Coll({ c }) {
   const { products: P, categories: CATS } = useC();
   const [search, setSearch] = useState('');
-  const matchText = (value) =>
-    value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLocaleLowerCase('es-AR');
   useEffect(
     () => setSearch(new URLSearchParams(location.search).get('search') || ''),
     [],
@@ -820,8 +821,16 @@ function PublicStore({ children }) {
     [open, setOpen] = useState(false),
     [menu, setMenu] = useState(false),
     [searchOpen, setSearchOpen] = useState(false),
+    [searchQuery, setSearchQuery] = useState(''),
+    [catalogLoaded, setCatalogLoaded] = useState(false),
     [newsDone, setNewsDone] = useState(false),
     [newsError, setNewsError] = useState('');
+  const normalizedQuery = matchText(searchQuery.trim());
+  const searchMatches = normalizedQuery
+    ? products.filter((p) =>
+        matchText(p.n + ' ' + p.c + ' ' + p.col).includes(normalizedQuery),
+      )
+    : [];
   const root = useRef(null),
     trigger = useRef(null),
     lastFocus = useRef(null),
@@ -853,6 +862,9 @@ function PublicStore({ children }) {
       })
       .catch((e) => {
         if (active) setCatalogError(e.message);
+      })
+      .finally(() => {
+        if (active) setCatalogLoaded(true);
       });
     return () => {
       active = false;
@@ -1133,6 +1145,10 @@ function PublicStore({ children }) {
                   ref={searchInput}
                   id="store-header-search-input"
                   name="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  autoComplete="off"
+                  aria-controls="store-search-suggestions"
                   type="search"
                   placeholder="Nombre, color o categoría"
                   required
@@ -1152,6 +1168,56 @@ function PublicStore({ children }) {
                   ×
                 </button>
               </div>
+              {normalizedQuery && (
+                <section
+                  id="store-search-suggestions"
+                  className="store-search-suggestions"
+                  aria-label="Sugerencias de productos"
+                >
+                  <output aria-live="polite">
+                    {!catalogLoaded
+                      ? 'Buscando productos…'
+                      : catalogError
+                        ? 'No pudimos cargar las sugerencias. Intentá nuevamente.'
+                        : searchMatches.length
+                          ? 'Productos que coinciden con tu búsqueda'
+                          : 'No encontramos productos con esa búsqueda.'}
+                  </output>
+                  {catalogLoaded &&
+                    !catalogError &&
+                    searchMatches.length > 0 && (
+                      <>
+                        <ul>
+                          {searchMatches.slice(0, 6).map((product) => (
+                            <li key={product.id}>
+                              <a
+                                href={'/producto/' + product.slug}
+                                onClick={() => setSearchOpen(false)}
+                              >
+                                <span>
+                                  <strong>{product.n}</strong>
+                                  <small>
+                                    {product.c} · {product.col}
+                                  </small>
+                                </span>
+                                <b>{storeMoney(product.original.price)}</b>
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                        <a
+                          className="store-search-all"
+                          href={
+                            '/tienda?search=' +
+                            encodeURIComponent(searchQuery.trim())
+                          }
+                        >
+                          Ver todos los resultados →
+                        </a>
+                      </>
+                    )}
+                </section>
+              )}
             </form>
           </search>
         )}

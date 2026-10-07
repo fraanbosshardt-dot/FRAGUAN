@@ -2466,3 +2466,76 @@ body:has(.fraguan-design) .store-toast {
   background: var(--bone-2);
   color: var(--ink);
 }
+
+.fraguan-design .store-search-suggestions {
+  max-width: 1000px;
+  margin: 16px auto 0;
+  max-height: min(420px, 50svh);
+  overflow-y: auto;
+}
+.fraguan-design .store-search-suggestions > output {
+  display: block;
+  font-size: 13px;
+  color: var(--purchase-muted);
+  margin-bottom: 8px;
+}
+.fraguan-design .store-search-suggestions ul {
+  list-style: none;
+  padding: 0;
+}
+.fraguan-design .store-search-suggestions li + li {
+  border-top: 1px solid var(--sand);
+}
+.fraguan-design .store-search-suggestions li a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 10px;
+}
+.fraguan-design .store-search-suggestions li a:hover,
+.fraguan-design .store-search-suggestions li a:focus-visible {
+  background: var(--bone-2);
+}
+.fraguan-design .store-search-suggestions strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.fraguan-design .store-search-suggestions small {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--purchase-muted);
+}
+.fraguan-design .store-search-suggestions b {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.fraguan-design .store-search-all {
+  display: inline-block;
+  margin: 12px 0 0;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.fraguan-design .fa-hero {
+  overflow: clip;
+}
+.fraguan-design .fa-hero-title {
+  position: sticky;
+  top: 80px;
+}
+@media (max-width: 700px) {
+  .fraguan-design .fa-hero-title {
+    top: 72px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design .fa-hero-title {
+    position: relative;
+    top: auto;
+    transform: none;
+    opacity: 1;
+  }
+}
