@@ -1,3 +1,9 @@
+import {
+  emailFrame,
+  escapeHtml,
+  orderEmail,
+  orderEmailTitles,
+} from './email-template';
 import { env } from 'cloudflare:workers';
 import { z } from 'zod';
 import { Actor, AppError, requirePermission } from './auth';
@@ -10,35 +16,6 @@ import {
   rows,
   statement,
 } from '@/db/queries';
-
-function escapeHtml(value: unknown) {
-  const text =
-    typeof value === 'string' || typeof value === 'number' ? String(value) : '';
-  return text.replace(
-    /[&<>'"]/g,
-    (char) =>
-      ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;',
-      })[char]!,
-  );
-}
-
-function emailFrame(
-  title: string,
-  preheader: string,
-  content: string,
-  action?: { label: string; url: string },
-) {
-  const button =
-    action?.label && action.url
-      ? `<p style="margin:28px 0"><a href="${escapeHtml(action.url)}" style="display:inline-block;background:#181818;color:#fff;padding:14px 22px;text-decoration:none;font-weight:700">${escapeHtml(action.label)}</a></p>`
-      : '';
-  return `<!doctype html><html><body style="margin:0;background:#f3efe7;color:#181818;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div><main style="max-width:620px;margin:auto;padding:42px 24px"><div style="font-size:18px;font-weight:900;letter-spacing:.14em">FRAGUAN</div><div style="height:3px;background:#181818;margin:20px 0 34px"></div><h1 style="font-size:38px;line-height:1.02;margin:0 0 22px">${escapeHtml(title)}</h1><div style="font-size:16px;line-height:1.65">${content}</div>${button}<div style="height:1px;background:#cbc4b7;margin:36px 0 20px"></div><small style="color:#6d675e">FRAGUAN · FORJÁ TU ESTILO.</small></main></body></html>`;
-}
 
 export function emailConfiguration(channel: 'orders' | 'marketing' = 'orders') {
   const from =
@@ -163,30 +140,21 @@ export async function sendOrderEmails(
     orderId,
   );
   if (!order) return;
-  const titles = {
-    created: 'RECIBIMOS TU PEDIDO.',
-    paid: 'PAGO CONFIRMADO.',
-    preparing: 'ESTAMOS PREPARANDO TU COMPRA.',
-    ready_pickup: 'TU PEDIDO ESTÁ LISTO.',
-    shipped: 'TU PEDIDO YA SALIÓ.',
-    delivered: 'PEDIDO ENTREGADO.',
-  } as const;
-  const statusText =
-    event === 'created'
-      ? `Pedido <strong>#${order.orderNumber}</strong> por <strong>$${(Number(order.total) / 100).toLocaleString('es-AR')}</strong>. ${order.paymentMethod === 'transfer' ? `Referencia para transferir: <strong>${escapeHtml(order.transferReference)}</strong>.` : 'Tu pago se procesa de forma segura.'}`
-      : event === 'paid'
-        ? `Confirmamos el pago del pedido <strong>#${order.orderNumber}</strong>. Ya quedó en nuestra cola de preparación.`
-        : event === 'preparing'
-          ? `El pedido <strong>#${order.orderNumber}</strong> está siendo preparado por el equipo FRAGUAN.`
-          : event === 'ready_pickup'
-            ? `El pedido <strong>#${order.orderNumber}</strong> ya está listo para retirar en FRAGUAN. Presentá tu documento al buscarlo.`
-            : event === 'shipped'
-              ? `Despachamos el pedido <strong>#${order.orderNumber}</strong>. Seguimiento: <strong>${escapeHtml(order.trackingNumber || 'se informará pronto')}</strong>.`
-              : `El pedido <strong>#${order.orderNumber}</strong> fue entregado. Gracias por elegir FRAGUAN.`;
-  const html = emailFrame(
-    titles[event],
-    `Actualización del pedido #${order.orderNumber}`,
-    `<p>Hola ${escapeHtml(order.customerName)},</p><p>${statusText}</p>`,
+  const titles = orderEmailTitles;
+  const items = await rows<{
+    productName: string;
+    color: string;
+    size: string;
+    quantity: number;
+    lineTotal: number;
+  }>(
+    'SELECT productName,color,size,quantity,lineTotal FROM online_order_items WHERE orderId=? ORDER BY id',
+    orderId,
+  );
+  const html = orderEmail(
+    order as Parameters<typeof orderEmail>[0],
+    items,
+    event,
   );
   await deliver({
     to: order.email,
@@ -447,9 +415,9 @@ export async function sendAccountWelcome(accountId: string) {
     to: account.email,
     subject: 'BIENVENIDO A FRAGUAN.',
     html: emailFrame(
-      'TU CUENTA ESTÁ LISTA.',
+      'BIENVENIDO A FRAGUAN.',
       'Bienvenido a FRAGUAN.',
-      `<p>Hola ${escapeHtml(account.name)},</p><p>Tu cuenta ya está creada. Podés consultar tus pedidos, guardar favoritos y completar tus datos desde Mi FRAGUAN.</p>`,
+      `<p>Hola ${escapeHtml(account.name)},</p><p>Tu cuenta ya está lista. Gracias por sumarte a FRAGUAN: menos vueltas, más vos.</p><p>En Mi FRAGUAN podés consultar tus pedidos, guardar tus prendas favoritas y completar tus datos para tu próxima compra.</p>`,
       origin ? { label: 'VER MI CUENTA', url: origin + '/cuenta' } : undefined,
     ),
     kind: 'account_welcome',

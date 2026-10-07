@@ -99,6 +99,15 @@ requieren confirmar el pago en Pedidos online. Vista en Admin → Bancos.
 ## Resend — preparación del 07/10/2026
 
 Dominio fraguan.com verificado en Resend. Pedidos desde pedidos@fraguan.com;
-bienvenida y marketing desde hola@fraguan.com. Remitentes preparados en Railway
-y separación implementada en código. API key y destinatario para prueba real
-pendientes de cargar/confirmar por el dueño. Detalles en docs/resend.md.
+bienvenida y marketing desde hola@fraguan.com. Clave y remitentes configurados
+en Railway y Vercel. El dueño confirmó recepción de pruebas en hola@fraguan.com.
+Plantilla con la identidad de la tienda aplicada a los emails existentes.
+Bienvenida y avisos de pedido recibido, pago confirmado, preparación, retiro,
+despacho y entrega diseñados con datos reales de la compra. Seguimiento enlaza
+Correo Argentino solo si hay código y corresponde a ese envío.
+Pendiente marketing y Club FRAGUAN, definidos según prendas y números reales;
+definir también porcentajes de transferencia, cupones y umbral de envío gratis.
+Esta tarea no cambia las reglas comerciales que ya están activas.
+Pendiente seguimiento automático, Andreani, recuperación de compras y campañas.
+No activar campañas sin definirlas.
+Detalles en docs/resend.md.
