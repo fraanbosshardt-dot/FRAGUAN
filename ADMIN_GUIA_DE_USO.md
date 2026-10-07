@@ -4,6 +4,26 @@ Revisión: 6 de octubre de 2026. Esta guía describe las áreas que existen en e
 
 ## Cómo se usa el sistema en el día a día
 
+### Cargar una prenda e imprimir sus etiquetas
+
+En Productos y stock, elegí Agregar. Los campos de nombre, marca, subcategoría,
+temporada, colección, ubicación, color y talle sugieren valores de prendas activas
+ya cargadas. Al empezar con el inventario vacío, las sugerencias aparecen a medida
+que registrás productos. Los precios y las cantidades no se completan por inferencia.
+
+Si el nombre coincide con una prenda existente, el formulario ofrece agregar otro
+talle/color a ese producto, en lugar de crear una ficha duplicada. Esa variante
+parte del precio y costo de la prenda elegida; revisalos antes de guardar.
+
+Dejá SKU y código de barras vacíos para generarlos automáticamente. Al guardar,
+se confirma «Prenda cargada» y se abre la vista previa de las etiquetas de la
+variante que se acaba de guardar. Elegí la cantidad y tocá Imprimir etiquetas.
+La tanda admite hasta 100 etiquetas; para más unidades, imprimí varias tandas.
+Se propone una etiqueta por unidad cargada, o una si el stock inicial es cero.
+La Nictom IT02 usa papel de 58 mm y un área de impresión de 48 mm.
+
+Imprimir o reimprimir no crea otra prenda ni modifica el stock.
+
 Primero se cargan el equipo, los productos y sus variantes (color y talle), los proveedores, las ubicaciones y los medios de pago. Las compras y los conteos permiten registrar existencias. El POS registra las ventas del local; los pedidos de la web se gestionan en Pedidos online. Caja, Bancos y Gastos sirven para seguir el dinero. Reportes permite revisar lo vendido y los resultados.
 
 Las existencias, las ventas y el dinero son cosas distintas: vender reduce stock, pero un pago con tarjeta puede acreditarse después y tener comisión. Vendido bruto es el importe cobrado de las ventas; el neto descontará comisiones y otros ajustes según la configuración. Los costos de compra de la mercadería afectan el margen, no el importe vendido bruto. Las devoluciones se revisan por separado en los resúmenes correspondientes.

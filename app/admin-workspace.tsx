@@ -398,6 +398,9 @@ export default function Admin({
               ? { discountPercent: Number(row.discountBps ?? 0) / 100 }
               : {}),
           }
+        : type === 'variant' && row
+          ? { price: Number(row.price ?? 0) / 100, cost: Number(row.cost ?? 0) / 100,
+              stock: 0, minimum: row.minimum ?? 3, ideal: row.ideal ?? 6 }
         : type === 'labels'
           ? { labelCount: 1 }
           : type === 'storage-transfer' && row
@@ -469,10 +472,18 @@ export default function Admin({
     setBusy(true);
     setError('');
     try {
-      await api(resource, payload);
-      setModal('');
-      setSuccess('Operación guardada correctamente.');
-      await load();
+      const result = await api(resource, payload);
+      if (['products', 'variants'].includes(resource) && result.variant) {
+        setSelected(result.variant);
+        setForm({ labelCount: Math.min(100, Math.max(1, Number(result.variant.stock) || 1)), justCreated: true });
+        setModal('labels');
+        setSuccess('Prenda cargada correctamente. Sus etiquetas están listas para imprimir.');
+      } else {
+        setModal('');
+        setSuccess('Operación guardada correctamente.');
+      }
+      // A failed list refresh must not make a committed creation look unsaved.
+      await load().catch(() => setError('La operación se guardó, pero no pudimos actualizar el listado. Usá Actualizar.'));
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -626,6 +637,14 @@ export default function Admin({
       value?: any;
     },
   ) {
+    const suggest = section === 'products' &&
+      ['create', 'variant', 'edit-product', 'edit-variant'].includes(modal) &&
+      ['name', 'subcategory', 'brand', 'season', 'collection', 'location', 'color', 'size'].includes(name);
+    const suggestions = suggest ? Array.from(new Set(list
+      .filter((row) => row.active !== 0 && typeof row[name] === 'string' && row[name].trim())
+      .map((row) => String(row[name]).trim())))
+      .sort((a, b) => a.localeCompare(b, 'es')) : [];
+    const suggestionId = `product-suggestions-${name}`;
     return (
       <label key={name}>
         {label}
@@ -643,13 +662,19 @@ export default function Admin({
             ))}
           </select>
         ) : (
+          <>
           <Input
             type={options?.type ?? 'text'}
             step={options?.type === 'number' ? 'any' : undefined}
             value={form[name] ?? options?.value ?? ''}
             required={!options?.optional}
+            list={suggestions.length ? suggestionId : undefined}
             onChange={(e) => setForm({ ...form, [name]: e.target.value })}
           />
+          {suggestions.length > 0 && <datalist id={suggestionId} aria-label={`Sugerencias de ${label}`}>
+            {suggestions.map((value) => <option key={value} value={value}>{value}</option>)}
+          </datalist>}
+          </>
         )}
       </label>
     );
@@ -881,8 +906,8 @@ export default function Admin({
           price: minor(form.price),
           cost: minor(form.cost),
           stock: Number(form.stock),
-          minimum: Number(form.minimum || 3),
-          ideal: Number(form.ideal || 6),
+          minimum: Number(form.minimum ?? 3),
+          ideal: Number(form.ideal ?? 6),
           entryAt: form.entryAt || '',
         });
         return;
@@ -3531,6 +3556,10 @@ export default function Admin({
           ) : modal === 'labels' && selected ? (
             <div className="quick-form">
               <div className="no-print">
+                {form.justCreated && <output className="quiet">
+                  Prenda cargada: {selected.name} · {selected.color} · {selected.size}.
+                  Código generado: {selected.barcode}. Elegí cuántas etiquetas imprimir.
+                </output>}
                 {field('labelCount', 'Cantidad de etiquetas', {
                   type: 'number',
                   value: 1,
@@ -4808,6 +4837,14 @@ export default function Admin({
                   {section === 'products' && (
                     <>
                       {field('name', 'Nombre')}
+                      {list.some((row) => row.active !== 0 && row.name?.trim().toLocaleLowerCase('es') === String(form.name ?? '').trim().toLocaleLowerCase('es')) && (
+                        <div className="quiet">
+                          Ya existe un producto con ese nombre. Si es la misma prenda, agregá su talle/color.
+                          <Button type="button" onClick={() => openForm('variant', list.find((row) => row.active !== 0 && row.name?.trim().toLocaleLowerCase('es') === String(form.name ?? '').trim().toLocaleLowerCase('es')) ?? null)}>
+                            Agregar talle/color al producto existente
+                          </Button>
+                        </div>
+                      )}
                       {field('internalCode', 'Código interno', {
                         optional: true,
                       })}

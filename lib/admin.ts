@@ -53,9 +53,12 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
   const key = id(),
     date = now();
   let commands: D1PreparedStatement[] = [];
+  let variant: Record<string, unknown> | undefined;
   if (resource === 'products') {
     const x = v.productInput.parse(raw);
     const codes = await resolveVariantCodes(x);
+    variant = { id: `${key}-v`, productId: key, name: x.name, color: x.color,
+      size: x.size, price: x.price, sku: codes.sku, barcode: codes.barcode, stock: x.stock };
     if (x.ideal < x.minimum)
       throw new AppError(400, 'El stock ideal no puede ser menor al mínimo.');
     if (
@@ -343,7 +346,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
   } else throw new AppError(403, 'Acceso denegado.');
   commands.push(auditStatement(a.id, `Crear ${resource}`, key, null, raw));
   await db().batch(commands);
-  return { id: key, ok: true };
+  return { id: key, ok: true, ...(variant ? { variant } : {}) };
 }
 export async function adminAction(a: Actor, raw: unknown) {
   const input = z

@@ -109,9 +109,8 @@ export async function addVariant(a: Actor, raw: unknown) {
     .parse(raw);
   if (x.ideal < x.minimum)
     throw new AppError(400, 'El stock ideal no puede ser menor al mínimo.');
-  if (
-    !(await one('SELECT id FROM products WHERE id=? AND active=1', x.productId))
-  )
+  const product = await one<{ name: string }>('SELECT name FROM products WHERE id=? AND active=1', x.productId);
+  if (!product)
     throw new AppError(404, 'Producto no encontrado.');
   const key = id();
   const codes = await resolveVariantCodes(x);
@@ -146,5 +145,7 @@ export async function addVariant(a: Actor, raw: unknown) {
     ),
     auditStatement(a.id, 'Crear variante', key, null, { ...x, ...codes }),
   ]);
-  return { ok: true, id: key };
+  return { ok: true, id: key, variant: { id: key, productId: x.productId,
+    name: product.name, color: x.color, size: x.size, price: x.price,
+    sku: codes.sku, barcode: codes.barcode, stock: x.stock } };
 }
