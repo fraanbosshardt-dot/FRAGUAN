@@ -3,6 +3,7 @@ import {
   escapeHtml,
   orderEmail,
   orderEmailTitles,
+  verificationEmail,
 } from './email-template';
 import { env } from 'cloudflare:workers';
 import { z } from 'zod';
@@ -17,17 +18,21 @@ import {
   statement,
 } from '@/db/queries';
 
-export function emailConfiguration(channel: 'orders' | 'marketing' = 'orders') {
+export function emailConfiguration(
+  channel: 'orders' | 'marketing' | 'verification' = 'orders',
+) {
   const from =
-    (channel === 'marketing'
-      ? env.RESEND_MARKETING_FROM
-      : env.RESEND_FROM
+    (channel === 'verification'
+      ? env.RESEND_VERIFICATION_FROM || 'FRAGUAN <noreply@fraguan.com>'
+      : channel === 'marketing'
+        ? env.RESEND_MARKETING_FROM
+        : env.RESEND_FROM
     )?.trim() ?? '';
   return { from, configured: Boolean(env.RESEND_API_KEY?.trim() && from) };
 }
 
 async function deliver(input: {
-  channel?: 'orders' | 'marketing';
+  channel?: 'orders' | 'marketing' | 'verification';
   to: string;
   subject: string;
   html: string;
@@ -113,13 +118,10 @@ export async function sendEmailVerificationCode(
   nonce: string,
 ) {
   return deliver({
+    channel: 'verification',
     to: email,
     subject: `${code} es tu código FRAGUAN`,
-    html: emailFrame(
-      'CONFIRMÁ TU EMAIL.',
-      `${code} es tu código de verificación`,
-      `<p>Ingresá este código para continuar con tu compra:</p><p style="margin:26px 0;font-size:34px;font-weight:900;letter-spacing:.22em">${escapeHtml(code)}</p><p>Vence en 10 minutos. Si no solicitaste este código, podés ignorar el mensaje.</p>`,
-    ),
+    html: verificationEmail(code),
     kind: 'email_verification',
     idempotencyKey: `email-verification-${nonce}`,
   });
@@ -430,7 +432,7 @@ export async function sendEmailTest(actor: Actor, raw: unknown) {
   const input = z
     .object({
       action: z.literal('test'),
-      channel: z.enum(['orders', 'marketing']),
+      channel: z.enum(['orders', 'marketing', 'verification']),
       requestKey: z.uuid(),
     })
     .strict()
@@ -450,11 +452,14 @@ export async function sendEmailTest(actor: Actor, raw: unknown) {
     channel: input.channel,
     to: recipient.data,
     subject: 'PRUEBA DE EMAIL — FRAGUAN',
-    html: emailFrame(
-      'EMAIL DE PRUEBA.',
-      'Verificación de la conexión de FRAGUAN con Resend.',
-      '<p>Esta es una prueba de la conexión de la tienda FRAGUAN con Resend. No corresponde a una compra ni concede beneficios.</p>',
-    ),
+    html:
+      input.channel === 'verification'
+        ? verificationEmail('123456')
+        : emailFrame(
+            'EMAIL DE PRUEBA.',
+            'Verificación de la conexión de FRAGUAN con Resend.',
+            '<p>Esta es una prueba de la conexión de la tienda FRAGUAN con Resend. No corresponde a una compra ni concede beneficios.</p>',
+          ),
     kind: 'integration_test_' + input.channel,
     idempotencyKey: 'email-test-' + input.requestKey,
   });

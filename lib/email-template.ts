@@ -53,6 +53,14 @@ ${button}
 </td></tr></table></body></html>`;
 }
 
+export function verificationEmail(code: string) {
+  return emailFrame(
+    'CONFIRMÁ TU EMAIL.',
+    `${code} es tu código de verificación FRAGUAN. Vence en 10 minutos.`,
+    `<p>Ingresá este código en FRAGUAN para verificar tu email y continuar:</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:26px 0"><tr><td align="center" bgcolor="${emailTheme.sand}" style="padding:22px 12px;border:1px solid #cdc0a8;font-family:Consolas,'Courier New',monospace;font-size:36px;font-weight:700;line-height:1.3;letter-spacing:.12em;color:${emailTheme.ink}">${escapeHtml(code)}</td></tr></table><p>El código vence en <strong>10 minutos</strong>. No lo compartas con nadie.</p><p>Si no solicitaste este código, ignorá este mensaje.</p><p style="font-size:13px">Este email es automático. No respondas a noreply@fraguan.com; si necesitás ayuda, escribinos a hola@fraguan.com.</p>`,
+  );
+}
+
 export const orderEmailTitles = {
   created: 'RECIBIMOS TU PEDIDO.',
   paid: 'COMPRA CONFIRMADA.',

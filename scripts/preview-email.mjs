@@ -12,7 +12,8 @@ new Function(
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText,
 )(template, template.exports);
-const { emailFrame, escapeHtml, orderEmail } = template.exports;
+const { emailFrame, escapeHtml, orderEmail, verificationEmail } =
+  template.exports;
 assert.equal(
   escapeHtml('<Hola & "vos">'),
   '&lt;Hola &amp; &quot;vos&quot;&gt;',
@@ -34,6 +35,10 @@ assert.ok(html.includes('max-width:600px'));
 assert.ok(html.includes('#2440ff'));
 mkdirSync('outputs', { recursive: true });
 writeFileSync('outputs/fraguan-email-preview.html', html);
+writeFileSync(
+  'outputs/fraguan-verification-preview.html',
+  verificationEmail('123456'),
+);
 // Isolated preview fixtures: never inserted into the system or delivered.
 const order = {
   orderNumber: 123,

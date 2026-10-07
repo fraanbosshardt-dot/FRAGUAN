@@ -6,10 +6,19 @@ import { storeApi } from '@/lib/store-client';
 declare global {
   interface Window {
     google?: {
-      accounts: { id: {
-        initialize(input: { client_id: string; callback: (response: { credential: string }) => void; auto_select?: boolean }): void;
-        renderButton(element: HTMLElement, options: Record<string, unknown>): void;
-      } };
+      accounts: {
+        id: {
+          initialize(input: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+            auto_select?: boolean;
+          }): void;
+          renderButton(
+            element: HTMLElement,
+            options: Record<string, unknown>,
+          ): void;
+        };
+      };
     };
   }
 }
@@ -20,12 +29,14 @@ export function GoogleSignIn({
   resource = 'store-account',
   successPath,
   buttonText = 'continue_with',
+  onSuccess,
 }: {
   clientId: string;
   onError: (message: string) => void;
   resource?: 'store-account' | 'internal-auth';
   successPath?: string;
   buttonText?: 'continue_with' | 'signin_with' | 'signup_with';
+  onSuccess?: () => Promise<void> | void;
 }) {
   const target = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
@@ -45,7 +56,10 @@ export function GoogleSignIn({
               method: 'POST',
               body: JSON.stringify({ action: 'google', credential }),
             });
-            if (successPath) location.assign(successPath);
+            if (onSuccess) {
+              await onSuccess();
+              setLoading(false);
+            } else if (successPath) location.assign(successPath);
             else location.reload();
           } catch (cause: any) {
             onError(cause.message || 'No pudimos iniciar sesión con Google.');
@@ -65,7 +79,9 @@ export function GoogleSignIn({
         locale: 'es',
       });
     };
-    const existing = document.getElementById('google-identity-services') as HTMLScriptElement | null;
+    const existing = document.getElementById(
+      'google-identity-services',
+    ) as HTMLScriptElement | null;
     if (existing) {
       if (window.google) render();
       else existing.addEventListener('load', render, { once: true });
@@ -79,9 +95,18 @@ export function GoogleSignIn({
     script.onload = render;
     script.onerror = () => onError('No pudimos cargar Google Login.');
     document.head.appendChild(script);
-  }, [clientId, onError, resource, successPath, buttonText]);
+  }, [clientId, onError, resource, successPath, buttonText, onSuccess]);
 
   if (!clientId)
-    return <button className="store-google-placeholder" type="button" disabled>Continuar con Google · listo para configurar</button>;
-  return <div className="store-google-signin" aria-busy={loading}><div ref={target} />{loading && <small>Ingresando…</small>}</div>;
+    return (
+      <button className="store-google-placeholder" type="button" disabled>
+        Continuar con Google · listo para configurar
+      </button>
+    );
+  return (
+    <div className="store-google-signin" aria-busy={loading}>
+      <div ref={target} />
+      {loading && <small>Ingresando…</small>}
+    </div>
+  );
 }

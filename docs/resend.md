@@ -2,8 +2,15 @@
 
 Configuración acordada el 07/10/2026:
 
-- Pedidos, sus estados, solicitudes de cambios/devoluciones y códigos de verificación:
+- Pedidos, sus estados y solicitudes de cambios/devoluciones:
   `FRAGUAN <pedidos@fraguan.com>` (`RESEND_FROM`).
+- Códigos de verificación: `FRAGUAN <noreply@fraguan.com>`
+  (`RESEND_VERIFICATION_FROM`, con este remitente predeterminado). Usa el mismo
+  dominio verificado y cupo de Resend; no requiere una nueva API key ni crea buzón.
+  En Admin → comunicaciones puede probarse al destinatario interno configurado.
+  El código de prueba 123456 es solo una vista de email; no verifica una cuenta.
+  Google verifica el email al iniciar sesión; este código se usa en el flujo de
+  verificación de email del checkout. No se agregó un segundo factor a Google.
 - Bienvenida de cuenta nueva, bienvenida a newsletter y marketing:
   `FRAGUAN <hola@fraguan.com>` (`RESEND_MARKETING_FROM`).
 - Una API key de Resend con permiso de envío para `fraguan.com`:

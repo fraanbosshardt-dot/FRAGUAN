@@ -56,7 +56,7 @@ export const storeMoney = (value: number) =>
   new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
-    minimumFractionDigits: 0,
+    minimumFractionDigits: value % 100 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(value / 100);
 

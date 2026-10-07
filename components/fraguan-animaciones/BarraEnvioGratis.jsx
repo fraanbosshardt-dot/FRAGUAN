@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import './fraguan-anim.css';
 
-const money = (n) => '$ ' + Number(n).toLocaleString('es-AR');
+const money = (n) =>
+  '$ ' +
+  Number(n).toLocaleString('es-AR', {
+    minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
 
 /** 2. Barra de envío gratis. Props: subtotal (número), meta (default 150000) */
 export default function BarraEnvioGratis({

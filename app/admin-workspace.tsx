@@ -2700,6 +2700,7 @@ export default function Admin({
                 <p>Prueba y avisos internos: {data.testRecipient || 'Sin configurar'}</p>
                 <div className="heading-actions">
                   <Button disabled={busy || !data.ordersConfigured || !data.testRecipient} onClick={() => mutate('newsletter', {action:'test',channel:'orders',requestKey:crypto.randomUUID()})}>Probar email de pedidos</Button>
+                  <Button disabled={busy || !data.ordersConfigured || !data.testRecipient} onClick={() => mutate('newsletter', {action:'test',channel:'verification',requestKey:crypto.randomUUID()})}>Probar email de verificación</Button>
                   <Button disabled={busy || !data.configured || !data.testRecipient} onClick={() => mutate('newsletter', {action:'test',channel:'marketing',requestKey:crypto.randomUUID()})}>Probar bienvenida y marketing</Button>
                 </div>
                 <p className="quiet">La prueba se envía solo al email interno configurado. Configurado indica que existen las variables; verificá la recepción con una prueba.</p>

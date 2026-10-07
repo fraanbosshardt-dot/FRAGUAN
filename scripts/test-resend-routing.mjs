@@ -97,7 +97,9 @@ const api = m.exports;
 await api.sendOrderEmails('order-test', 'created');
 assert.equal(sent.at(-1).from, env.RESEND_FROM);
 await api.sendEmailVerificationCode('test@example.invalid', '123456', 'nonce');
-assert.equal(sent.at(-1).from, env.RESEND_FROM);
+assert.equal(sent.at(-1).from, 'FRAGUAN <noreply@fraguan.com>');
+assert.ok(sent.at(-1).html.includes('123456'));
+assert.ok(sent.at(-1).html.includes('10 minutos'));
 await api.sendMarketingEmail({
   to: 'test@example.invalid',
   subject: 'Novedades',
@@ -163,3 +165,10 @@ await assert.rejects(() =>
   ),
 );
 console.log('PASS: prueba interna por canal, sin destinatarios arbitrarios.');
+await api.sendEmailTest(
+  { id: 'owner' },
+  { action: 'test', channel: 'verification', requestKey: crypto.randomUUID() },
+);
+assert.equal(sent.at(-1).from, 'FRAGUAN <noreply@fraguan.com>');
+assert.equal(sent.at(-1).to[0], env.RESEND_ORDER_TO);
+assert.ok(sent.at(-1).html.includes('123456'));

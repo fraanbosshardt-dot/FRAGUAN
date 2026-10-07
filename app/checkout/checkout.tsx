@@ -4,6 +4,7 @@ import StoreReservation, {
   useReservationExpired,
 } from '@/components/store-reservation';
 import { CheckoutPanel } from '@/components/checkout-panel';
+import { GoogleSignIn } from '@/components/google-sign-in';
 import { FREE_SHIPPING_MINIMUM_MINOR } from '@/lib/store-shipping-policy';
 import BarraEnvioGratis from '@/components/fraguan-animaciones/BarraEnvioGratis';
 import TarjetaClub from '@/components/fraguan-animaciones/TarjetaClub';
@@ -81,14 +82,6 @@ export default function Checkout({
   const [recoveryConsent, setRecoveryConsent] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState('');
   const [deliverySummary, setDeliverySummary] = useState('');
-  const [summaryOpen, setSummaryOpen] = useState(true);
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 860px)');
-    const resize = () => setSummaryOpen(!media.matches);
-    resize();
-    media.addEventListener('change', resize);
-    return () => media.removeEventListener('change', resize);
-  }, []);
   const [payment, setPayment] = useState<'transfer' | 'card'>('transfer');
   const [shippingMethod, setShippingMethod] = useState<
     'correo-argentino-home' | 'pickup'
@@ -279,13 +272,19 @@ export default function Checkout({
   async function submit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || pricingBusy || !pricing) return;
+    if (createAccount && !passwordAuthEnabled && !session?.customer) {
+      setError(
+        'Continuá con Google para crear tu cuenta, o desmarcá esa opción para comprar como invitado.',
+      );
+      return;
+    }
     for (const number of [1, 2, 3]) if (!validateStep(number)) return;
     setConfirmingPayment(true);
     setBusy(true);
     setError('');
     const form = new FormData(event.currentTarget);
     try {
-      if (createAccount && !session?.customer) {
+      if (createAccount && !session?.customer && passwordAuthEnabled) {
         await storeApi('store-account', {
           method: 'POST',
           body: JSON.stringify({
@@ -1110,19 +1109,52 @@ export default function Checkout({
                   <input
                     type="checkbox"
                     checked={createAccount}
-                    disabled={!passwordAuthEnabled}
+                    disabled={!passwordAuthEnabled && !session?.googleClientId}
                     onChange={(e) => setCreateAccount(e.target.checked)}
                   />
                   <span>
                     <strong>Crear mi cuenta con estos datos</strong>
                     <small className="cp-account-help">
                       {passwordAuthEnabled
-                        ? 'Sumás tus compras del local y online, preferencias y beneficios del Club.'
-                        : 'El registro todavía no está habilitado. Podés continuar como invitado.'}
+                        ? 'Guardá tus pedidos y datos para tu próxima compra.'
+                        : session?.googleClientId
+                          ? 'Continuá con Google para crear tu cuenta sin perder los datos de esta compra.'
+                          : 'Podés continuar como invitado y verificar tu email en Contacto.'}
                     </small>
                   </span>
                 </CheckoutField>
-                {createAccount && (
+                {createAccount &&
+                  !passwordAuthEnabled &&
+                  session?.googleClientId && (
+                    <div className="cp-google-account">
+                      <GoogleSignIn
+                        clientId={session.googleClientId}
+                        buttonText="signup_with"
+                        onError={setError}
+                        onSuccess={async () => {
+                          const account = await storeApi('store-account');
+                          if (!account.customer)
+                            throw new Error(
+                              'No pudimos confirmar tu sesión. Intentá nuevamente.',
+                            );
+                          const emailField =
+                            checkoutForm.current?.elements.namedItem(
+                              'email',
+                            ) as HTMLInputElement | null;
+                          if (emailField)
+                            emailField.value = account.customer.email;
+                          setContactSummary(account.customer.email);
+                          setSession(account);
+                          dispatchEvent(
+                            new CustomEvent('fraguan-account', {
+                              detail: account.customer,
+                            }),
+                          );
+                        }}
+                      />
+                    </div>
+                  )}
+                {createAccount && passwordAuthEnabled && (
                   <CheckoutField className="fi">
                     CONTRASEÑA (8+)
                     <input
@@ -1177,7 +1209,7 @@ export default function Checkout({
             )}
             {!session?.customer &&
               !emailVerificationToken &&
-              !createAccount && (
+              !(createAccount && passwordAuthEnabled) && (
                 <p className="cp-muted">
                   Para confirmar el pedido,{' '}
                   <button
@@ -1202,9 +1234,10 @@ export default function Checkout({
                 busy ||
                 pricingBusy ||
                 !pricing ||
+                (createAccount && !passwordAuthEnabled && !session?.customer) ||
                 (!session?.customer &&
                   !emailVerificationToken &&
-                  !createAccount)
+                  !(createAccount && passwordAuthEnabled))
               }
             >
               <RollingText>
@@ -1229,19 +1262,13 @@ export default function Checkout({
           )}
         </form>
         <aside className="cp-aside" aria-label="Resumen del pedido">
-          <details
-            open={summaryOpen}
-            onToggle={(event) => setSummaryOpen(event.currentTarget.open)}
-          >
-            <summary>
+          <section className="cp-order-summary">
+            <header className="cp-summary-heading">
               <span>TU PEDIDO</span>
               <span>
                 <Odometer value={total / 100} />
-                <span className="cp-summary-chevron" aria-hidden="true">
-                  ⌄
-                </span>
               </span>
-            </summary>
+            </header>
             <div className="cp-summary-content">
               {cart.map((item) => (
                 <div className="cp-item" key={item.id}>
@@ -1332,7 +1359,7 @@ export default function Checkout({
                 Modificar carrito →
               </a>
             </div>
-          </details>
+          </section>
         </aside>
       </div>
     </section>

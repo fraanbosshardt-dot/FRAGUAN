@@ -11,6 +11,12 @@ formulario con datos productivos. No se enviaron campañas de prueba a clientes.
 
 ## Cambios realizados en esta revisión
 
+- Checkout: casillas junto a su texto y operables desde la etiqueta; creación
+  con Google dentro del formulario sin recarga. Resumen siempre abierto, sin
+  desplegable; importes con dos decimales cuando tienen centavos. Verificación
+  por email desde noreply@fraguan.com, con plantilla de código de seis dígitos y
+  prueba al destinatario interno desde Admin. Google ya verifica sus cuentas;
+  el código sigue correspondiendo a la verificación del checkout.
 - Reserva: contador absoluto de vencimiento en checkout y seguimiento, con los
   tokens del tema. Aviso de stock liberado, recuperación con precios/disponibilidad
   actuales y conservación de otros productos del carrito. No reinicia vigencia al
