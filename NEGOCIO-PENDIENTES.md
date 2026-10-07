@@ -94,3 +94,11 @@ Acreditaciones: el dueño confirmó usar automáticamente el día previsto segú
 el plazo guardado al cobrar, sin confirmación manual de tarjetas. Transferencia
 del local ingresada al confirmar la venta. Solo transferencias de compras online
 requieren confirmar el pago en Pedidos online. Vista en Admin → Bancos.
+
+
+## Resend — preparación del 07/10/2026
+
+Dominio fraguan.com verificado en Resend. Pedidos desde pedidos@fraguan.com;
+bienvenida y marketing desde hola@fraguan.com. Remitentes preparados en Railway
+y separación implementada en código. API key y destinatario para prueba real
+pendientes de cargar/confirmar por el dueño. Detalles en docs/resend.md.

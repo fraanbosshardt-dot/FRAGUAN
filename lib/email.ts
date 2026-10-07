@@ -40,7 +40,17 @@ function emailFrame(
   return `<!doctype html><html><body style="margin:0;background:#f3efe7;color:#181818;font-family:Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div><main style="max-width:620px;margin:auto;padding:42px 24px"><div style="font-size:18px;font-weight:900;letter-spacing:.14em">FRAGUAN</div><div style="height:3px;background:#181818;margin:20px 0 34px"></div><h1 style="font-size:38px;line-height:1.02;margin:0 0 22px">${escapeHtml(title)}</h1><div style="font-size:16px;line-height:1.65">${content}</div>${button}<div style="height:1px;background:#cbc4b7;margin:36px 0 20px"></div><small style="color:#6d675e">FRAGUAN · FORJÁ TU ESTILO.</small></main></body></html>`;
 }
 
+export function emailConfiguration(channel: 'orders' | 'marketing' = 'orders') {
+  const from =
+    (channel === 'marketing'
+      ? env.RESEND_MARKETING_FROM
+      : env.RESEND_FROM
+    )?.trim() ?? '';
+  return { from, configured: Boolean(env.RESEND_API_KEY?.trim() && from) };
+}
+
 async function deliver(input: {
+  channel?: 'orders' | 'marketing';
   to: string;
   subject: string;
   html: string;
@@ -51,8 +61,8 @@ async function deliver(input: {
 }) {
   const deliveryId = id(),
     createdAt = now();
-  if (!env.RESEND_API_KEY || !env.RESEND_FROM)
-    return { sent: false, configured: false };
+  const configuration = emailConfiguration(input.channel);
+  if (!configuration.configured) return { sent: false, configured: false };
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -62,7 +72,7 @@ async function deliver(input: {
         'Idempotency-Key': input.idempotencyKey.slice(0, 256),
       },
       body: JSON.stringify({
-        from: env.RESEND_FROM,
+        from: configuration.from,
         to: [input.to],
         subject: input.subject,
         html: input.html,
@@ -111,6 +121,7 @@ export async function sendMarketingEmail(input: {
   entityId: string;
 }) {
   return deliver({
+    channel: 'marketing',
     to: input.to,
     subject: input.subject,
     html: emailFrame(input.title, input.preheader, input.content, input.action),
@@ -278,12 +289,16 @@ export async function subscribeNewsletter(raw: unknown) {
   ).run();
   const origin = env.SITE_ORIGIN?.replace(/\/$/, '') ?? '';
   await deliver({
+    channel: 'marketing',
     to: input.email,
-    subject: 'YA SOS PARTE DE FRAGUAN.',
+    subject: 'NOVEDADES DE FRAGUAN.',
     html: emailFrame(
-      'ENTRASTE A FRAGUAN.',
+      'BIENVENIDO A LAS NOVEDADES.',
       'Acceso a novedades y drops.',
-      '<p>Vas a recibir nuevos ingresos, drops y beneficios del Club. Solo cuando haya algo que valga la pena.</p>',
+      '<p>Te suscribiste para recibir novedades y nuevos ingresos de FRAGUAN.</p>' +
+        (origin
+          ? `<p><a href="${escapeHtml(origin)}/api/store-newsletter?unsubscribe=${encodeURIComponent(token)}">Dejar de recibir novedades</a></p>`
+          : ''),
       origin ? { label: 'VER LA COLECCIÓN', url: origin } : undefined,
     ),
     kind: 'newsletter_welcome',
@@ -318,7 +333,7 @@ export async function newsletterOverview(actor: Actor) {
     ),
   ]);
   return {
-    configured: Boolean(env.RESEND_API_KEY && env.RESEND_FROM),
+    configured: emailConfiguration('marketing').configured,
     subscribers,
     campaigns,
   };
@@ -336,7 +351,7 @@ export async function sendNewsletterCampaign(actor: Actor, raw: unknown) {
     })
     .strict()
     .parse(raw);
-  if (!env.RESEND_API_KEY || !env.RESEND_FROM)
+  if (!emailConfiguration('marketing').configured)
     throw new AppError(409, 'Configurá Resend antes de enviar una campaña.');
   const subscribers = await rows<{
     id: string;
@@ -385,6 +400,7 @@ export async function sendNewsletterCampaign(actor: Actor, raw: unknown) {
           ? `<p style="margin-top:30px;font-size:12px;color:#6d675e"><a href="${escapeHtml(unsubscribe)}">Dejar de recibir estos emails</a></p>`
           : '';
         return deliver({
+          channel: 'marketing',
           to: subscriber.email,
           subject: input.subject,
           html: emailFrame(
@@ -413,4 +429,26 @@ export async function sendNewsletterCampaign(actor: Actor, raw: unknown) {
     campaignId,
   ).run();
   return newsletterOverview(actor);
+}
+
+export async function sendAccountWelcome(accountId: string) {
+  const account = await one<{ email: string; name: string }>(
+    'SELECT a.email,c.name FROM customer_accounts a JOIN customers c ON c.id=a.customerId WHERE a.id=?',
+    accountId,
+  );
+  if (!account) return;
+  const origin = env.SITE_ORIGIN?.replace(/\/$/, '') ?? '';
+  return deliver({
+    channel: 'marketing',
+    to: account.email,
+    subject: 'BIENVENIDO A FRAGUAN.',
+    html: emailFrame(
+      'TU CUENTA ESTÁ LISTA.',
+      'Bienvenido a FRAGUAN.',
+      `<p>Hola ${escapeHtml(account.name)},</p><p>Tu cuenta ya está creada. Podés consultar tus pedidos, guardar favoritos y completar tus datos desde Mi FRAGUAN.</p>`,
+      origin ? { label: 'VER MI CUENTA', url: origin + '/cuenta' } : undefined,
+    ),
+    kind: 'account_welcome',
+    idempotencyKey: 'account-welcome-' + accountId,
+  });
 }

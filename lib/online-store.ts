@@ -17,6 +17,7 @@ import {
   readCustomerIntelligenceConfig,
 } from './customer-intelligence';
 import {
+  sendAccountWelcome,
   sendEmailVerificationCode,
   sendOrderEmails,
   sendReturnRequestEmails,
@@ -840,6 +841,7 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
       503,
       'El acceso por email está deshabilitado. Ingresá con Google.',
     );
+  let newAccount = false;
   let loginEmail = input.email;
   let account: {
     id: string;
@@ -900,6 +902,7 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
           createdAt,
         ),
       ]);
+      newAccount = true;
       account = {
         id: accountId,
         customerId,
@@ -943,6 +946,7 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
         createdAt,
       ),
     ]);
+    newAccount = true;
     account = {
       id: accountId,
       customerId,
@@ -981,6 +985,7 @@ export async function storeAccountWrite(req: Request, raw: unknown) {
       now(),
     ),
   ]);
+  if (newAccount) await sendAccountWelcome(account.id).catch(() => undefined);
   const customer = await one(
     'SELECT name,surname,phone,points FROM customers WHERE id=?',
     account.customerId,

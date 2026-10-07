@@ -4,7 +4,7 @@ import { env } from 'cloudflare:workers';
 import { Actor, AppError, requirePermission } from './auth';
 import { currentStoreCustomer } from './online-store';
 import { db, id, now, one, rows, statement } from '@/db/queries';
-import { sendMarketingEmail } from './email';
+import { sendMarketingEmail, emailConfiguration } from './email';
 import {
   publicLine,
   publicMultiline,
@@ -202,7 +202,7 @@ export async function storeGrowthDashboard(actor: Actor) {
       checkout: counts.begin_checkout ?? 0,
       purchases: counts.purchase ?? 0,
     }, sources, products, carts, reviews, waits, automations,
-    configured: Boolean(env.RESEND_API_KEY && env.RESEND_FROM),
+    configured: emailConfiguration('marketing').configured,
   };
 }
 
