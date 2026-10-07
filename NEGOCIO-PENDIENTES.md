@@ -142,3 +142,8 @@ otros productos del carrito. Sin nueva reserva hasta confirmar un nuevo pedido.
 Transferencias informadas no ofrecen volver a comprar/pagar; requieren revisión.
 Definir plazo específico para transferencia
 con el dueño antes de modificarlo; no se cambió la vigencia existente.
+
+## Preferencia de diseño — 07/10/2026
+
+No agregar bordes azules decorativos ni barras laterales azules en tarjetas o avisos. Mantener el estilo existente; los bordes de los avisos de reserva son neutros.
+

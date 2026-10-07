@@ -1,7 +1,6 @@
 .fraguan-design .store-reservation {
   background: var(--bone-2);
   border: 1px solid var(--sand);
-  border-left: 3px solid var(--acc);
   color: var(--ink);
   font-family: var(--fb);
   padding: 20px;
