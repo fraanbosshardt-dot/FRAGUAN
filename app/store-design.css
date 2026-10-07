@@ -2539,3 +2539,40 @@ body:has(.fraguan-design) .store-toast {
     opacity: 1;
   }
 }
+.fraguan-design .store-product-share {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 0;
+  margin-top: 20px;
+  border-top: 1px solid var(--sand);
+}
+.fraguan-design .store-product-share > span {
+  font-size: 18px;
+}
+.fraguan-design .store-product-share > div {
+  display: flex;
+  gap: 8px;
+}
+.fraguan-design .store-product-share a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--bone);
+}
+.fraguan-design .store-product-share a:hover,
+.fraguan-design .store-product-share a:focus-visible {
+  background: var(--bone-2);
+  color: var(--ink);
+}
+.fraguan-design .store-product-share svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}

@@ -33,6 +33,7 @@ import {
   trackStore,
 } from '@/lib/store-client';
 import { StoreProductTrust } from '@/components/store-product-trust';
+import { StoreProductShare } from '@/components/store-product-share';
 import { FREE_SHIPPING_MINIMUM_MINOR } from '@/lib/store-shipping-policy';
 const matchText = (value) =>
   value
@@ -559,6 +560,7 @@ function Prod({ id }) {
             ${f ? '♥ EN FAVORITOS' : '♡ GUARDAR EN FAVORITOS'}
           </button>
         </div>
+        <${StoreProductShare} product=${p.original} />
         <p style=${{ marginTop: 22, lineHeight: 1.6 }}>${p.description}</p>
         <details>
           <summary>MATERIAL Y CUIDADOS</summary>
