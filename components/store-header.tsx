@@ -32,14 +32,6 @@ export function StoreHeader({ dark = false }: { dark?: boolean }) {
   const [menu, setMenu] = useState(false);
   return (
     <>
-      <div className="store-promo">
-        <div className="store-promo-track" aria-label="Beneficios de compra">
-          <span>10% OFF PAGANDO POR TRANSFERENCIA</span>
-          <span>ENVÍOS A TODO EL PAÍS</span>
-          <span aria-hidden="true">10% OFF PAGANDO POR TRANSFERENCIA</span>
-          <span aria-hidden="true">ENVÍOS A TODO EL PAÍS</span>
-        </div>
-      </div>
       <header className={`store-header ${dark ? 'on-dark' : ''}`}>
         <button
           className="store-menu-button"

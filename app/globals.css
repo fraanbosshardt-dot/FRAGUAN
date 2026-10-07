@@ -5960,3 +5960,9 @@ textarea {
     font-size: 13px;
   }
 }
+
+.admin-growth-form { display:grid;gap:16px;margin:20px 0; }
+.admin-growth-form label { display:grid;gap:8px;font-size:14px; }
+.admin-growth-form label:has(input[type="checkbox"]) { display:flex;align-items:center; }
+.admin-growth-form input:not([type="checkbox"]) { width:100%;min-height:44px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--background);color:var(--foreground); }
+.admin-growth-form button { min-height:44px;padding:10px 16px;background:var(--primary);color:var(--primary-foreground);border-radius:8px; }

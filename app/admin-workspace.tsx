@@ -1,4 +1,5 @@
 'use client';
+import { AdminGrowthControls } from '@/components/admin-growth-controls';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ShoppingBag,
@@ -1384,7 +1385,7 @@ export default function Admin({
                   }
                   disabled={busy}
                 >
-                  <RefreshCw size={15} /> Ejecutar automatizaciones
+                  <RefreshCw size={15} /> Procesar recordatorios pendientes
                 </Button>
               )}
               {![
@@ -2758,6 +2759,7 @@ export default function Admin({
           )}
           {section === 'marketing' && data && (
             <div className="growth-admin">
+              <AdminGrowthControls data={data} busy={busy} save={config=>mutate('marketing',{action:'configure-recovery',config})} />
               <section className="metric-grid">
                 {[
                   ['Sesiones', data.funnel?.visitors ?? 0],
@@ -2839,7 +2841,7 @@ export default function Admin({
                     <h2>Carritos por recuperar</h2>
                     <span>
                       {data.configured
-                        ? 'Emails automáticos listos'
+                        ? data.recovery?.enabled ? 'Recuperación activada' : 'Recuperación pausada'
                         : 'Falta configurar Resend'}
                     </span>
                   </div>

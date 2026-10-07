@@ -224,7 +224,7 @@ export async function storeEmailVerification(req: Request, raw: unknown) {
   };
 }
 
-async function requireVerifiedCheckoutEmail(
+export async function requireVerifiedCheckoutEmail(
   req: Request,
   email: string,
   token: string,

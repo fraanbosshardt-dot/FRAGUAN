@@ -1,4 +1,9 @@
 import {
+  captureCartRecovery,
+  stopCartRecovery,
+  saveRecoveryConfiguration,
+} from '@/lib/cart-recovery';
+import {
   actor,
   identity,
   can,
@@ -277,6 +282,20 @@ export async function GET(
           (url.searchParams.get('productId') ?? '').slice(0, 100),
         ),
       );
+    if (resource === 'store-recovery') {
+      enforceRateLimit(req, resource, 60, 60000);
+      await stopCartRecovery(url.searchParams.get('unsubscribe') ?? '');
+      return new Response(
+        '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recordatorios pausados | FRAGUAN</title><body style="background:#f2eee6;color:#14110f;font-family:Arial;padding:40px;max-width:600px;margin:auto"><h1>FRAGUAN</h1><h2>Recordatorios pausados.</h2><p>No te enviaremos más recordatorios de esta selección.</p><a href="https://www.fraguan.com">Volver a la tienda</a></body></html>',
+        {
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-Robots-Tag': 'noindex',
+          },
+        },
+      );
+    }
     if (resource === 'store-recover-cart')
       return reply(await recoverCart(url.searchParams.get('token') ?? ''));
     if (resource === 'store-account') return reply(await storeAccount(req));
@@ -824,6 +843,10 @@ export async function POST(
       return reply(await createOnlineReturnRequest(body), 201);
     if (resource === 'store-newsletter')
       return reply(await subscribeNewsletter(body), 201);
+    if (resource === 'store-recovery') {
+      enforceRateLimit(req, resource, 30, 60000);
+      return reply(await captureCartRecovery(req, body));
+    }
     if (resource === 'store-event')
       return reply(await trackStoreEvent(req, body), 201);
     if (resource === 'store-back-in-stock')
@@ -1059,10 +1082,33 @@ export async function POST(
     if (resource === 'online-catalog')
       return reply(await onlineCatalogWrite(a, body));
     if (resource === 'newsletter')
-      return reply(body && typeof body === 'object' && 'action' in body && body.action === 'test'
-        ? await sendEmailTest(a, body)
-        : await sendNewsletterCampaign(a, body));
+      return reply(
+        body &&
+          typeof body === 'object' &&
+          'action' in body &&
+          body.action === 'test'
+          ? await sendEmailTest(a, body)
+          : await sendNewsletterCampaign(a, body),
+      );
     if (resource === 'marketing') {
+      if (
+        body &&
+        typeof body === 'object' &&
+        'action' in body &&
+        body.action === 'configure-recovery'
+      ) {
+        await saveRecoveryConfiguration(
+          a,
+          z
+            .object({
+              action: z.literal('configure-recovery'),
+              config: z.unknown(),
+            })
+            .strict()
+            .parse(body).config,
+        );
+        return reply(await storeGrowthDashboard(a));
+      }
       const action = z
         .object({
           action: z.enum(['run-automations', 'moderate-review']),

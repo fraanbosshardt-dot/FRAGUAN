@@ -16,7 +16,6 @@ import {
   PhotoReveal,
   AnimatedLabel,
   AnimatedForm,
-  ScrollMarquee,
 } from '@/components/store-motion';
 import {
   volarAlCarrito,
@@ -889,13 +888,6 @@ function PublicStore({ children }) {
         <a className="design-skip" href="#store-content">
           Saltar al contenido
         </a>
-        <ScrollMarquee aria-label="10% OFF pagando por transferencia. Envíos a todo el país.">
-          {[0, 1, 2].map((i) => (
-            <span key={i}>
-              10% OFF PAGANDO POR TRANSFERENCIA ✦ ENVÍOS A TODO EL PAÍS ✦
-            </span>
-          ))}
-        </ScrollMarquee>
         {pathname === '/checkout' ? (
           <nav className="cp-nav" aria-label="Navegación de compra">
             <a href="/carrito">← VOLVER AL CARRITO</a>

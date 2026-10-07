@@ -35,6 +35,8 @@ reglas aprobadas para implementar sin definir sus datos y condiciones.
 2. **Meta Ads:** conectar la publicidad y la medición de resultados de las campañas
    con la tienda. Definir cuentas, eventos y campañas antes de activarlas.
 3. **Métodos de envío:** Correo Argentino y Andreani a domicilio desde Isla Verde.
+   Pospuestos por el dueño el 07/10/2026: informó que el acceso de Andreani no
+   funciona y pidió retomar las integraciones más adelante.
    Faltan cuentas, credenciales API, código postal de origen y embalaje con peso y
    medidas. Ver `docs/envios-correo-andreani.md`.
 4. **Pagos online:** conectar los proveedores elegidos para cobrar y confirmar
@@ -111,3 +113,17 @@ Esta tarea no cambia las reglas comerciales que ya están activas.
 Pendiente seguimiento automático, Andreani, recuperación de compras y campañas.
 No activar campañas sin definirlas.
 Detalles en docs/resend.md.
+
+## Revisión y cupos de emails — 07/10/2026
+
+Límites informados: 3.000 emails/mes y 1.000 contactos Marketing gratuitos.
+Resend también aplica 100 emails/día. Con la API actual, bienvenida y recuperación
+consumen el mismo cupo de envíos que pedidos. Priorizar compras/verificación.
+Recuperación autorizada: dos avisos a 2 y 24 horas, sin descuentos; pausa,
+horarios y presupuesto desde Crecimiento online. Inicial: 30 recordatorios/día,
+900/mes; posponer a 80 envíos/día o 2.400/mes registrados para dejar margen.
+Conteos locales orientativos; contrastar con Resend. Si volumen requiere pago,
+el dueño acepta evaluarlo; no contratar automáticamente.
+CyberMonday reversible no implementado. Priorizar stock compartido POS/reservas
+online y número de pedido concurrente. SEO/Search Console y decisiones pendientes
+detallados en REVISION_SISTEMA.md. Mantener Meta Ads y Google Maps para después.

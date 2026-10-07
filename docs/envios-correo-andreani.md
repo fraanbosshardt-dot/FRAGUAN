@@ -1,6 +1,16 @@
 # Envíos: Correo Argentino y Andreani
 
-Actualizado: 6 de octubre de 2026.
+Actualizado: 7 de octubre de 2026.
+
+## Estado: pospuesto por el dueño
+
+El 07/10/2026 el dueño informó que el acceso de Andreani no funciona y pidió
+dejar las integraciones de envíos para más adelante. No se continuará el alta,
+la conexión API ni la activación de cotizaciones hasta que se retome el trabajo.
+El fallo fue informado por el dueño; no se confirmó una caída general del servicio.
+Siguen pendientes los accesos/contratos, la dirección y código postal de origen,
+y el peso y dimensiones del embalaje. La configuración existente de la tienda
+no se modificó durante este intento de integración.
 
 ## Decisiones confirmadas
 
@@ -55,3 +65,30 @@ automático y los eventos de entrega aún deben completarse y validarse por prov
 - [Servicios e integración de MiCorreo](https://www.correoargentino.com.ar/MiCorreo/public/paq-ar)
 - [Andreani Developers](https://developers.andreani.com/document)
 - [Integraciones Andreani](https://www.andreani.com/integraciones)
+
+## Andreani — inicio de configuración, 07/10/2026
+
+El dueño eligió integrar Andreani primero. Revisada la documentación oficial
+desde el navegador, todavía sin configurar credenciales ni activar tarifas:
+
+- Registro como usuario PyME en Andreani.com si aún no se es cliente. Acceso a
+  credenciales/contrato desde Integraciones; confirmar con Andreani el acceso QA
+  y producción para el servicio contratado.
+- Autenticación: GET /login con Basic Auth (usuario/contraseña). Token de 24 horas;
+  llamadas autenticadas con header x-authorization-token.
+- Bases oficiales: https://apisqa.andreani.com y https://apis.andreani.com.
+- Cotización: GET /v1/tarifas, con parámetros según el contrato. No asumir tarifa,
+  moneda, unidades ni embalaje sin validar su mapeo y la cuenta real.
+- Pre-envío: POST /v2/ordenes-de-envio. La respuesta incluye número de envío y
+  enlaces de etiquetas; generar la orden no equivale a despacho físico.
+- Validar estado de creación antes de considerar lista la etiqueta. La admisión
+  física del paquete es una etapa distinta, que requiere seguimiento.
+
+Documentación y mapeos oficiales consultados:
+- https://developers.andreani.com/document
+- Cotizador: https://a.storyblok.com/f/63950/x/785cfc88f2/api-cotizador-v2-1.xlsx
+- Orden: https://a.storyblok.com/f/63950/x/67eaefe2fd/api-orden-envio-3.xlsx
+
+Para continuar faltan confirmar cuenta/acceso API, contrato a domicilio, origen
+completo y embalaje real. No se cambió el checkout ni se agregó una tarifa ficticia
+de Andreani. El acceso API y los mapeos deben validarse antes de implementarlo.

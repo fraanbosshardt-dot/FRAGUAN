@@ -193,6 +193,18 @@ export function useStoreCart() {
     localStorage.setItem(CART_KEY, JSON.stringify(next));
     setCartState(next);
     dispatchEvent(new Event('fraguan-cart'));
+    if (!next.length) {
+      void fetch('/api/store-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: storeSessionId(),
+          consent: false,
+          items: [],
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    }
   }, []);
   const add = useCallback(
     (product: StoreProduct, variant: StoreVariant, quantity = 1) => {

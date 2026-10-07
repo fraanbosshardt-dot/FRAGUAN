@@ -47,5 +47,22 @@ export default defineConfig({
     ),
     'process.env.FRAGUAN_DEPLOY_ENABLED': JSON.stringify('true'),
   },
-  plugins: [vinext(), nitro()],
+  plugins: [
+    vinext(),
+    nitro(
+      process.env.NITRO_PRESET === 'node-server'
+        ? {
+            experimental: { tasks: true },
+            tasks: {
+              'cart-recovery': {
+                handler: fileURLToPath(
+                  new URL('./server/tasks/cart-recovery.ts', import.meta.url),
+                ),
+              },
+            },
+            scheduledTasks: { '*/5 * * * *': ['cart-recovery'] },
+          }
+        : {},
+    ),
+  ],
 });

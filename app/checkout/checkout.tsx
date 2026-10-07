@@ -75,6 +75,8 @@ export default function Checkout({
   const [createdCustomer, setCreatedCustomer] = useState<any>(null);
   const [completed, setCompleted] = useState([false, false, false]);
   const [contactSummary, setContactSummary] = useState('');
+  const [recoveryConsent, setRecoveryConsent] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState('');
   const [deliverySummary, setDeliverySummary] = useState('');
   const [summaryOpen, setSummaryOpen] = useState(true);
   useEffect(() => {
@@ -116,6 +118,53 @@ export default function Checkout({
       .then(setSession)
       .catch(() => undefined);
   }, []);
+  useEffect(() => {
+    if (!hydrated) return;
+    const controller = new AbortController();
+    if (recoveryConsent && !session?.customer && !emailVerificationToken) {
+      setRecoveryMessage(
+        'Verificá tu email en Contacto para recibir recordatorios.',
+      );
+      return;
+    }
+    const timer = setTimeout(() => {
+      void storeApi('store-recovery', {
+        method: 'POST',
+        signal: controller.signal,
+        body: JSON.stringify({
+          sessionId: storeSessionId(),
+          consent: recoveryConsent,
+          email: contactSummary,
+          emailVerificationToken,
+          items: cart.map((x) => ({ variantId: x.id, quantity: x.quantity })),
+        }),
+      })
+        .then(() =>
+          setRecoveryMessage(
+            recoveryConsent
+              ? 'Podés darte de baja desde cualquier recordatorio.'
+              : '',
+          ),
+        )
+        .catch((cause) => {
+          if (!controller.signal.aborted)
+            setRecoveryMessage(
+              cause.message || 'No pudimos guardar tu preferencia.',
+            );
+        });
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    hydrated,
+    recoveryConsent,
+    contactSummary,
+    emailVerificationToken,
+    session?.customer,
+    cart,
+  ]);
   function fillShippingAddress(address?: Record<string, any>) {
     setPostalCode(address?.postalCode || '');
     for (const key of [
@@ -1103,46 +1152,20 @@ export default function Checkout({
               <input
                 name="marketingRecovery"
                 type="checkbox"
-                onChange={(event) => {
-                  if (!event.currentTarget.checked) return;
-                  localStorage.setItem('fraguan-cookie-consent', 'analytics');
-                  const email =
-                    (
-                      event.currentTarget.form?.elements.namedItem(
-                        'email',
-                      ) as HTMLInputElement | null
-                    )?.value || '';
-                  if (email)
-                    trackStore('begin_checkout', {
-                      consentGranted: true,
-                      email,
-                      value: subtotal,
-                      cart: cart.map(
-                        ({
-                          id,
-                          productName,
-                          slug,
-                          color,
-                          size,
-                          price,
-                          quantity,
-                        }) => ({
-                          variantId: id,
-                          productName,
-                          slug,
-                          color,
-                          size,
-                          price,
-                          quantity,
-                        }),
-                      ),
-                    });
-                }}
+                checked={recoveryConsent}
+                onChange={(event) =>
+                  setRecoveryConsent(event.currentTarget.checked)
+                }
               />
               <span>
                 Quiero recibir ayuda por email si dejo esta compra sin terminar.
               </span>
             </CheckoutField>
+            {recoveryMessage && (
+              <output className="cp-muted">
+                {recoveryMessage}
+              </output>
+            )}
             {!session?.customer &&
               !emailVerificationToken &&
               !createAccount && (

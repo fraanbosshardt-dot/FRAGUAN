@@ -20,9 +20,9 @@ export default function RecoverCart({ token }: { token: string }) {
           size: line.size,
           price: line.price,
           quantity: line.quantity,
-          stock: 20,
-          sku: '',
-          barcode: '',
+          stock: line.stock,
+          sku: line.sku,
+          barcode: line.barcode,
         }));
         localStorage.setItem('fraguan-online-cart', JSON.stringify(restored));
         dispatchEvent(new Event('fraguan-cart'));

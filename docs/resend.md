@@ -72,3 +72,22 @@ el enlace oficial https://www.correoargentino.com.ar/formularios/e-commerce
 para ingresarlo. No inventa URLs individuales ni permite ver pedidos privados
 sin autenticación. Andreani y actualizaciones automáticas del transportista
 siguen pendientes de integración. Los avisos usan los eventos existentes.
+
+## Recuperación y presupuesto
+
+Dos avisos autorizados: 2h y 24h, sin descuento. Consentimiento explícito y
+email verificado; baja por carrito, supresión al crear pedido o vaciarlo.
+Configuración en Admin → Crecimiento online; ejecución Railway cada 5 minutos.
+No recupera precios ni disponibilidad viejos: consulta las variantes actuales.
+
+Plan gratuito informado: 3.000 emails/mes, 100/día y 1.000 contactos Marketing.
+El endpoint `/emails` cuenta también bienvenida y recordatorios en envíos; un
+remitente distinto no da otro cupo. Presupuesto inicial: 30 recordatorios/día y
+900/mes, editable. Se posponen con 80 diarios o 2.400 mensuales registrados,
+dejando margen a pedidos. Contadores calendario UTC locales, no la medición
+global/facturación de Resend; revisar allí si existen envíos fuera de FRAGUAN.
+Los pedidos no se bloquean por este presupuesto. Sin contratación automática.
+No se sincroniza todavía una audiencia de 1.000 contactos para Broadcasts.
+Después de contratar un plan en Resend, el dueño puede desactivar el margen del
+plan gratuito y aumentar presupuestos desde Admin; esa opción no contrata nada.
+Detalles de pendientes y límites de verificación: REVISION_SISTEMA.md.

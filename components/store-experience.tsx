@@ -25,7 +25,7 @@ export function StoreExperience() {
     };
     addEventListener('fraguan-cart-feedback', feedback);
     return () => removeEventListener('fraguan-cart-feedback', feedback);
-  }, [internal]);
+  }, [internal, pathname]);
   if (internal) return null;
   return (
     <>
