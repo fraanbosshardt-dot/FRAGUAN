@@ -2461,3 +2461,8 @@ body:has(.fraguan-design) .store-toast {
     min-width: 36px;
   }
 }
+/* Icon controls keep a visible keyboard state without an outer frame. */
+.fraguan-design nav .nr > :is(a, button):focus-visible {
+  background: var(--bone-2);
+  color: var(--ink);
+}
