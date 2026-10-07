@@ -294,11 +294,33 @@ export function useStoreCart() {
     save([]);
     trackStore('remove_from_cart', { cart: [] });
   }, [save]);
+  const restore = useCallback(
+    (items: StoreCartItem[]) => {
+      const current: StoreCartItem[] = JSON.parse(
+        localStorage.getItem(CART_KEY) || '[]',
+      );
+      const selected = new Map(current.map((item) => [item.id, item]));
+      for (const item of items) {
+        const previous = selected.get(item.id);
+        selected.set(item.id, {
+          ...item,
+          quantity: Math.min(
+            item.stock,
+            Math.max(item.quantity, previous?.quantity ?? 0),
+            20,
+          ),
+        });
+      }
+      save([...selected.values()]);
+    },
+    [save],
+  );
   return {
     cart,
     add,
     update,
     clear,
+    restore,
     count: cart.reduce((total, item) => total + item.quantity, 0),
     subtotal: cart.reduce(
       (total, item) => total + item.price * item.quantity,

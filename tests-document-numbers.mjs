@@ -63,6 +63,7 @@ test('pedidos distintos y reintento mantienen número y referencia reales', asyn
   const first = await c.create(firstInput),
     second = await c.create(c.input());
   assert.equal(first.orderNumber, 1001);
+  assert.equal(first.items[0].variantId, 'variant');
   assert.equal(second.orderNumber, 1002);
   assert.match(first.transferReference, /^FRG-1001-[A-Z0-9]+$/);
   const retry = await c.create(firstInput);

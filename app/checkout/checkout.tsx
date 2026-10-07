@@ -1,5 +1,8 @@
 'use client';
 import './checkout-proposal.css';
+import StoreReservation, {
+  useReservationExpired,
+} from '@/components/store-reservation';
 import { CheckoutPanel } from '@/components/checkout-panel';
 import { FREE_SHIPPING_MINIMUM_MINOR } from '@/lib/store-shipping-policy';
 import BarraEnvioGratis from '@/components/fraguan-animaciones/BarraEnvioGratis';
@@ -96,6 +99,7 @@ export default function Checkout({
   const [session, setSession] = useState<any>(null);
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
+  const { expired: reservationExpired } = useReservationExpired(order);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   useOrderPaymentUpdates(order, setOrder);
   const [busy, setBusy] = useState(false);
@@ -539,6 +543,7 @@ export default function Checkout({
           </div>
           <span>PEDIDO #{order.orderNumber}</span>
           <h1 className="d">¡Gracias por tu compra!</h1>
+          <StoreReservation order={order} />
           {createdCustomer && (
             <TarjetaClub
               nombre={[createdCustomer.name, createdCustomer.surname]
@@ -551,7 +556,7 @@ export default function Checkout({
             showPending={
               busy ||
               order.paymentStatus === 'reported' ||
-              order.paymentMethod === 'card'
+              (order.paymentMethod === 'card' && !reservationExpired)
             }
           />
           {order.paymentStatus === 'reported' && (
@@ -563,33 +568,37 @@ export default function Checkout({
           {order.paymentStatus === 'paid' ? null : payment === 'transfer' &&
             order.paymentStatus !== 'reported' ? (
             <>
-              <p>
-                Transferí el importe exacto e incluí esta referencia en el
-                concepto de la operación.
-              </p>
-              <div className="store-transfer-box">
-                <small>TOTAL A TRANSFERIR</small>
-                <strong>{storeMoney(order.total)}</strong>
-                <small>REFERENCIA ÚNICA</small>
-                <button
-                  onClick={() =>
-                    navigator.clipboard.writeText(order.transferReference)
-                  }
-                >
-                  {order.transferReference}
-                  <Copy />
-                </button>
-                <dl>
-                  <div>
-                    <dt>Alias</dt>
-                    <dd>FRAGUAN.TIENDA</dd>
-                  </div>
-                  <div>
-                    <dt>Titular</dt>
-                    <dd>FRAGUAN</dd>
-                  </div>
-                </dl>
-              </div>
+              {!reservationExpired && (
+                <p>
+                  Transferí el importe exacto e incluí esta referencia en el
+                  concepto de la operación.
+                </p>
+              )}
+              {!reservationExpired && (
+                <div className="store-transfer-box">
+                  <small>TOTAL A TRANSFERIR</small>
+                  <strong>{storeMoney(order.total)}</strong>
+                  <small>REFERENCIA ÚNICA</small>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(order.transferReference)
+                    }
+                  >
+                    {order.transferReference}
+                    <Copy />
+                  </button>
+                  <dl>
+                    <div>
+                      <dt>Alias</dt>
+                      <dd>FRAGUAN.TIENDA</dd>
+                    </div>
+                    <div>
+                      <dt>Titular</dt>
+                      <dd>FRAGUAN</dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
               <form onSubmit={report} className="store-report-transfer">
                 <CheckoutField>
                   ¿Ya transferiste?
@@ -607,7 +616,7 @@ export default function Checkout({
                 </button>
               </form>
             </>
-          ) : payment === 'card' ? (
+          ) : payment === 'card' && !reservationExpired ? (
             <div className="store-payment-pending">
               <CreditCard />
               <h2>Pago con tarjeta preparado</h2>
@@ -622,7 +631,9 @@ export default function Checkout({
               <PackageCheck />{' '}
               {order.paymentStatus === 'paid'
                 ? 'Tu pago está confirmado.'
-                : 'Reservamos tus prendas durante 30 minutos.'}
+                : reservationExpired
+                  ? 'La reserva de tus prendas venció.'
+                  : 'Tus prendas están reservadas mientras completás el pago.'}
             </p>
             <p>
               <Truck /> El pedido aparecerá en preparación apenas se confirme el
@@ -1162,9 +1173,7 @@ export default function Checkout({
               </span>
             </CheckoutField>
             {recoveryMessage && (
-              <output className="cp-muted">
-                {recoveryMessage}
-              </output>
+              <output className="cp-muted">{recoveryMessage}</output>
             )}
             {!session?.customer &&
               !emailVerificationToken &&

@@ -136,6 +136,9 @@ detallados en REVISION_SISTEMA.md. Mantener Meta Ads y Google Maps para después
 
 El usuario pidió evaluar reserva temporal mientras completa la compra. Actualmente
 se reserva por 30 minutos al crear pedido, no al seleccionar/agregar al carrito.
-Propuesta pendiente de implementación: contador visible, aviso al vencer y
-revalidación de stock sin perder carrito. Definir plazo específico para transferencia
+Implementado: contador visible en checkout y seguimiento, aviso al vencer y
+recuperación de selección desde pedido con stock/precios actuales, conservando
+otros productos del carrito. Sin nueva reserva hasta confirmar un nuevo pedido.
+Transferencias informadas no ofrecen volver a comprar/pagar; requieren revisión.
+Definir plazo específico para transferencia
 con el dueño antes de modificarlo; no se cambió la vigencia existente.

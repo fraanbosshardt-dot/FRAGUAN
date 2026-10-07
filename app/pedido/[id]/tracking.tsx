@@ -1,4 +1,7 @@
 'use client';
+import StoreReservation, {
+  useReservationExpired,
+} from '@/components/store-reservation';
 import { ArrowLeft, Check, Clock, PackageCheck, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { storeApi, storeMoney } from '@/lib/store-client';
@@ -31,6 +34,7 @@ export default function OrderTracking({
   thankYou?: boolean;
 }) {
   const [order, setOrder] = useState<any>(null);
+  const { expired: reservationExpired } = useReservationExpired(order);
   const [error, setError] = useState('');
   useOrderPaymentUpdates(order, setOrder);
   useEffect(() => {
@@ -77,9 +81,10 @@ export default function OrderTracking({
               order={order}
               showPending={
                 order.paymentStatus === 'reported' ||
-                order.paymentMethod === 'card'
+                (order.paymentMethod === 'card' && !reservationExpired)
               }
             />
+            <StoreReservation order={order} />
             <section className="store-tracking-steps">
               <article className="done">
                 <Check />

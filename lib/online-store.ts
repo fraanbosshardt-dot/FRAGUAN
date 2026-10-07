@@ -1573,7 +1573,7 @@ export async function onlineOrderDetail(
   if (!order) throw new AppError(404, 'Pedido no encontrado.');
   const [items, returnRequests] = await Promise.all([
     rows(
-      `SELECT oi.productName,oi.sku,oi.color,oi.size,oi.quantity,oi.unitPrice,oi.lineTotal,
+      `SELECT oi.variantId,oi.productName,oi.sku,oi.color,oi.size,oi.quantity,oi.unitPrice,oi.lineTotal,
             COALESCE((SELECT l.name||CASE WHEN l.detail<>'' THEN ' · '||l.detail ELSE '' END
               FROM variant_location_stock vls JOIN stock_locations l ON l.id=vls.locationId
              WHERE vls.variantId=oi.variantId AND vls.quantity>0 ORDER BY l.priority,l.name LIMIT 1),'Sin ubicación') AS location

@@ -11,6 +11,11 @@ formulario con datos productivos. No se enviaron campañas de prueba a clientes.
 
 ## Cambios realizados en esta revisión
 
+- Reserva: contador absoluto de vencimiento en checkout y seguimiento, con los
+  tokens del tema. Aviso de stock liberado, recuperación con precios/disponibilidad
+  actuales y conservación de otros productos del carrito. No reinicia vigencia al
+  recargar ni reserva al retomar; la validación final sigue en servidor. Pago
+  informado no ofrece repetir compra. Plazo de transferencia aún por definir.
 - Retirado el anuncio superior de descuento por transferencia y envíos. El
   cálculo comercial de transferencia permanece como estaba por decisión previa.
 - Recuperación: consentimiento separado de analytics; email de cuenta autenticada
