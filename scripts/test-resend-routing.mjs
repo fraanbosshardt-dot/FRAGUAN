@@ -123,3 +123,11 @@ assert.ok(writes.at(-1).sql.includes('failed'));
 console.log(
   'PASS: remitentes separados, bienvenida, newsletter con baja, configuración incompleta sin mezclar remitentes y errores de Resend registrados.',
 );
+
+fail=false;env.RESEND_ORDER_TO='test@example.invalid';
+await api.sendEmailTest({id:'owner'},{action:'test',channel:'orders',requestKey:crypto.randomUUID()});
+assert.equal(sent.at(-1).from,env.RESEND_FROM);assert.equal(sent.at(-1).to[0],env.RESEND_ORDER_TO);
+await api.sendEmailTest({id:'owner'},{action:'test',channel:'marketing',requestKey:crypto.randomUUID()});
+assert.equal(sent.at(-1).from,env.RESEND_MARKETING_FROM);
+await assert.rejects(()=>api.sendEmailTest({id:'owner'},{action:'test',channel:'orders',requestKey:crypto.randomUUID(),to:'other@example.invalid'}));
+console.log('PASS: prueba interna por canal, sin destinatarios arbitrarios.');

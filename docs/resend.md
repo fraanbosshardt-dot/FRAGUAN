@@ -9,7 +9,7 @@ Configuración acordada el 07/10/2026:
 - Una API key de Resend con permiso de envío para `fraguan.com`:
   `RESEND_API_KEY`, únicamente en el backend de Railway, servicio
   `fraguan-store-api`, proyecto `accomplished-adaptation`.
-- `RESEND_ORDER_TO`: email interno para avisos de pedidos/solicitudes, pendiente de definir.
+- `RESEND_ORDER_TO`: `hola@fraguan.com`, para avisos de pedidos/solicitudes y pruebas.
 
 ## Dominio
 
@@ -41,3 +41,6 @@ y error del proveedor. TypeScript, lint de archivos modificados y builds.
 
 Pendiente para activar y validar en producción: API key cargada por el titular y
 prueba real a un destinatario autorizado. Nunca guardar la clave en Git o en este documento.
+
+En Admin → Email y newsletter se muestran los remitentes y hay dos botones
+para enviar una prueba al email interno, sin enviar campañas ni crear pedidos.

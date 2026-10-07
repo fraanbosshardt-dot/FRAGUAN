@@ -125,6 +125,7 @@ import {
 import {
   newsletterOverview,
   sendNewsletterCampaign,
+  sendEmailTest,
   subscribeNewsletter,
   unsubscribeNewsletter,
 } from '@/lib/email';
@@ -1058,7 +1059,9 @@ export async function POST(
     if (resource === 'online-catalog')
       return reply(await onlineCatalogWrite(a, body));
     if (resource === 'newsletter')
-      return reply(await sendNewsletterCampaign(a, body));
+      return reply(body && typeof body === 'object' && 'action' in body && body.action === 'test'
+        ? await sendEmailTest(a, body)
+        : await sendNewsletterCampaign(a, body));
     if (resource === 'marketing') {
       const action = z
         .object({

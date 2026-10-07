@@ -334,6 +334,10 @@ export async function newsletterOverview(actor: Actor) {
   ]);
   return {
     configured: emailConfiguration('marketing').configured,
+    ordersConfigured: emailConfiguration('orders').configured,
+    ordersFrom: emailConfiguration('orders').from,
+    marketingFrom: emailConfiguration('marketing').from,
+    testRecipient: env.RESEND_ORDER_TO ?? '',
     subscribers,
     campaigns,
   };
@@ -451,4 +455,52 @@ export async function sendAccountWelcome(accountId: string) {
     kind: 'account_welcome',
     idempotencyKey: 'account-welcome-' + accountId,
   });
+}
+
+export async function sendEmailTest(actor: Actor, raw: unknown) {
+  requirePermission(actor, 'communications');
+  const input = z
+    .object({
+      action: z.literal('test'),
+      channel: z.enum(['orders', 'marketing']),
+      requestKey: z.uuid(),
+    })
+    .strict()
+    .parse(raw);
+  const recipient = z.email().safeParse(env.RESEND_ORDER_TO);
+  if (!recipient.success)
+    throw new AppError(
+      409,
+      'Configurá el email interno de pedidos antes de probar.',
+    );
+  if (!emailConfiguration(input.channel).configured)
+    throw new AppError(
+      409,
+      'Falta configurar la API key o el remitente de Resend.',
+    );
+  const result = await deliver({
+    channel: input.channel,
+    to: recipient.data,
+    subject: 'PRUEBA DE EMAIL — FRAGUAN',
+    html: emailFrame(
+      'EMAIL DE PRUEBA.',
+      'Verificación de la conexión de FRAGUAN con Resend.',
+      '<p>Esta es una prueba de la conexión de la tienda FRAGUAN con Resend. No corresponde a una compra ni concede beneficios.</p>',
+    ),
+    kind: 'integration_test_' + input.channel,
+    idempotencyKey: 'email-test-' + input.requestKey,
+  });
+  await auditStatement(
+    actor.id,
+    'Probar email Resend',
+    input.requestKey,
+    null,
+    { channel: input.channel, recipient: recipient.data, sent: result.sent },
+  ).run();
+  if (!result.sent)
+    throw new AppError(
+      502,
+      'Resend no aceptó la prueba. Revisá el dominio y la API key.',
+    );
+  return { ok: true, recipient: recipient.data, channel: input.channel };
 }

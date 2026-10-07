@@ -2693,6 +2693,17 @@ export default function Admin({
           {section === 'newsletter' && data && (
             <div className="newsletter-admin-grid">
               <section className="panel">
+                <h2>Conexión de emails</h2>
+                <p>Pedidos: {data.ordersFrom || 'Sin configurar'} · {data.ordersConfigured ? 'Configurado' : 'Falta configurar'}</p>
+                <p>Bienvenida y marketing: {data.marketingFrom || 'Sin configurar'} · {data.configured ? 'Configurado' : 'Falta configurar'}</p>
+                <p>Prueba y avisos internos: {data.testRecipient || 'Sin configurar'}</p>
+                <div className="heading-actions">
+                  <Button disabled={busy || !data.ordersConfigured || !data.testRecipient} onClick={() => mutate('newsletter', {action:'test',channel:'orders',requestKey:crypto.randomUUID()})}>Probar email de pedidos</Button>
+                  <Button disabled={busy || !data.configured || !data.testRecipient} onClick={() => mutate('newsletter', {action:'test',channel:'marketing',requestKey:crypto.randomUUID()})}>Probar bienvenida y marketing</Button>
+                </div>
+                <p className="quiet">La prueba se envía solo al email interno configurado. Configurado indica que existen las variables; verificá la recepción con una prueba.</p>
+              </section>
+              <section className="panel">
                 <div className="panel-heading">
                   <h2>Suscriptores activos</h2>
                   <span>
