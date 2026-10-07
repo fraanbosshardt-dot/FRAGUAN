@@ -180,8 +180,8 @@
   font-family: var(--fa-font);
 }
 .fa-hero-title {
-  position: sticky;
-  top: 12px;
+  position: relative;
+  top: auto;
   z-index: 5;
   margin: 0;
   transform-origin: 0 0;
@@ -433,7 +433,7 @@
   justify-content: center;
   flex-wrap: nowrap;
   transform-origin: 50% 0;
-  top: 80px;
+  top: auto;
   padding-top: 0.04em;
 }
 .fraguan-design .fa-hero-sub {
@@ -674,7 +674,7 @@
     padding: 28px 16px 40px;
   }
   .fraguan-design .fa-hero-title {
-    top: 70px;
+    top: auto;
   }
   .fraguan-design .fa-col a {
     font-size: clamp(36px, 10vw, 68px);

@@ -60,7 +60,8 @@ export default function Account({
   const load = () =>
     storeApi('store-account').then((result) => {
       setData(result);
-      if (result.googleClientId) setAccountGoogleClientId(result.googleClientId);
+      if (result.googleClientId)
+        setAccountGoogleClientId(result.googleClientId);
       dispatchEvent(
         new CustomEvent('fraguan-account', { detail: result.customer }),
       );
@@ -157,11 +158,15 @@ export default function Account({
     </AnimatedLabel>
   );
   return (
-    <section className={`sec lt pg ${data?.customer ? 'account-profile' : 'account-entry'}`}>
+    <section
+      className={`sec lt pg ${data?.customer ? 'account-profile' : 'account-entry'}`}
+    >
       {data?.customer ? (
         <div className="account-profile-content">
           <b className="k">MI FRAGUAN</b>
-          <h1 className="d account-profile-title">Hola, {data.customer.name}</h1>
+          <h1 className="d account-profile-title">
+            Hola, {data.customer.name}
+          </h1>
           <div className="pills">
             <button
               className={panel === 'datos' ? 'on' : ''}
@@ -193,7 +198,8 @@ export default function Account({
           {panel === 'datos' && (
             <>
               <p style={{ marginBottom: 16 }}>
-                Completá tus datos para tus próximas compras. También podés actualizarlos al hacer un pedido.
+                Completá tus datos para tus próximas compras. También podés
+                actualizarlos al hacer un pedido.
               </p>
               <AnimatedForm
                 onSubmit={updateProfile}
@@ -245,7 +251,9 @@ export default function Account({
                       autoComplete="address-level1"
                       required
                     >
-                      <option value="" disabled>Elegí tu provincia</option>
+                      <option value="" disabled>
+                        Elegí tu provincia
+                      </option>
                       {ARGENTINA_PROVINCES.map((p) => (
                         <option key={p}>{p}</option>
                       ))}
@@ -271,12 +279,18 @@ export default function Account({
                   />
                   Quiero recibir novedades y beneficios.
                 </AnimatedLabel>
-                {profileState && (
-                  <output className="err">{profileState}</output>
-                )}
-                <button className="btn a" disabled={busy}>
-                  {busy ? 'GUARDANDO…' : 'GUARDAR'}
-                </button>
+                <div className="account-profile-actions">
+                  <button className="btn a" disabled={busy}>
+                    {busy ? 'GUARDANDO…' : 'GUARDAR'}
+                  </button>
+                  <output
+                    className="account-profile-status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {profileState}
+                  </output>
+                </div>
               </AnimatedForm>
               <div className="design-benefits">
                 <b className="k">TUS BENEFICIOS</b>
@@ -431,7 +445,11 @@ export default function Account({
             )}
             {accountGoogleClientId && (
               <div className="account-entry-google">
-                {passwordAuthEnabled && <p className="account-entry-separator">O continuá con Google</p>}
+                {passwordAuthEnabled && (
+                  <p className="account-entry-separator">
+                    O continuá con Google
+                  </p>
+                )}
                 <GoogleSignIn
                   clientId={accountGoogleClientId}
                   onError={setError}

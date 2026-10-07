@@ -813,7 +813,7 @@ export default function Checkout({
                     <strong>
                       {method === 'pickup'
                         ? 'Retiro en el local'
-                        : 'Envío a domicilio'}
+                        : 'Envío a domicilio con Correo Argentino'}
                     </strong>
                     <small>
                       {method === 'pickup' ? 'Sin cargo' : 'A todo el país'}

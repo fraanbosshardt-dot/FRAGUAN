@@ -196,7 +196,7 @@
   cursor: not-allowed;
 }
 .fraguan-design .checkout-proposal :is(button, summary, a):focus-visible {
-  outline: 2px solid var(--acc);
+  outline: 2px solid var(--purchase-ink);
   outline-offset: 3px;
 }
 .fraguan-design .checkout-proposal :is(input, select, textarea) {
@@ -234,7 +234,7 @@
 }
 .fraguan-design .checkout-proposal [aria-invalid='true'],
 .fraguan-design .cp-terms:has([aria-invalid='true']) {
-  border-color: var(--acc);
+  border-color: var(--purchase-ink);
 }
 .fraguan-design .cp-email-row {
   display: grid;
@@ -373,7 +373,7 @@
   transform: scale(1);
 }
 .fraguan-design .cp-option:has(input:focus-visible) {
-  outline: 2px solid var(--acc);
+  outline: 2px solid var(--purchase-ink);
   outline-offset: 3px;
 }
 .fraguan-design .cp-tag {
@@ -917,4 +917,80 @@
   .fraguan-design .cp-heading h2 {
     font-size: 17px;
   }
+}
+
+/* Consistent alignment for account contact details and order summary. */
+.fraguan-design nav.cp-nav {
+  max-width: 1080px;
+  padding-inline: 24px;
+}
+.fraguan-design .cp-email-row:not(:has(button)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.fraguan-design .cp-email-row {
+  align-items: end;
+  gap: 12px;
+}
+.fraguan-design .cp-email-row > button {
+  min-height: 50px;
+}
+.fraguan-design .cp-form > .cp-panel:first-of-type {
+  padding-top: 0;
+}
+.fraguan-design .cp-heading h2 {
+  text-transform: none;
+}
+.fraguan-design .cp-aside .cp-summary-heading > span:last-child {
+  display: none;
+}
+.fraguan-design .cp-summary-content .cp-item strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.fraguan-design .cp-summary-content .cp-item small {
+  font-size: 12px;
+  margin-top: 4px;
+}
+.fraguan-design .cp-quantity {
+  margin-top: 8px;
+  gap: 10px;
+}
+.fraguan-design .cp-quantity button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.fraguan-design .cp-aside dl > div {
+  padding: 7px 0;
+}
+.fraguan-design .cp-back-cart {
+  margin-top: 18px;
+}
+@media (max-width: 520px) {
+  .fraguan-design nav.cp-nav {
+    padding-inline: 16px;
+  }
+}
+
+/* Selection uses a quiet surface and the filled radio, without an outer frame. */
+.fraguan-design .cp-option:has(input:checked) {
+  background: var(--purchase-soft);
+  border-color: var(--purchase-line);
+  box-shadow: none;
+}
+.fraguan-design .cp-option:has(input:focus-visible) {
+  outline: none;
+  background: var(--purchase-soft);
+}
+.fraguan-design .checkout-proposal :is(input, select, textarea):focus {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--purchase-line);
+  background: var(--purchase-soft);
+}
+.fraguan-design .checkout-proposal :is(button, summary, a):focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }

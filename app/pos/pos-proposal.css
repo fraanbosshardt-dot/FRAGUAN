@@ -76,7 +76,7 @@
 }
 .pos-proposal :focus-visible,
 .pos-proposal-dialog :focus-visible {
-  outline: 2px solid var(--pp-ac);
+  outline: 2px solid var(--focus-neutral);
   outline-offset: 2px;
 }
 .pos-proposal .topbar {
@@ -761,8 +761,8 @@
   gap: 0;
 }
 .pos-proposal .search-row input:focus-visible {
-  border-color: var(--pp-ac);
-  outline: 2px solid var(--pp-ac);
+  border-color: var(--focus-neutral);
+  outline: 2px solid var(--focus-neutral);
   outline-offset: 2px;
   box-shadow: none !important;
 }
@@ -1181,4 +1181,22 @@
   .pos-proposal .cart .pos-customer-inline {
     min-width: 0;
   }
+}
+
+.pos-proposal :is(input, select, textarea):focus-visible,
+.pos-proposal-dialog :is(input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: none;
+  background: var(--pp-bg);
+  border-color: var(--pp-bd);
+}
+.pos-proposal .search-row input:focus-visible {
+  outline: none;
+  border-color: var(--pp-bd);
+}
+.pos-proposal :is(button, a):focus-visible,
+.pos-proposal-dialog :is(button, a):focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }

@@ -401,6 +401,11 @@ function Home() {
 function Coll({ c }) {
   const { products: P, categories: CATS } = useC();
   const [search, setSearch] = useState('');
+  const matchText = (value) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es-AR');
   useEffect(
     () => setSearch(new URLSearchParams(location.search).get('search') || ''),
     [],
@@ -412,9 +417,9 @@ function Coll({ c }) {
   if (c == 'nuevos') L = L.filter((p) => p.featured);
   if (search)
     L = L.filter((p) =>
-      (p.n + ' ' + p.c + ' ' + p.col)
-        .toLowerCase()
-        .includes(search.toLowerCase()),
+      matchText(p.n + ' ' + p.c + ' ' + p.col).includes(
+        matchText(search.trim()),
+      ),
     );
   if (z) L = L.filter((p) => p.z.includes(z));
   if (so == 'min') L = [...L].sort((a, b) => a.p - b.p);
@@ -428,13 +433,16 @@ function Coll({ c }) {
     <div class="pills">
       ${['todo', ...CATS.map((x) => x.toLowerCase())].map((s) => html`<a key=${s} class=${s == c ? 'on' : ''} href=${'#/c/' + s}>${s == 'todo' ? 'Todo' : s[0].toUpperCase() + s.slice(1)}</a>`)}
     </div>
-    <div class="pills">
-      <input
-        aria-label="Buscar producto"
-        placeholder="Buscar producto"
-        value=${search}
-        onChange=${(e) => setSearch(e.target.value)}
-      /><select
+    <div class="collection-tools">
+      <label class="collection-search"
+        ><span>Buscar en esta colección</span
+        ><input
+          aria-label="Buscar producto en esta colección"
+          type="search"
+          placeholder="Nombre, color o categoría"
+          value=${search}
+          onChange=${(e) => setSearch(e.target.value)} /></label
+      ><select
         aria-label="Filtrar por talle"
         value=${z}
         onChange=${(e) => sz(e.target.value)}
@@ -811,11 +819,17 @@ function PublicStore({ children }) {
     [user, setUser] = useState(null),
     [open, setOpen] = useState(false),
     [menu, setMenu] = useState(false),
+    [searchOpen, setSearchOpen] = useState(false),
     [newsDone, setNewsDone] = useState(false),
     [newsError, setNewsError] = useState('');
   const root = useRef(null),
     trigger = useRef(null),
-    lastFocus = useRef(null);
+    lastFocus = useRef(null),
+    searchInput = useRef(null);
+  useEffect(() => {
+    if (searchOpen) searchInput.current?.focus();
+  }, [searchOpen]);
+  useEffect(() => setSearchOpen(false), [pathname]);
   useEffect(() => {
     if (!menu) return;
     const close = (event) => {
@@ -1024,6 +1038,27 @@ function PublicStore({ children }) {
               >
                 ☰
               </button>
+              <button
+                className="store-search-toggle"
+                type="button"
+                aria-label="Buscar productos"
+                aria-expanded={searchOpen}
+                aria-controls="store-header-search"
+                onClick={() => setSearchOpen(!searchOpen)}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <path d="m16 16 5 5" />
+                </svg>
+              </button>
               <a
                 href="/favoritos"
                 aria-label={'Favoritos: ' + saved.favorites.length}
@@ -1078,6 +1113,47 @@ function PublicStore({ children }) {
               </button>
             </div>
           </nav>
+        )}
+        {searchOpen && pathname !== '/checkout' && (
+          <search id="store-header-search" className="store-search-panel">
+            <form action="/tienda" method="get">
+              <label htmlFor="store-header-search-input">
+                ¿Qué estás buscando?
+              </label>
+              <div>
+                <input
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      setSearchOpen(false);
+                      root.current
+                        ?.querySelector('.store-search-toggle')
+                        ?.focus();
+                    }
+                  }}
+                  ref={searchInput}
+                  id="store-header-search-input"
+                  name="search"
+                  type="search"
+                  placeholder="Nombre, color o categoría"
+                  required
+                  maxLength={120}
+                />
+                <button type="submit">Buscar</button>
+                <button
+                  type="button"
+                  aria-label="Cerrar búsqueda"
+                  onClick={() => {
+                    setSearchOpen(false);
+                    root.current
+                      ?.querySelector('.store-search-toggle')
+                      ?.focus();
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </form>
+          </search>
         )}
         {menu && pathname !== '/checkout' && (
           <div className="design-mobile-links" id="store-mobile-menu">

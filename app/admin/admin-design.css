@@ -17,7 +17,7 @@ body:has(.admin-theme) {
   --accent-foreground: var(--foreground);
   --border: hsl(215 16% 84%);
   --input: var(--border);
-  --ring: var(--primary);
+  --ring: var(--focus-neutral);
   --destructive: hsl(270 40% 40%);
   --chart-1: var(--primary);
   --chart-2: hsl(200 45% 45%);
@@ -273,7 +273,7 @@ body:has(.admin-theme)
 }
 .admin-theme :focus-visible,
 body:has(.admin-theme) [data-slot='dialog-content'] :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--focus-neutral);
   outline-offset: 2px;
 }
 .admin-theme .metric-grid {
@@ -808,4 +808,22 @@ body:has(.admin-theme) [data-slot='dialog-footer'] {
     transition: none;
     animation: none;
   }
+}
+
+.admin-theme :is(input, select, textarea):focus-visible,
+body:has(.admin-theme)
+  [data-slot='dialog-content']
+  :is(input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: none;
+  background: var(--muted);
+}
+.admin-theme :is(button, a):focus-visible,
+body:has(.admin-theme)
+  [data-slot='dialog-content']
+  :is(button, a):focus-visible {
+  outline: none;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }

@@ -32,7 +32,7 @@ export function CheckoutPanel({
           {completed && !open ? '✓' : number}
         </span>
         <h2 id={heading} tabIndex={-1}>
-          {String(number).padStart(2, '0')} — {title}
+          {title}
         </h2>
         {completed && !open && (
           <button

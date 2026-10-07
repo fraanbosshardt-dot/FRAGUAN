@@ -151,12 +151,14 @@
   transform: scale(0.75);
 }
 .fraguan-design .fg-field > input:focus {
-  border-color: var(--fg-accent);
-  box-shadow: 0 0 0 2px var(--acc-l);
+  border-color: var(--sand);
+  box-shadow: none;
+  background: var(--bone-2);
+  outline: none;
 }
 .fraguan-design input[aria-invalid='true'] {
   border-color: var(--fg-error);
-  outline: 2px solid var(--acc-l);
+  outline: 2px solid var(--ink);
 }
 .fraguan-design .fg-steps {
   display: flex;
