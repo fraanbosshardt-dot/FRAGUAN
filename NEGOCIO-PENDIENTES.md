@@ -1,6 +1,6 @@
 # Decisiones de FRAGUAN pendientes
 
-Actualizado: 6 de octubre de 2026.
+Actualizado: 7 de octubre de 2026.
 
 ## Club FRAGUAN
 
@@ -39,8 +39,8 @@ reglas aprobadas para implementar sin definir sus datos y condiciones.
    medidas. Ver `docs/envios-correo-andreani.md`.
 4. **Pagos online:** conectar los proveedores elegidos para cobrar y confirmar
    pagos reales, registrar comisiones y estados y conciliar cada cobro con su pedido.
-5. **Resend:** conectar el servicio y dominio remitente para enviar los correos
-   reales de FRAGUAN.
+5. **Resend — conectado:** dominio y remitentes configurados; dueño confirmó
+   recepción de pruebas. Pendiente definir marketing y automatizaciones adicionales.
 6. **CyberMonday:** precios promocionales temporales por producto/variante, precio
    anterior tachado, conservación de los precios previos y un botón para restaurarlos.
    Guardar quién cambió los precios y cuándo. El dueño mencionó subir precios antes
@@ -50,10 +50,10 @@ reglas aprobadas para implementar sin definir sus datos y condiciones.
    descripciones, enlaces y páginas de productos/categorías.
 8. **Seguimiento automático de envíos:** obtener el tracking y estado del proveedor,
    asociarlos al pedido y permitir verlos desde la página del pedido/envío en la tienda.
-9. **Email de compra:** confirmar al cliente el pedido, sus productos, importes y
-   siguientes pasos. Diferenciar pedido recibido de pago efectivamente acreditado.
-10. **Email de bienvenida:** enviar al crear la cuenta de la tienda; no prometer
-    beneficios del Club mientras no se hayan definido.
+9. **Email de compra — implementado:** pedido y productos, importes y siguientes
+   pasos. Distingue pedido recibido de pago confirmado y avisa sus estados.
+10. **Email de bienvenida — implementado:** al crear la cuenta de la tienda;
+    no promete beneficios del Club mientras no se hayan definido.
 11. **Promociones:** definir y administrar las ofertas reales, condiciones, vigencia
     y combinación de descuentos. Si se refiere también a emails promocionales,
     confirmar las campañas deseadas.
