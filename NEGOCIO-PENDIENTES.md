@@ -2,7 +2,26 @@
 
 Actualizado: 7 de octubre de 2026.
 
-## Club FRAGUAN
+## Políticas comerciales confirmadas — 07/10/2026
+
+Cambios de talle/color: 7 días corridos desde la entrega, sin uso y con etiquetas,
+sujetos a stock. Si se elige una prenda de mayor valor, se abona la diferencia.
+No se ofrece devolución comercial por preferencia personal; se conservan los
+derechos legales de arrepentimiento online y por fallas. Reintegros al mismo
+medio de pago cuando correspondan. Se mantiene el botón de arrepentimiento
+por el requisito de la Disposición 954/2025 y el artículo 34 de la Ley 24.240.
+
+Se confirma por ahora el 10% por transferencia. Tarjetas online: débito y crédito
+mediante Mercado Pago. Contacto: hola@fraguan.com; sin teléfono ni WhatsApp.
+CUIT informado por el dueño: 20-23758108-4. Titular previamente confirmado:
+Cristian Jesús Bosshardt. Local: Sarmiento 785, Isla Verde, Córdoba;
+lunes a sábado de 10:00 a 12:30 y de 16:00 a 21:30.
+
+**Pendiente, no habilitado:** permitir que una compra online con retiro en tienda
+se pague en efectivo al retirar. Hoy se mantiene el pago online. Antes de habilitar,
+definir reserva de stock, vencimiento, registro del cobro en POS y avisos al cliente.
+
+## Club FRAGUAN — definición
 
 El programa todavía no está definido ni lanzado. Crear una cuenta de tienda no
 equivale a dar de alta un socio ni garantiza beneficios.

@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { STORE_TRANSFER } from '@/lib/store-transfer-details';
 
 type Section = { title: string; body: string };
 type Page = {
@@ -47,19 +48,19 @@ const pages: Record<string, Page> = {
     sections: [
       {
         title: 'Cambio comercial',
-        body: 'Podés solicitar cambio de talle o color dentro de los 30 días corridos desde la entrega. La prenda debe estar sin uso, con etiquetas y en las mismas condiciones recibidas.',
+        body: 'Podés solicitar un cambio de talle o color dentro de los 7 días corridos desde la entrega. La prenda debe estar sin uso, con sus etiquetas y en las mismas condiciones en que la recibiste. Los cambios están sujetos a stock.',
       },
       {
         title: 'Disponibilidad',
-        body: 'Los cambios dependen del stock vigente. Si la nueva prenda tiene otro precio, se informa la diferencia antes de confirmar. También puede emitirse saldo a favor.',
+        body: 'Si elegís una prenda de mayor valor, abonás la diferencia. Te informamos el importe antes de confirmar el cambio. Nuestra política comercial no contempla devoluciones por preferencia personal, sin afectar el derecho de arrepentimiento de las compras online ni los derechos ante productos con fallas.',
       },
       {
         title: 'Derecho de arrepentimiento',
-        body: 'En compras a distancia podés revocar la compra dentro de los 10 días corridos desde la recepción, sin costo. No requiere cuenta: usá el Botón de arrepentimiento.',
+        body: 'En compras online podés ejercer el derecho de arrepentimiento dentro de los 10 días corridos desde la entrega o la celebración del contrato, lo que ocurra después, según la normativa vigente. No necesitás una cuenta: usá el Botón de arrepentimiento. Los gastos de devolución corresponden a FRAGUAN. Este derecho es independiente del plazo de 7 días para cambios comerciales.',
       },
       {
         title: 'Producto con inconvenientes',
-        body: 'Si recibiste un artículo incorrecto, dañado o con una falla, conservá el empaque y comunicate con Atención al Cliente para coordinar la solución.',
+        body: 'Si recibiste una prenda incorrecta, dañada o con una falla, escribinos a hola@fraguan.com con el número de pedido y una descripción del problema. Si podés, adjuntá fotos para ayudarnos a revisarlo. Coordinaremos la solución que corresponda. El plazo comercial de 7 días no limita tus derechos ante una falla.',
       },
       {
         title: 'Reintegros',
@@ -75,7 +76,7 @@ const pages: Record<string, Page> = {
     sections: [
       {
         title: 'Transferencia',
-        body: 'Tenés 10% de descuento. Transferí el importe exacto y usá la referencia indicada en tu pedido.',
+        body: `Tenés 10% de descuento por transferencia. Transferí el total indicado en tu pedido al alias ${STORE_TRANSFER.alias}, a nombre de ${STORE_TRANSFER.holder}. Enviá el comprobante a ${STORE_TRANSFER.receiptEmail} e incluí la referencia única del pedido para identificar tu pago.`,
       },
       {
         title: 'Tarjetas',
@@ -83,7 +84,11 @@ const pages: Record<string, Page> = {
       },
       {
         title: 'Confirmación',
-        body: 'El stock se reserva al crear el pedido. La preparación comienza cuando el proveedor de pago confirma la acreditación.',
+        body: 'Al crear el pedido, tus prendas quedan reservadas durante el tiempo indicado en pantalla. La preparación comienza después de confirmar el pago. Si pagás por transferencia, revisamos la acreditación y el comprobante; si pagás con tarjeta, recibimos la confirmación del pago a través de Mercado Pago.',
+      },
+      {
+        title: 'Compras con retiro en tienda',
+        body: 'Las compras online con retiro en FRAGUAN se pagan desde la web, por transferencia o con tarjeta. El retiro en el local no tiene cargo. Esperá el aviso de que tu pedido está listo antes de acercarte.',
       },
     ],
   },
@@ -95,11 +100,11 @@ const pages: Record<string, Page> = {
     sections: [
       {
         title: 'Cómo medirte',
-        body: 'Usá una cinta flexible, sin ajustar. Para pecho y cintura medí alrededor de la parte más amplia; para pantalones, compará también con una prenda que te quede bien.',
+        body: 'Usá una cinta flexible, sin ajustar: medí el pecho en su parte más amplia y la cintura a su altura natural. Compará con las medidas disponibles en la ficha del producto y con una prenda que te quede cómoda. Tené en cuenta el tipo de prenda y el calce que buscás.',
       },
       {
         title: 'Asistente de talle',
-        body: 'En la ficha de cada producto podés ingresar tu altura, peso y cómo preferís usar la ropa para recibir una recomendación orientativa.',
+        body: 'En la ficha del producto podés ingresar tu altura, peso y cómo preferís usar la ropa. La recomendación es orientativa: no reemplaza las medidas de la prenda ni garantiza un calce exacto. Si tenés dudas, escribinos antes de comprar.',
       },
       {
         title: 'Entre dos talles',
@@ -111,7 +116,7 @@ const pages: Record<string, Page> = {
     eyebrow: 'PRIVACIDAD',
     title: 'Tus datos, con propósito.',
     intro:
-      'Recopilamos lo necesario para comprar, entregar, proteger tu cuenta y ofrecer beneficios.',
+      'Usamos los datos necesarios para gestionar tus compras, entregar tus pedidos, proteger tu cuenta y atender tus consultas.',
     sections: [
       {
         title: 'Qué datos usamos',
@@ -119,7 +124,7 @@ const pages: Record<string, Page> = {
       },
       {
         title: 'Para qué',
-        body: 'Procesar compras, prevenir fraude, entregar pedidos, atender cambios, mostrar Club FRAGUAN y enviar marketing únicamente cuando exista consentimiento.',
+        body: 'Gestionar compras y pagos, entregar pedidos, prevenir fraude y atender consultas y cambios. También los usamos para guardar tus datos y favoritos si creás una cuenta. Las novedades y promociones se envían cuando las autorizás; crear una cuenta no garantiza beneficios del Club FRAGUAN.',
       },
       {
         title: 'Proveedores',
@@ -131,11 +136,11 @@ const pages: Record<string, Page> = {
       },
       {
         title: 'Tus derechos',
-        body: 'Podés solicitar acceso, actualización, rectificación o supresión de tus datos. Verificaremos tu identidad antes de responder para proteger la cuenta.',
+        body: 'Podés actualizar tus datos desde Mi FRAGUAN o solicitar acceso, rectificación o supresión escribiendo a hola@fraguan.com. Verificamos tu identidad para proteger tu información. La eliminación puede estar limitada por obligaciones legales de conservación de las compras.',
       },
       {
         title: 'Marketing',
-        body: 'La suscripción y la recuperación de carrito son opcionales. Cada email comercial incluye un enlace para darte de baja. Medimos campañas sin guardar costos internos ni datos de tarjeta.',
+        body: 'Recibir novedades o ayuda para completar una compra es opcional. Podés retirar tu autorización mediante el enlace de baja de los emails comerciales. Los mensajes necesarios sobre un pedido, su pago o su entrega se gestionan por separado de las promociones.',
       },
     ],
   },
@@ -147,7 +152,7 @@ const pages: Record<string, Page> = {
     sections: [
       {
         title: 'Sesión',
-        body: 'La cookie de Mi FRAGUAN mantiene la sesión iniciada y es HttpOnly, SameSite y segura en producción.',
+        body: 'Usamos una cookie necesaria para mantener tu sesión en Mi FRAGUAN y proteger el acceso a tu cuenta. No se utiliza para publicidad.',
       },
       {
         title: 'Carrito y favoritos',
@@ -183,15 +188,15 @@ const pages: Record<string, Page> = {
       },
       {
         title: 'Pagos y entrega',
-        body: 'Los medios, descuentos, costos y plazos aparecen antes de confirmar. El cliente debe ingresar datos correctos y disponer de una persona que pueda recibir el pedido.',
+        body: 'Podés pagar por transferencia con 10% de descuento o con tarjeta de débito o crédito mediante Mercado Pago. El total y el costo de entrega se muestran antes de confirmar. Enviamos a domicilio con Correo Argentino o podés retirar sin cargo en FRAGUAN. Preparamos los pedidos dentro de las 24 a 48 horas hábiles posteriores a la confirmación del pago; el plazo de transporte se cuenta desde el despacho. Ingresá datos correctos para coordinar la entrega.',
       },
       {
         title: 'Cuenta',
-        body: 'La cuenta es personal. El cliente debe proteger el acceso a Google o su contraseña y avisar si detecta actividad desconocida.',
+        body: 'Crear una cuenta es opcional: también podés comprar como invitado, verificando tu email. Mi FRAGUAN permite consultar pedidos, guardar favoritos y actualizar datos para próximas compras. Protegé tu acceso y avisá a hola@fraguan.com si detectás actividad desconocida. La cuenta no garantiza beneficios del Club FRAGUAN, que todavía no está definido.',
       },
       {
         title: 'Cambios y arrepentimiento',
-        body: 'Aplican la política de Cambios y devoluciones y los derechos irrenunciables previstos por la normativa argentina de defensa del consumidor.',
+        body: 'Los cambios comerciales de talle o color pueden solicitarse dentro de los 7 días corridos desde la entrega, con la prenda sin uso y con etiquetas, sujetos a stock. Este plazo no limita los derechos por fallas ni el derecho de arrepentimiento de las compras online. Consultá la política de Cambios y devoluciones para conocer el procedimiento.',
       },
       {
         title: 'Propiedad intelectual',
@@ -207,19 +212,19 @@ const pages: Record<string, Page> = {
     eyebrow: 'ATENCIÓN AL CLIENTE',
     title: 'Estamos para resolver.',
     intro:
-      'Incluí siempre tu número de pedido para que podamos encontrar la compra rápido.',
+      'Escribinos para consultar sobre prendas, compras o entregas. Si tu consulta es sobre una compra, incluí el número o la referencia única del pedido.',
     sections: [
       {
         title: 'Email',
-        body: 'Escribinos a atencion@fraguan.com. Las notificaciones de pedido se envían desde el dominio de emails de FRAGUAN.',
+        body: 'Atención al Cliente: hola@fraguan.com. También podés enviar a esta dirección el comprobante de una transferencia, con la referencia única del pedido.',
       },
       {
         title: 'Horario',
-        body: 'Atención al Cliente: lunes a sábado, de 10 a 21 hs.',
+        body: 'Encontranos en Sarmiento 785, Isla Verde, Córdoba. Atendemos de lunes a sábado, de 10:00 a 12:30 y de 16:00 a 21:30. Para retirar una compra online, esperá primero el aviso de que el pedido está listo.',
       },
       {
         title: 'Cambios',
-        body: 'Para cambios comerciales usá Mi FRAGUAN o indicá pedido, prenda y talle requerido en tu consulta.',
+        body: 'Para solicitar un cambio, escribinos con el número de pedido, la prenda y el talle o color que necesitás. Revisaremos el stock y te indicaremos cómo continuar.',
       },
       {
         title: 'Arrepentimiento',
@@ -260,7 +265,7 @@ export default async function InformationPage({
           sections: [
             {
               title: 'Proveedor',
-              body: `${env.STORE_LEGAL_NAME || 'FRAGUAN'} · CUIT ${env.STORE_CUIT || 'pendiente de configuración'} · ${env.STORE_ADDRESS || 'domicilio comercial pendiente de configuración'} · ${env.STORE_SUPPORT_EMAIL || 'atencion@fraguan.com'}.`,
+              body: `${env.STORE_LEGAL_NAME || 'Cristian Jesús Bosshardt (FRAGUAN)'} · CUIT ${env.STORE_CUIT || '20-23758108-4'} · ${env.STORE_ADDRESS || 'Sarmiento 785, Isla Verde, Córdoba, Argentina'} · hola@fraguan.com.`,
             },
             ...source.sections,
           ],
@@ -290,12 +295,7 @@ export default async function InformationPage({
         ))}
         {page === 'contacto' && (
           <p>
-            <a
-              className="btn a"
-              href={
-                'mailto:' + (env.STORE_SUPPORT_EMAIL || 'atencion@fraguan.com')
-              }
-            >
+            <a className="btn a" href="mailto:hola@fraguan.com">
               ESCRIBINOS →
             </a>
           </p>

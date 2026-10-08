@@ -547,6 +547,13 @@ function Prod({ id }) {
         </details>
         <${SizeHelp} product=${p.original} />
         <details>
+          <summary>Métodos de pago</summary>
+          <p>
+            Aceptamos las siguientes opciones de pago: Tarjetas de Crédito,
+            Tarjetas de Débito, Transferencia y Mercado Pago.
+          </p>
+        </details>
+        <details>
           <summary>ENVÍOS</summary>
           <p>
             Enviamos a todo el país. Gratis desde ${$(FREE)}. Retiro sin cargo
@@ -555,7 +562,13 @@ function Prod({ id }) {
         </details>
         <details>
           <summary>CAMBIOS Y DEVOLUCIONES</summary>
-          <p>30 días para cambiar tu prenda sin uso y con etiquetas.</p>
+          <p>
+            7 días corridos desde la entrega para cambios de talle o color, con
+            la prenda sin uso y con etiquetas, sujetos a stock. Si elegís una
+            prenda de mayor valor, abonás la diferencia. Consultá la política
+            completa de
+            <a href="/informacion/cambios">Cambios y devoluciones</a>.
+          </p>
         </details>
       </div>
     </div>
