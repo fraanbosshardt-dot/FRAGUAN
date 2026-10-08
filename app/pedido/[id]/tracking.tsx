@@ -2,6 +2,7 @@
 import StoreReservation, {
   useReservationExpired,
 } from '@/components/store-reservation';
+import { StoreTransferDetails } from '@/components/store-transfer-details';
 import { ArrowLeft, Check, Clock, PackageCheck, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { storeApi, storeMoney } from '@/lib/store-client';
@@ -85,6 +86,15 @@ export default function OrderTracking({
               }
             />
             <StoreReservation order={order} />
+            {order.paymentMethod === 'transfer' &&
+              ['pending', 'reported'].includes(order.paymentStatus) &&
+              !reservationExpired &&
+              order.status !== 'cancelled' && (
+                <StoreTransferDetails
+                  total={order.total}
+                  reference={order.transferReference}
+                />
+              )}
             <section className="store-tracking-steps">
               <article className="done">
                 <Check />

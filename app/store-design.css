@@ -2971,3 +2971,270 @@ body:has(.fraguan-design) .store-toast {
 .fraguan-design:has(.landing-home) .store-page-enter {
   animation: none;
 }
+
+/* Confirmación y seguimiento: información compacta con la identidad de la tienda. */
+.fraguan-design .store-shell .store-order-success,
+.fraguan-design .store-shell .store-tracking {
+  width: 100%;
+  max-width: 1120px;
+  margin: auto;
+  padding: 48px 24px 72px;
+}
+.fraguan-design .store-order-success > span {
+  background: none;
+  color: var(--ink);
+  padding: 0;
+  font-size: 12px;
+}
+.fraguan-design .store-order-success > h1 {
+  background: none;
+  color: var(--ink);
+  padding: 0;
+  margin: 14px 0 24px;
+  font-size: clamp(34px, 4.5vw, 58px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+.fraguan-design .store-order-success > p {
+  margin: 16px 0;
+  max-width: none;
+  text-align: left;
+}
+.fraguan-design .store-order-next {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+  justify-content: start;
+}
+.fraguan-design .store-order-next p {
+  line-height: 1.5;
+}
+.fraguan-design .store-order-next svg {
+  flex-shrink: 0;
+}
+.fraguan-design .store-order-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sand);
+}
+.fraguan-design .store-order-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 14px;
+}
+.fraguan-design .store-order-links svg {
+  width: 18px;
+}
+.fraguan-design .store-shell .store-tracking > header {
+  padding: 28px 0 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--sand);
+  background: none;
+  color: var(--ink);
+}
+.fraguan-design .store-shell .store-tracking > header h1 {
+  font-family: var(--fd);
+  font-size: clamp(34px, 4.5vw, 58px);
+  line-height: 1.08;
+  letter-spacing: 0;
+  max-width: 850px;
+  margin: 12px 0;
+}
+.fraguan-design .store-tracking-steps {
+  margin: 24px 0;
+  border: 0;
+  background: var(--bone-2);
+}
+.fraguan-design .store-tracking-steps article {
+  min-height: 86px;
+  padding: 14px 8px;
+  font-size: 13px;
+  border-color: var(--sand);
+}
+.fraguan-design .store-tracking-steps article.done {
+  background: var(--bone-2);
+  color: var(--ink);
+}
+.fraguan-design .store-shell .store-tracking-grid {
+  grid-template-columns: 1.3fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+  border: 0;
+  background: transparent;
+}
+.fraguan-design .store-shell .store-tracking-grid > div,
+.fraguan-design .store-shell .store-tracking-grid > aside {
+  padding: 24px;
+  background: var(--bone-2);
+}
+.fraguan-design .store-tracking-grid h2 {
+  font-size: 28px;
+  margin-bottom: 18px;
+}
+.fraguan-design .store-tracking-grid article {
+  gap: 16px;
+  align-items: start;
+  padding: 14px 0;
+}
+.fraguan-design .store-tracking-grid article b {
+  white-space: nowrap;
+}
+.fraguan-design .store-tracking-help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 24px;
+  font-size: 13px;
+}
+.fraguan-design .store-payment-animation {
+  max-width: 380px;
+  margin: 24px auto;
+}
+.fraguan-design .store-payment-animation .pa {
+  padding: 20px 12px;
+}
+.fraguan-design .store-payment-waiting {
+  padding: 16px 20px;
+  background: var(--bone-2);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 20px 0;
+}
+.fraguan-design .transfer-details {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 28px;
+  margin: 24px 0;
+  text-align: left;
+}
+.fraguan-design .transfer-instructions,
+.fraguan-design .transfer-receipt {
+  padding: 24px;
+  background: var(--bone-2);
+  min-width: 0;
+}
+.fraguan-design .transfer-details h2 {
+  font: 28px/1.15 var(--fd);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.fraguan-design .transfer-details p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.fraguan-design .transfer-details .transfer-amount {
+  display: block;
+  font-size: 32px;
+  margin: 20px 0;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.fraguan-design .transfer-details dl > div {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--sand);
+  font-size: 14px;
+}
+.fraguan-design .transfer-details dt {
+  color: var(--purchase-muted);
+  line-height: 1.4;
+}
+.fraguan-design .transfer-details dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.fraguan-design .transfer-details dd button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.fraguan-design .transfer-details dd button svg {
+  width: 17px;
+  height: 17px;
+}
+.fraguan-design .transfer-details dd button:hover,
+.fraguan-design .transfer-details dd button:focus-visible {
+  background: var(--bone);
+  outline: none;
+}
+.fraguan-design .transfer-copy-status:empty {
+  display: none;
+}
+.fraguan-design .transfer-receipt > svg {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 14px;
+}
+.fraguan-design .transfer-receipt p a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.fraguan-design .transfer-receipt-link {
+  display: block;
+  text-align: center;
+  padding: 16px;
+  background: var(--ink);
+  color: var(--bone);
+  border: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 20px;
+  white-space: normal;
+}
+.fraguan-design .transfer-other-mail {
+  display: block;
+  margin: 14px 0;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.fraguan-design .transfer-receipt small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--purchase-muted);
+}
+@media (max-width: 700px) {
+  .fraguan-design .store-shell .store-order-success,
+  .fraguan-design .store-shell .store-tracking {
+    padding: 32px 16px 48px;
+  }
+  .fraguan-design .transfer-details,
+  .fraguan-design .store-shell .store-tracking-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .fraguan-design .transfer-instructions,
+  .fraguan-design .transfer-receipt {
+    padding: 20px;
+  }
+  .fraguan-design .store-tracking-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fraguan-design .store-tracking-grid article {
+    flex-wrap: wrap;
+  }
+}
+.fraguan-design .store-payment-waiting,
+.fraguan-design .transfer-copy-status {
+  display: block;
+}

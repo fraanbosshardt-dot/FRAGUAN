@@ -1,3 +1,4 @@
+import { STORE_TRANSFER } from './store-transfer-details';
 /** Store palette from app/store-design.css. Inline styles keep email clients usable. */
 export const emailTheme = {
   ink: '#14110f',
@@ -130,7 +131,7 @@ export function orderEmail(
     event === 'created' &&
     order.paymentMethod === 'transfer' &&
     order.transferReference
-      ? `<p>Referencia de tu transferencia: <strong>${escapeHtml(order.transferReference)}</strong>.</p>`
+      ? `<p>Transferí ${escapeHtml(money(order.total))} al alias <strong>${escapeHtml(STORE_TRANSFER.alias)}</strong>.<br>Titular: ${escapeHtml(STORE_TRANSFER.holder)} · DNI ${escapeHtml(STORE_TRANSFER.document)}.</p><p>Referencia única de tu pedido: <strong>${escapeHtml(order.transferReference)}</strong>.</p><p>Si ya transferiste, mandá el comprobante a <a href="mailto:${STORE_TRANSFER.receiptEmail}">${STORE_TRANSFER.receiptEmail}</a> con esta referencia. Vamos a confirmar tu pago después de verificar la transferencia.</p>`
       : '';
   const tracking =
     event === 'shipped' && order.trackingNumber

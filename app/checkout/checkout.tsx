@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Copy,
   CreditCard,
   PackageCheck,
   Truck,
@@ -25,6 +24,7 @@ import {
   useAnimatedFields,
 } from '@/components/store-motion';
 import PagoAprobado from '@/components/PagoAprobado';
+import { StoreTransferDetails } from '@/components/store-transfer-details';
 import {
   StorePaymentTicket,
   useOrderPaymentUpdates,
@@ -95,6 +95,10 @@ export default function Checkout({
   const { expired: reservationExpired } = useReservationExpired(order);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   useOrderPaymentUpdates(order, setOrder);
+  const completedOrderId = order?.id;
+  useEffect(() => {
+    if (completedOrderId) window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [completedOrderId]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -453,27 +457,6 @@ export default function Checkout({
       setError(cause.message);
     }
   }
-  async function report(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    const form = new FormData(event.currentTarget);
-    try {
-      setOrder(
-        await storeApi('store-transfer', {
-          method: 'POST',
-          body: JSON.stringify({
-            orderId: order!.id,
-            accessToken: order!.accessToken,
-            transactionId: form.get('transactionId'),
-          }),
-        }),
-      );
-    } catch (cause: any) {
-      setError(cause.message);
-    } finally {
-      setBusy(false);
-    }
-  }
   function openStep(number: number) {
     setStep(number);
     requestAnimationFrame(() => {
@@ -564,67 +547,27 @@ export default function Checkout({
               acreditación del pago.
             </p>
           )}
-          {order.paymentStatus === 'paid' ? null : payment === 'transfer' &&
-            order.paymentStatus !== 'reported' ? (
-            <>
-              {!reservationExpired && (
+          {['pending', 'reported'].includes(order.paymentStatus) &&
+            order.status !== 'cancelled' &&
+            order.paymentMethod === 'transfer' &&
+            !reservationExpired && (
+              <StoreTransferDetails
+                total={order.total}
+                reference={order.transferReference}
+              />
+            )}
+          {order.paymentStatus !== 'paid' &&
+            order.paymentMethod === 'card' &&
+            !reservationExpired && (
+              <div className="store-payment-pending">
+                <CreditCard />
+                <h2>Pago con tarjeta preparado</h2>
                 <p>
-                  Transferí el importe exacto e incluí esta referencia en el
-                  concepto de la operación.
+                  Al conectar la pasarela, este paso abrirá el pago seguro y su
+                  confirmación llegará automáticamente al pedido.
                 </p>
-              )}
-              {!reservationExpired && (
-                <div className="store-transfer-box">
-                  <small>TOTAL A TRANSFERIR</small>
-                  <strong>{storeMoney(order.total)}</strong>
-                  <small>REFERENCIA ÚNICA</small>
-                  <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(order.transferReference)
-                    }
-                  >
-                    {order.transferReference}
-                    <Copy />
-                  </button>
-                  <dl>
-                    <div>
-                      <dt>Alias</dt>
-                      <dd>FRAGUAN.TIENDA</dd>
-                    </div>
-                    <div>
-                      <dt>Titular</dt>
-                      <dd>FRAGUAN</dd>
-                    </div>
-                  </dl>
-                </div>
-              )}
-              <form onSubmit={report} className="store-report-transfer">
-                <CheckoutField>
-                  ¿Ya transferiste?
-                  <input
-                    name="transactionId"
-                    required
-                    minLength={4}
-                    maxLength={80}
-                    placeholder="Número de operación bancaria"
-                  />
-                </CheckoutField>
-                <button disabled={busy}>
-                  {busy ? 'Registrando…' : 'Avisar transferencia'}{' '}
-                  <ArrowRight />
-                </button>
-              </form>
-            </>
-          ) : payment === 'card' && !reservationExpired ? (
-            <div className="store-payment-pending">
-              <CreditCard />
-              <h2>Pago con tarjeta preparado</h2>
-              <p>
-                Al conectar la pasarela, este paso abrirá el pago seguro y su
-                confirmación llegará automáticamente al pedido.
-              </p>
-            </div>
-          ) : null}
+              </div>
+            )}
           <div className="store-order-next">
             <p>
               <PackageCheck />{' '}
@@ -639,12 +582,14 @@ export default function Checkout({
               pago.
             </p>
           </div>
-          <a href="/cuenta">
-            Ver mi cuenta <ArrowRight />
-          </a>
-          <a href={`/pedido/${order.id}`}>
-            Seguir este pedido <ArrowRight />
-          </a>
+          <div className="store-order-links">
+            <a href="/cuenta">
+              Ver mi cuenta <ArrowRight />
+            </a>
+            <a href={`/pedido/${order.id}`}>
+              Seguir este pedido <ArrowRight />
+            </a>
+          </div>
         </section>
       </div>
     );
