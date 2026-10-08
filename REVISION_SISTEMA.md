@@ -160,3 +160,11 @@ Comprobaciones aisladas: caja POS, medios de pago, etiquetas, códigos de varian
 Entrega: el seguimiento muestra PEDIDO ENTREGADO y el último paso marcado. Para retiro, un operador autorizado registra la entrega desde POS/Admin; queda evento con usuario y fecha y se dispara el email correspondiente. Para domicilio falta la integración con Correo Argentino y no hay hoy una acción equivalente para confirmar entrega manual de un envío despachado. No se debe inferir entrega por el mero paso del tiempo.
 
 Pendientes: seguimiento automático del transportista, cotizaciones reales y embalajes; enlace seguro al seguimiento interno en emails; reducir el peso del CSS global (aprox. 407 KB sin comprimir) y favicon (aprox. 327 KB), y separar recursos de Admin de las rutas públicas. El video ya usa versión móvil, loop silencioso y pausa fuera de pantalla. Las pruebas aisladas no certifican todas las interacciones privadas del Admin/POS con cuentas reales ni la concurrencia de múltiples conexiones PostgreSQL productivas.
+
+## Velocidad — 08/10/2026
+
+- Favicon derivado del mismo logo: JPEG original 327.571 bytes → PNG 64×64 de 5.264 bytes. El logo original se conserva para la organización/SEO y otros usos.
+- CSS principal compilado: 407.793 → 363.022 bytes, aproximadamente 11% menos. Se retiró únicamente el import de animate.css sin usuarios (las animaciones FRAGUAN propias permanecen). 234 reglas internas se trasladaron sin cambiar declaraciones a internal-workspace.css, cargado por Admin, POS y acceso del personal. Se compararon todas las reglas originales con las dos hojas resultantes: ninguna perdida.
+- Módulo admin-workspace compilado: 500.992 → 143.176 bytes. Los gráficos (327.581 bytes) y Centro financiero (32.030 bytes) usan carga diferida con Suspense; se descargan cuando se renderiza la sección que los necesita. Los gráficos conservan exactamente las opciones y datos previos. No se eliminan funciones.
+- Tamaños sin compresión; no son porcentaje de mejora de tiempo total ni Core Web Vitals. La latencia de base de datos/backend y la conexión siguen influyendo.
+- TypeScript y builds web/API correctos. Gráfico diferido renderizado en navegador con datos locales descartables y sin desborde. Se mantiene pendiente la prueba integral autenticada de todos los formularios de Admin/POS; no se registraron operaciones reales.

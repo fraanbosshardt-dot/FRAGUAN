@@ -1,3 +1,4 @@
+import '../internal-workspace.css';
 import Workspace from '../workspace';
 import ComingSoon from '../coming-soon';
 import { isProductionComingSoon } from '@/lib/release-mode';

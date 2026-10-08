@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   robots: { index: true, follow: true },
   twitter: { card: 'summary', title: 'FRAGUAN | Tienda oficial' },
-  icons: { icon: '/fraguan-logo.jpg' },
+  icons: { icon: '/fraguan-icon.png' },
 };
 export default function RootLayout({
   children,

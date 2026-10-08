@@ -1,3 +1,4 @@
+import '../internal-workspace.css';
 import { env } from 'cloudflare:workers';
 import ComingSoon from '../coming-soon';
 import { isProductionComingSoon } from '@/lib/release-mode';

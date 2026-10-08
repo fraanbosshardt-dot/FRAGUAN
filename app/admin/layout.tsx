@@ -1,3 +1,4 @@
+import '../internal-workspace.css';
 import type { ReactNode } from 'react';
 import './admin-design.css';
 

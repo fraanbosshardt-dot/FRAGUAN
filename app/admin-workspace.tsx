@@ -1,7 +1,7 @@
 'use client';
 import { AdminSeoControls } from '@/components/admin-seo-controls';
 import { AdminGrowthControls } from '@/components/admin-growth-controls';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ShoppingBag,
   Package,
@@ -30,15 +30,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { ChartContainer } from '@/components/ui/chart';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from 'recharts';
 import { api, money, minor, date, useSession, Row } from '@/lib/client';
 import { buildProductCsvTemplate, parseProductCsv } from '@/lib/product-csv';
 import { GlobalSearch } from '@/components/global-search';
@@ -49,7 +40,10 @@ import { Barcode } from '@/components/barcode';
 import { printCommerce } from '@/lib/printing';
 import { LoadingState } from '@/components/loading-state';
 import { ChatGPTAnalysisExport } from '@/components/chatgpt-analysis-export';
-import { PersonalFinanceControl } from '@/components/personal-finance-control';
+const PersonalFinanceControl = lazy(() => import('@/components/personal-finance-control').then(m => ({default:m.PersonalFinanceControl})));
+const AdminSalesChart = lazy(() => import('@/components/admin-sales-charts').then(m => ({default:m.AdminSalesChart})));
+const AdminRevenueChart = lazy(() => import('@/components/admin-sales-charts').then(m => ({default:m.AdminRevenueChart})));
+const AdminFundsChart = lazy(() => import('@/components/admin-sales-charts').then(m => ({default:m.AdminFundsChart})));
 import { AdminSidebar, navigation } from '@/components/admin-navigation';
 const exportLabels: Record<string, string> = {
   products: 'Productos',
@@ -1576,60 +1570,7 @@ export default function Admin({
                         <span>Últimos 30 días con actividad</span>
                       </div>
                       {data.trend.length ? (
-                        <ChartContainer
-                          config={{
-                            total: { label: 'Ventas', color: 'var(--primary)' },
-                          }}
-                          className="sales-chart"
-                        >
-                          <AreaChart data={data.trend}>
-                            <defs>
-                              <linearGradient
-                                id="salesGradient"
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                              >
-                                <stop
-                                  offset="0%"
-                                  stopColor="var(--primary)"
-                                  stopOpacity={0.28}
-                                />
-                                <stop
-                                  offset="100%"
-                                  stopColor="var(--primary)"
-                                  stopOpacity={0}
-                                />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid
-                              vertical={false}
-                              strokeDasharray="4 5"
-                            />
-                            <XAxis
-                              dataKey="date"
-                              tickFormatter={(v) => v.slice(5)}
-                              tickLine={false}
-                              axisLine={false}
-                            />
-                            <YAxis
-                              tickFormatter={(v) =>
-                                `${Math.round(v / 100000)}k`
-                              }
-                              tickLine={false}
-                              axisLine={false}
-                            />
-                            <Tooltip formatter={(v: any) => money(Number(v))} />
-                            <Area
-                              type="monotone"
-                              dataKey="total"
-                              stroke="var(--primary)"
-                              strokeWidth={2}
-                              fill="url(#salesGradient)"
-                            />
-                          </AreaChart>
-                        </ChartContainer>
+                        <Suspense fallback={<LoadingState />}><AdminSalesChart data={data} /></Suspense>
                       ) : (
                         <div className="chart-empty">
                           <ShoppingBag size={30} />
@@ -1800,62 +1741,7 @@ export default function Admin({
                     <span>Venta neta por día</span>
                   </div>
                   {data.trend?.length ? (
-                    <ChartContainer
-                      config={{
-                        revenueMinor: {
-                          label: 'Venta neta',
-                          color: 'var(--primary)',
-                        },
-                      }}
-                      className="sales-chart"
-                    >
-                      <AreaChart data={data.trend}>
-                        <defs>
-                          <linearGradient
-                            id="reportGradient"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="0%"
-                              stopColor="var(--primary)"
-                              stopOpacity={0.3}
-                            />
-                            <stop
-                              offset="100%"
-                              stopColor="var(--primary)"
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid vertical={false} strokeDasharray="4 5" />
-                        <XAxis
-                          dataKey="date"
-                          tickFormatter={(value) => value.slice(5)}
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <YAxis
-                          tickFormatter={(value) =>
-                            `${Math.round(value / 100000)}k`
-                          }
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <Tooltip
-                          formatter={(value: any) => money(Number(value))}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="revenueMinor"
-                          stroke="var(--primary)"
-                          strokeWidth={2}
-                          fill="url(#reportGradient)"
-                        />
-                      </AreaChart>
-                    </ChartContainer>
+                    <Suspense fallback={<LoadingState />}><AdminRevenueChart data={data} /></Suspense>
                   ) : (
                     <div className="chart-empty">
                       <ShoppingBag size={28} />
@@ -2090,42 +1976,7 @@ export default function Admin({
                     <h2>Caja conocida proyectada</h2>
                     <span>Próximos 90 días</span>
                   </div>
-                  <ChartContainer
-                    config={{
-                      projectedKnownFundsMinor: {
-                        label: 'Fondos proyectados',
-                        color: 'var(--primary)',
-                      },
-                    }}
-                    className="sales-chart"
-                  >
-                    <AreaChart data={data.daily}>
-                      <CartesianGrid vertical={false} strokeDasharray="4 5" />
-                      <XAxis
-                        dataKey="date"
-                        tickFormatter={(value) => value.slice(5)}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        tickFormatter={(value) =>
-                          `${Math.round(value / 100000)}k`
-                        }
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Tooltip
-                        formatter={(value: any) => money(Number(value))}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="projectedKnownFundsMinor"
-                        stroke="var(--primary)"
-                        strokeWidth={2}
-                        fill="url(#salesGradient)"
-                      />
-                    </AreaChart>
-                  </ChartContainer>
+                  <Suspense fallback={<LoadingState />}><AdminFundsChart data={data} /></Suspense>
                 </section>
                 <section className="panel">
                   <div className="panel-heading">
@@ -2155,7 +2006,7 @@ export default function Admin({
             </>
           )}
           {section === 'personal-finance' && data && (
-            <PersonalFinanceControl initial={data} />
+            <Suspense fallback={<LoadingState />}><PersonalFinanceControl initial={data} /></Suspense>
           )}
           {section === 'customer-intelligence' && data && (
             <>
