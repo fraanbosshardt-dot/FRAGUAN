@@ -47,20 +47,29 @@ export default function HeroForja({
     };
   }, []);
   return (
-    <header className="hero fa-hero" ref={heroRef}>
-      <StoreHeroVideo />
-      <p className="tag k">{tag}</p>
-      <h1 className="fa-hero-title" ref={titleRef} aria-label={titulo}>
-        {titulo.split('').map((c, i) => (
-          <span className="fa-hero-mask" key={i} aria-hidden="true">
-            <span style={{ '--i': i }}>{c}</span>
-          </span>
-        ))}
-      </h1>
-      <p className="fa-hero-sub">
-        {linea} <strong>{destacado}</strong>
-      </p>
-      {children}
-    </header>
+    <>
+      <div className="landing-curtain" aria-hidden="true">
+        <span>FRAGUAN</span>
+      </div>
+      <section className="hero fa-hero landing-hero" ref={heroRef}>
+        <StoreHeroVideo />
+        <div className="landing-hero-inner">
+          <p className="tag k">{tag}</p>
+          <h1 className="fa-hero-title" ref={titleRef} aria-label={titulo}>
+            {titulo.split('').map((c, i) => (
+              <span className="fa-hero-mask" key={i} aria-hidden="true">
+                <span style={{ '--i': i }}>{c}</span>
+              </span>
+            ))}
+          </h1>
+          <div className="landing-hero-row">
+            <p className="fa-hero-sub">
+              {linea} <strong>{destacado}</strong>
+            </p>
+            {children}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

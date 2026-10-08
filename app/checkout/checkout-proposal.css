@@ -994,3 +994,43 @@
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+
+/* Un solo control de cantidad, integrado con el fondo del resumen. */
+.fraguan-design .cp-summary-content .cp-quantity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 10px;
+  padding: 0;
+  border: 1px solid var(--purchase-line);
+  border-radius: var(--purchase-radius);
+  background: transparent;
+  vertical-align: middle;
+}
+.fraguan-design .cp-summary-content .cp-quantity button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--purchase-ink);
+  box-shadow: none;
+  font: 18px var(--purchase-font);
+}
+.fraguan-design .cp-summary-content .cp-quantity button:hover,
+.fraguan-design .cp-summary-content .cp-quantity button:focus-visible {
+  background: var(--purchase-soft);
+  text-decoration: none;
+}
+.fraguan-design .cp-summary-content .cp-quantity > span {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 40px;
+  padding: 0 4px;
+  font: 14px var(--purchase-font);
+  font-variant-numeric: tabular-nums;
+}

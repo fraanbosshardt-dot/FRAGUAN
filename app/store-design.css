@@ -2577,67 +2577,397 @@ body:has(.fraguan-design) .store-toast {
   fill: currentColor;
 }
 
-.fraguan-design .store-hero-video {
+/* Landing: tokens de la tienda, sin datos comerciales de la maqueta. */
+.fraguan-design .landing-home {
+  background: var(--bone);
+  color: var(--ink);
+}
+.fraguan-design .landing-hero {
+  position: relative;
+  min-height: min(86svh, 760px);
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  color: var(--bone);
+  isolation: isolate;
+}
+.fraguan-design .store-hero-video,
+.fraguan-design .store-hero-shade {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
   pointer-events: none;
+}
+.fraguan-design .store-hero-video {
+  object-fit: cover;
+  object-position: 50% 35%;
 }
 .fraguan-design .store-hero-shade {
-  position: absolute;
-  inset: 0;
   background: linear-gradient(
-    180deg,
-    rgba(20, 17, 15, 0.48),
-    rgba(20, 17, 15, 0.72)
+    to top,
+    rgba(20, 17, 15, 0.88),
+    rgba(20, 17, 15, 0.5) 45%,
+    rgba(20, 17, 15, 0.45)
   );
-  pointer-events: none;
 }
-.fraguan-design .fa-hero .tag,
-.fraguan-design .fa-hero-sub,
-.fraguan-design .fa-hero .tiles {
+.fraguan-design .landing-hero-inner {
+  width: 100%;
+  max-width: 1240px;
+  margin: auto auto 0;
+  padding: 48px 24px 56px;
   position: relative;
   z-index: 1;
 }
-.fraguan-design .fa-hero-title {
-  z-index: 1;
-}
-.fraguan-design .store-hero-play {
-  position: absolute;
-  top: 14px;
-  right: 20px;
-  z-index: 2;
-  padding: 8px 12px;
-  background: var(--ink);
+.fraguan-design .landing-hero .tag {
+  text-align: left;
   color: var(--bone);
-  border: 0;
-  font: 12px var(--fb);
+  margin: 0 0 14px;
 }
-.fraguan-design .store-hero-play:hover,
-.fraguan-design .store-hero-play:focus-visible {
+.fraguan-design .landing-hero .fa-hero-title {
+  position: relative;
+  top: auto;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  font-size: clamp(60px, 17vw, 220px);
+  line-height: 1;
+  letter-spacing: 0;
+  width: 100%;
+  margin: 0;
+  transform-origin: left center;
+}
+.fraguan-design .landing-hero .fa-hero-mask {
+  overflow: hidden;
+  padding-top: 0.04em;
+}
+.fraguan-design .landing-hero .fa-hero-mask span {
+  animation-delay: calc(1.3s + var(--i)*70ms);
+}
+.fraguan-design .landing-hero-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.fraguan-design .landing-hero .fa-hero-sub {
+  text-align: left;
+  margin: 0;
+  font-size: clamp(18px, 2.5vw, 26px);
+  animation-delay: 1.9s;
+}
+.fraguan-design .landing-hero .fa-hero-sub strong::after {
+  display: none;
+}
+.fraguan-design .landing-cta {
+  background: var(--bone);
+  color: var(--ink);
+  border: 0;
+  border-radius: var(--purchase-radius);
+  padding: 18px 28px;
+  font-size: 13px;
+}
+.fraguan-design .landing-cta:hover,
+.fraguan-design .landing-cta:focus-visible {
   background: var(--bone-2);
   color: var(--ink);
 }
-@media (max-width: 700px) {
-  .fraguan-design .store-hero-video,
-  .fraguan-design .store-hero-shade {
-    height: 320px;
+.fraguan-design .landing-curtain {
+  position: fixed;
+  inset: 0;
+  background: var(--ink);
+  color: var(--bone);
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: landing-curtain-exit 0.85s 0.9s cubic-bezier(0.8, 0, 0.2, 1)
+    forwards;
+}
+.fraguan-design .landing-curtain span {
+  font: clamp(48px, 12vw, 150px) var(--fd);
+  animation: landing-curtain-word 0.8s both;
+}
+@keyframes landing-curtain-exit {
+  to {
+    transform: translateY(-100%);
+    visibility: hidden;
   }
-  .fraguan-design .store-hero-shade {
-    background: linear-gradient(
-      180deg,
-      rgba(20, 17, 15, 0.4),
-      rgba(20, 17, 15, 0.55) 65%,
-      var(--ink)
-    );
+}
+@keyframes landing-curtain-word {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
   }
-  .fraguan-design .store-hero-play {
-    top: 6px;
-    right: 12px;
-    padding: 6px 9px;
-    font-size: 10px;
+  to {
+    opacity: 1;
+    transform: none;
   }
+}
+.fraguan-design .landing-marquee {
+  overflow: hidden;
+  border-bottom: 1px solid var(--sand);
+  padding: 18px 0;
+  font: 22px var(--fd);
+}
+.fraguan-design .landing-marquee > div {
+  display: flex;
+  width: max-content;
+  animation: landing-marquee 28s linear infinite;
+}
+.fraguan-design .landing-marquee span {
+  white-space: nowrap;
+  padding-right: 28px;
+}
+@keyframes landing-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.fraguan-design .landing-home .words {
+  height: auto;
+  min-height: 0;
+  padding: 110px 24px 90px;
+  background: var(--bone);
+}
+.fraguan-design .landing-home .words > div {
+  position: relative;
+  top: auto;
+  height: auto;
+  max-width: 1192px;
+  margin: auto;
+}
+.fraguan-design .landing-home .words p {
+  font-size: clamp(34px, 6vw, 88px);
+  line-height: 1.08;
+}
+.fraguan-design .landing-block {
+  max-width: 1240px;
+  padding: 0 24px 84px;
+  margin: auto;
+}
+.fraguan-design .landing-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.fraguan-design .landing-heading h2 {
+  font-size: clamp(34px, 4vw, 56px);
+  line-height: 1.1;
+}
+.fraguan-design .landing-heading a {
+  font-size: 13px;
+}
+.fraguan-design .landing-categories {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.fraguan-design .landing-category a {
+  position: relative;
+  aspect-ratio: 4/5;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--bone-2);
+  overflow: hidden;
+  transition:
+    background 0.4s,
+    color 0.4s;
+}
+.fraguan-design .landing-category-number {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  font: 120px var(--fd);
+  color: var(--sand);
+  transition: transform 0.5s;
+}
+.fraguan-design .landing-category h3 {
+  font-size: 38px;
+  line-height: 1.15;
+  position: relative;
+  margin-bottom: 10px;
+}
+.fraguan-design .landing-category small {
+  font-size: 12px;
+  position: relative;
+}
+.fraguan-design .landing-category a:hover,
+.fraguan-design .landing-category a:focus-visible {
+  background: var(--ink);
+  color: var(--bone);
+}
+.fraguan-design .landing-category a:hover .landing-category-number {
+  color: var(--acc-l);
+  transform: translateY(8px);
+}
+.fraguan-design .landing-home .grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+.fraguan-design .landing-trust {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  padding: 30px max(24px, calc((100% - 1192px) /2));
+  background: white;
+  border-block: 1px solid var(--sand);
+}
+.fraguan-design .landing-trust b,
+.fraguan-design .landing-trust span {
+  display: block;
+}
+.fraguan-design .landing-trust b {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.fraguan-design .landing-trust span {
+  font-size: 13px;
+}
+.fraguan-design .landing-club {
+  max-width: none;
+  margin: 0;
+  padding: 84px max(24px, calc((100% - 1192px) /2));
+  background: var(--ink);
+  color: var(--bone);
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 64px;
+  align-items: end;
+}
+.fraguan-design .landing-club .k {
+  color: var(--acc-l);
+}
+.fraguan-design .landing-club h2 {
+  font-size: clamp(40px, 6vw, 84px);
+  line-height: 1.05;
+  margin: 18px 0;
+}
+.fraguan-design .landing-club p {
+  font-size: 16px;
+  color: var(--sand);
+  line-height: 1.6;
+  max-width: 460px;
+  margin: 22px 0;
+}
+.fraguan-design .landing-newsletter {
+  border-top: 1px solid var(--sand);
+  padding-top: 22px;
+  min-width: 0;
+}
+.fraguan-design .landing-newsletter h3 {
+  font-size: 34px;
+  line-height: 1.2;
+  margin: 18px 0;
+}
+.fraguan-design .landing-newsletter form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fraguan-design .landing-newsletter input {
+  flex: 1 1 150px;
+  width: auto;
+  min-width: 0;
+  background: transparent;
+  color: var(--bone);
+  border: 1px solid var(--sand);
+  padding: 16px;
+  font: 16px var(--fb);
+}
+.fraguan-design .landing-newsletter input:focus {
+  outline: none;
+  background: var(--ink-2);
+  border-color: var(--bone);
+}
+@media (max-width: 900px) {
+  .fraguan-design .landing-categories {
+    grid-template-columns: 1fr;
+  }
+  .fraguan-design .landing-category a {
+    aspect-ratio: 16/10;
+  }
+  .fraguan-design .landing-home .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fraguan-design .landing-trust {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fraguan-design .landing-club {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-block: 56px;
+  }
+  .fraguan-design .landing-block {
+    padding-bottom: 56px;
+  }
+  .fraguan-design .landing-home .words {
+    padding: 70px 24px 50px;
+  }
+  .fraguan-design .landing-hero {
+    min-height: 80svh;
+  }
+}
+@media (max-width: 520px) {
+  .fraguan-design .landing-hero-inner,
+  .fraguan-design .landing-block {
+    padding-inline: 16px;
+  }
+  .fraguan-design .landing-hero-inner {
+    padding-bottom: 36px;
+  }
+  .fraguan-design .landing-club,
+  .fraguan-design .landing-trust {
+    padding-inline: 16px;
+  }
+  .fraguan-design .landing-category-number {
+    font-size: 80px;
+  }
+  .fraguan-design .landing-category h3 {
+    font-size: 32px;
+  }
+  .fraguan-design .landing-home .grid {
+    gap: 12px;
+  }
+  .fraguan-design .landing-trust b {
+    font-size: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design .landing-curtain {
+    display: none;
+  }
+  .fraguan-design .landing-marquee > div {
+    animation: none;
+  }
+  .fraguan-design .landing-hero .fa-hero-mask span,
+  .fraguan-design .landing-hero .fa-hero-sub {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+.fraguan-design .landing-hero .fa-hero-title {
+  font-size: clamp(60px, 25vw, 320px);
+}
+.fraguan-design:has(.landing-home) nav[aria-label='Navegación principal'] {
+  background: var(--bone);
+  color: var(--ink);
+  border-bottom: 1px solid var(--sand);
+}
+.fraguan-design:has(.landing-home)
+  nav[aria-label='Navegación principal']
+  a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.fraguan-design:has(.landing-home) .store-page-enter {
+  animation: none;
 }

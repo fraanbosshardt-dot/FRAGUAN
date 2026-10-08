@@ -22,7 +22,6 @@ import {
   BarraEnvioGratis,
   EtiquetaTalle,
   HeroForja,
-  ColeccionHover,
 } from '@/components/fraguan-animaciones';
 import { usePathname } from 'next/navigation';
 import {
@@ -162,7 +161,16 @@ function useProg(ref) {
       t = requestAnimationFrame(() => {
         if (!ref.current) return;
         const r = ref.current.getBoundingClientRect();
-        s(Math.min(1, Math.max(0, -r.top / (r.height - innerHeight))));
+        s(
+          Math.min(
+            1,
+            Math.max(
+              0,
+              (innerHeight * 0.82 - r.top) /
+                (innerHeight * 0.5 + r.height * 0.4),
+            ),
+          ),
+        );
       });
     };
     addEventListener('scroll', f, { passive: true });
@@ -204,23 +212,6 @@ function Rv({ c = '', d = 0, children, animationKey }) {
   >
     ${children}
   </div>`;
-}
-function Count({ to, suf = '' }) {
-  const [r, v] = useSeen(),
-    [n, s] = useState(0);
-  useEffect(() => {
-    if (!v) return;
-    let t0, frame;
-    const f = (t) => {
-      t0 = t0 || t;
-      const k = Math.min(1, (t - t0) / 1400);
-      s(Math.round(to * (1 - Math.pow(1 - k, 3))));
-      if (k < 1) frame = requestAnimationFrame(f);
-    };
-    frame = requestAnimationFrame(f);
-    return () => cancelAnimationFrame(frame);
-  }, [v, to]);
-  return html`<span ref=${r}>${n}${suf}</span>`;
 }
 const Err = ({ e }) => (e ? html`<div class="err">${e}</div>` : null);
 
@@ -285,107 +276,93 @@ function Words() {
     </div>
   </section>`;
 }
-function HScroll() {
-  const { products: P } = useC();
-  const r = useRef(),
-    t = useRef(),
-    p = useProg(r),
-    x = t.current ? (t.current.scrollWidth - innerWidth) * p : 0;
-  return html`<section class="hs" ref=${r}>
-    <div>
-      <h2 class="d">Lo más vendido</h2>
-      <p class="design-swipe-hint">SEGUÍ BAJANDO PARA VER MÁS ↓</p>
-      <div
-        class="trk"
-        ref=${t}
-        tabindex="0"
-        aria-label="Productos más vendidos"
-        style=${{ transform: `translateX(${-x}px)` }}
-      >
-        ${[7, 0, 2, 4, 3, 5]
-          .map((i) => P[i])
-          .filter(Boolean)
-          .map((q, i) => {
-            return html`<div class="hc" key=${i}>
-              <b>${q.c.toUpperCase()} · ${q.col}</b
-              ><span class="d">${q.n}</span>
-              <div>
-                <b>${$(q.p)}</b><br /><br /><a href=${'#/p/' + q.slug}
-                  >VER PRODUCTO →</a
-                >
-              </div>
-            </div>`;
-          })}
-      </div>
-    </div>
-  </section>`;
-}
-
 function Home() {
   const { news, products: P, categories: CATS } = useC();
-  return html`<${React.Fragment}>
+  const fresh = P.filter((p) => p.featured);
+  return html`<div class="landing-home">
     <${HeroForja} titulo="FRAGUAN" linea="Lo nuevo." destacado="A tu manera.">
-      <div class="tiles">
-        <a class="tile" href="#/c/nuevos"
-          ><b class="k">01 — NOVEDADES</b
-          ><span class="d">Ver lo<br />nuevo →</span></a
-        ><a class="tile" href="#/c/remeras"
-          ><b class="k">02 — TU ESTILO, TODOS LOS DÍAS</b
-          ><span class="d">Elegir<br />remeras →</span></a
-        >
-      </div>
+      <a class="btn landing-cta" href="#/c/nuevos">VER LO NUEVO →</a>
     <//>
+    <div class="landing-marquee" aria-hidden="true">
+      <div>
+        ${[0, 1, 2, 3].map((i) => html`<span key=${i}>Menos vueltas. Más vos. · Forjá tu estilo. Todos los días. · </span>`)}
+      </div>
+    </div>
     <${Words} />
-    <section class="sec lt cats">
-      <${Rv}><b class="k">COLECCIÓN</b><//
-      ><${ColeccionHover}
-        items=${CATS.map((c) => ({ nombre: c, cantidad: String(P.filter((p) => p.c === c).length).padStart(2, '0') + ' MODELOS', href: '/coleccion/' + c.toLowerCase(), img: P.find((p) => p.c === c && p.img)?.img }))}
-      />
-    </section>
-    <section class="sec lt2">
-      <${Rv}><h2 class="d h1">Lo nuevo</h2><//><${Grid} L=${P.slice(0, 8)} />
-      <p style=${{ marginTop: '5vh' }}>
-        <a class="btn" href="#/c/todo">VER TODA LA COLECCIÓN →</a>
-      </p>
-    </section>
-    <${HScroll} />
-    <section class="sec">
-      <div class="ben">
-        <div>
-          <div class="d"><${Count} to=${10} suf="%" /></div>
-          <p>OFF PAGANDO POR TRANSFERENCIA</p>
-        </div>
-        <div>
-          <div class="d"><${Count} to=${24} /></div>
-          <p>PROVINCIAS CON ENVÍO</p>
-        </div>
-        <div>
-          <div class="d"><${Count} to=${7} /></div>
-          <p>CATEGORÍAS PARA ARMAR TU LOOK</p>
-        </div>
+    <section class="landing-block landing-collection">
+      <${Rv} c="landing-heading"
+        ><h2 class="d">Colección</h2>
+        <a href="#/c/todo">VER TODA LA TIENDA →</a><//
+      >
+      <div class="landing-categories">
+        <${Rv} c="landing-category"
+          ><a href="#/c/nuevos"
+            ><span class="landing-category-number" aria-hidden="true">01</span>
+            <h3 class="d">Novedades</h3>
+            <small
+              >${fresh.length} ${fresh.length === 1 ? 'modelo' : 'modelos'}
+              →</small
+            ></a
+          ><//
+        >
+        ${CATS.map((c, i) => {
+          const count = P.filter((p) => p.c === c).length;
+          return html`<${Rv} key=${c} c="landing-category" d=${(i % 3) * 90}
+            ><a href=${'/coleccion/' + c.toLowerCase()}
+              ><span class="landing-category-number" aria-hidden="true"
+                >${String(i + 2).padStart(2, '0')}</span
+              >
+              <h3 class="d">${c}</h3>
+              <small>${count} ${count === 1 ? 'modelo' : 'modelos'} →</small></a
+            ><//
+          >`;
+        })}
       </div>
     </section>
-    <section class="sec em club">
+    <section class="landing-block" id="landing-nuevo">
+      <${Rv} c="landing-heading"
+        ><h2 class="d">Lo nuevo</h2>
+        <a href="#/c/todo">VER TODA LA COLECCIÓN →</a><//
+      >
+      <${Grid} L=${P.slice(0, 8)} />
+    </section>
+    <section class="landing-trust" aria-label="Comprar en FRAGUAN">
       <${Rv}
-        ><b class="k">CLUB FRAGUAN</b>
-        <h2 class="d">Comprás acá.<br />Sumás en todos lados.</h2>
-        <p>
-          Tu cuenta reúne las compras del local y de la tienda online, tus
-          preferencias y beneficios. Y en el checkout, tus datos se completan
-          solos.
-        </p>
-        <a class="btn" href="#/cuenta">CREAR MI CUENTA →</a><//
+        ><b class="d">Todo el país</b
+        ><span>Envíos a todas las provincias</span><//
+      >
+      <${Rv}
+        ><b class="d">Retiro en el local</b><span>Isla Verde, Córdoba</span><//
+      >
+      <${Rv}
+        ><a href="#/info/cambios"
+          ><b class="d">Cambios</b
+          ><span>Consultá cambios y devoluciones</span></a
+        ><//
+      >
+      <${Rv}
+        ><a href="#/info/pagos"
+          ><b class="d">Medios de pago</b
+          ><span>Consultá las opciones disponibles</span></a
+        ><//
       >
     </section>
-    <section class="sec dk nl">
+    <section class="landing-block landing-club">
       <${Rv}
-        ><b class="k" style=${{ color: 'var(--acc-l)' }}>FRAGUAN LETTER</b>
-        <h2 class="d h1">Ingresos, drops<br />y beneficios.</h2>
+        ><b class="k">MI FRAGUAN</b>
+        <h2 class="d">Tu estilo.<br />Tu cuenta.</h2>
+        <p>
+          Guardá tus datos para tus próximas compras y encontrá tus pedidos y
+          favoritos en un mismo lugar.
+        </p>
+        <a class="btn landing-cta" href="#/cuenta">CREAR MI CUENTA →</a><//
+      >
+      <${Rv} c="landing-newsletter"
+        ><b class="k">FRAGUAN LETTER</b>
+        <h3 class="d">Ingresos, drops y novedades.</h3>
         ${
           news[0]
-            ? html`<p style=${{ fontSize: 20 }}>
-                Listo, ya sos parte. Sin ruido.
-              </p>`
+            ? html`<p role="status">Listo, ya sos parte. Sin ruido.</p>`
             : html`<form
                 onSubmit=${(e) => {
                   e.preventDefault();
@@ -398,11 +375,13 @@ function Home() {
                   type="email"
                   required
                   placeholder="Tu email"
-                /><button class="btn a">UNIRME</button>
+                /><button class="btn landing-cta" type="submit">UNIRME</button>
               </form>`
-        }<${Err} e=${news[2]}
-      /><//></section
-  ><//>`;
+        }
+        <${Err} e=${news[2]} />
+      <//>
+    </section>
+  </div>`;
 }
 
 function Coll({ c }) {

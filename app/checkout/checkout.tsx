@@ -887,9 +887,9 @@ export default function Checkout({
               hidden={shippingMethod === 'pickup'}
               disabled={shippingMethod === 'pickup'}
             >
-              {!!session?.addresses?.length && (
+              {session?.addresses?.length > 1 && (
                 <CheckoutField className="wide">
-                  Dirección guardada
+                  Autocompletar con otra dirección
                   <select
                     value={selectedAddressId}
                     onChange={(event) => {
@@ -1118,7 +1118,7 @@ export default function Checkout({
                       {passwordAuthEnabled
                         ? 'Guardá tus pedidos y datos para tu próxima compra.'
                         : session?.googleClientId
-                          ? 'Continuá con Google para crear tu cuenta sin perder los datos de esta compra.'
+                          ? 'Es opcional. Si la elegís, continuá con Google sin perder los datos de esta compra.'
                           : 'Podés continuar como invitado y verificar tu email en Contacto.'}
                     </small>
                   </span>
