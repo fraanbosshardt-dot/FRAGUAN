@@ -1011,6 +1011,8 @@ export async function storeAccount(req: Request) {
       benefits: [],
       googleClientId,
     };
+  if (new URL(req.url).searchParams.get('summary') === '1')
+    return { customer, googleClientId };
   const cutoff = new Date(Date.now() - 365 * 86400000).toISOString();
   const [orders, addresses, activity, config] = await Promise.all([
     rows(

@@ -8,6 +8,7 @@ import {
   RollingText,
 } from '@/components/store-motion';
 import { GoogleSignIn } from '@/components/google-sign-in';
+import { fulfillmentLabels } from '@/lib/store-order-status';
 import {
   StoreProduct,
   storeApi,
@@ -334,11 +335,9 @@ export default function Account({
                       : 'Pago pendiente'}
                   </p>
                   <p>
-                    {o.fulfillmentStatus === 'shipped'
-                      ? 'Despachado'
-                      : o.fulfillmentStatus === 'preparing'
-                        ? 'Preparando'
-                        : 'Recibido'}
+                    {o.status === 'cancelled'
+                      ? 'Cancelado'
+                      : fulfillmentLabels[o.fulfillmentStatus] || 'Recibido'}
                   </p>
                   <span className="k">VER PEDIDO →</span>
                 </a>

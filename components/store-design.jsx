@@ -228,7 +228,7 @@ function Card({ p, i = 0 }) {
       >${p.img && html`<${PhotoReveal}><img ref=${imageRef} class="im" src=${p.img} alt=${p.n} loading="lazy" /><//>`}<span
         class="ct"
         >${p.c.toUpperCase()}</span
-      >${p.low && html`<span class="lo">QUEDAN POCOS</span>`}
+      >${!p.variants.some((v) => v.stock > 0) ? html`<span class="lo">SIN STOCK</span>` : p.low && html`<span class="lo">QUEDAN POCOS</span>`}
       <button
         class=${'fv' + (f ? ' store-favorite-pop' : '')}
         aria-label=${f ? 'Quitar de favoritos' : 'Guardar en favoritos'}
@@ -240,7 +240,20 @@ function Card({ p, i = 0 }) {
       <div class="qa">
         <p>AGREGAR RÁPIDO · TALLE</p>
         <div>
-          ${p.z.map((z) => html`<button key=${z} disabled=${!p.variants.some((v) => v.size === z && v.color === p.cols[0] && v.stock > 0)} onClick=${() => add(p, z, p.cols[0], 1, true, imageRef.current)}>${z}</button>`)}
+          ${p.z.map((z) => {
+            const available = p.variants.some(
+              (v) => v.size === z && v.color === p.cols[0] && v.stock > 0,
+            );
+            return html`<button
+              key=${z}
+              disabled=${!available}
+              aria-label=${available ? 'Agregar talle ' + z : 'Talle ' + z + ' sin stock'}
+              title=${available ? 'Talle ' + z : 'SIN STOCK'}
+              onClick=${() => add(p, z, p.cols[0], 1, true, imageRef.current)}
+            >
+              ${z}${!available && html`<small>SIN STOCK</small>`}
+            </button>`;
+          })}
         </div>
       </div>
     </div>
@@ -504,7 +517,21 @@ function Prod({ id }) {
         </div>
         <span class="k">TALLE</span>
         <div class="chips">
-          ${p.z.map((x) => html`<button key=${x} disabled=${!p.variants.some((v) => v.size === x && v.color === c && v.stock > 0)} class=${x == s ? 'on' : ''} aria-pressed=${x === s} onClick=${() => ss(x)}>${x}</button>`)}
+          ${p.z.map((x) => {
+            const available = p.variants.some(
+              (v) => v.size === x && v.color === c && v.stock > 0,
+            );
+            return html`<button
+              key=${x}
+              disabled=${!available}
+              class=${x == s ? 'on' : ''}
+              aria-pressed=${x === s}
+              aria-label=${'Talle ' + x + (!available ? ' sin stock' : '')}
+              onClick=${() => ss(x)}
+            >
+              ${x}${!available && html`<small>SIN STOCK</small>`}
+            </button>`;
+          })}
         </div>
         <${EtiquetaTalle}
           key=${s + c}
@@ -521,8 +548,12 @@ function Prod({ id }) {
           </button>
         </div>
         <div style=${{ marginTop: 22 }}>
-          <${Err} e=${e} /><button class="btn a w" onClick=${() => ok(true)}>
-            AGREGAR AL CARRITO</button
+          <${Err} e=${e} /><button
+            class="btn a w"
+            disabled=${!p.variants.some((v) => v.color === c && v.stock > 0)}
+            onClick=${() => ok(true)}
+          >
+            ${p.variants.some((v) => v.color === c && v.stock > 0) ? 'AGREGAR AL CARRITO' : 'SIN STOCK'}</button
           ><button
             class="btn w"
             onClick=${() => {
@@ -866,7 +897,7 @@ function PublicStore({ children }) {
   }, []);
   useEffect(() => {
     let active = true;
-    storeApi('store-account')
+    storeApi('store-account?summary=1')
       .then((r) => {
         if (active) setUser(r.customer);
       })

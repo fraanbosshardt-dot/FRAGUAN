@@ -1,7 +1,7 @@
 'use client';
 import { AdminSeoControls } from '@/components/admin-seo-controls';
 import { AdminGrowthControls } from '@/components/admin-growth-controls';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ShoppingBag,
   Package,
@@ -318,6 +318,7 @@ export default function Admin({
   initialError?: string;
 }) {
   const { session } = useSession(initialSession);
+  const initialReadAvailable = useRef(initialData !== null);
   const [data, setData] = useState<any>(initialData),
     [error, setError] = useState(initialError),
     [busy, setBusy] = useState(false),
@@ -366,6 +367,10 @@ export default function Admin({
     );
   }, [section, reportFrom, reportTo]);
   useEffect(() => {
+    if (initialReadAvailable.current) {
+      initialReadAvailable.current = false;
+      return;
+    }
     load().catch((e) => setError(e.message));
   }, [load]);
   useEffect(() => {

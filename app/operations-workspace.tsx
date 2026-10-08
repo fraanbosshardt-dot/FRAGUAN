@@ -1,6 +1,6 @@
 'use client';
 import { ScheduledCollections } from '@/components/scheduled-collections';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, money, minor, date, Row, useSession } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +59,7 @@ export default function Operations({
   initialData?: Row | null; initialError?: string;
 }) {
   const { session } = useSession(initialSession);
+  const initialReadAvailable = useRef(initialData !== null);
   const [data, setData] = useState<Row | null>(initialData),
     [error, setError] = useState(initialError),
     [success, setSuccess] = useState(''),
@@ -81,6 +82,10 @@ export default function Operations({
     [section, appliedPeriod],
   );
   useEffect(() => {
+    if (initialReadAvailable.current) {
+      initialReadAvailable.current = false;
+      return;
+    }
     load().catch((e) => setError(e.message));
   }, [load]);
   const accounts: [string, string][] = (data?.accounts ?? []).map((r: Row) => [

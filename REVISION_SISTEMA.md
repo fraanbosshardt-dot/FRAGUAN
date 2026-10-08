@@ -148,3 +148,15 @@ por «Medio de pago no disponible». No se reactivó ese medio en producción.
 Las nuevas pruebas usan un fixture independiente con los métodos vigentes.
 Runtime opcional del test PostgreSQL: `@electric-sql/pglite`, instalado solamente
 en `outputs/pg-stock-tests`; no se añade al despliegue ni a dependencias del negocio.
+
+## Revisión del 08/10/2026 — tienda, Administración y POS
+
+Correcciones: los estados `unfulfilled`, `ready_pickup` y `delivered` ahora se muestran correctamente en seguimiento y Mis pedidos. Los talles agotados permanecen en el catálogo, con SIN STOCK y sin permitir elegirlos. No se borraron productos, variantes ni movimientos.
+
+Rendimiento: el encabezado consulta solo la sesión, evitando cargar pedidos, direcciones y beneficios en cada navegación. Admin y operaciones reutilizan los datos iniciales del servidor, evitando una segunda lectura inmediata. No se afirma una mejora porcentual sin medición comparativa.
+
+Comprobaciones aisladas: caja POS, medios de pago, etiquetas, códigos de variantes, autenticación y rutas del personal, consultas PostgreSQL, recuperación de carritos, acreditaciones programadas y numeración concurrente. Guards de stock compartido en PostgreSQL local: reservas, disponibilidad, vencimiento, precio y rollback. Emails de pedidos/bienvenida/verificación probados con proveedor simulado; se corrigió un import faltante en el fixture de Resend, no en el envío productivo. Estados y propiedad de pedidos con email verificado comprobados. No se crearon ventas ni se enviaron emails de prueba en producción.
+
+Entrega: el seguimiento muestra PEDIDO ENTREGADO y el último paso marcado. Para retiro, un operador autorizado registra la entrega desde POS/Admin; queda evento con usuario y fecha y se dispara el email correspondiente. Para domicilio falta la integración con Correo Argentino y no hay hoy una acción equivalente para confirmar entrega manual de un envío despachado. No se debe inferir entrega por el mero paso del tiempo.
+
+Pendientes: seguimiento automático del transportista, cotizaciones reales y embalajes; enlace seguro al seguimiento interno en emails; reducir el peso del CSS global (aprox. 407 KB sin comprimir) y favicon (aprox. 327 KB), y separar recursos de Admin de las rutas públicas. El video ya usa versión móvil, loop silencioso y pausa fuera de pantalla. Las pruebas aisladas no certifican todas las interacciones privadas del Admin/POS con cuentas reales ni la concurrencia de múltiples conexiones PostgreSQL productivas.

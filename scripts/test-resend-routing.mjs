@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
+import { STORE_TRANSFER } from '../lib/store-transfer-details.ts';
 const realRequire = createRequire(import.meta.url);
 const env = {
   RESEND_API_KEY: 'isolated-test-key',
@@ -61,10 +62,14 @@ const template = { exports: {} };
 new Function(
   'module',
   'exports',
+  'require',
   ts.transpileModule(readFileSync('lib/email-template.ts', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText,
-)(template, template.exports);
+)(template, template.exports, (name) => {
+  if (name === './store-transfer-details') return { STORE_TRANSFER };
+  throw new Error('Unexpected fixture import: ' + name);
+});
 const require = (p) =>
   p === './email-template'
     ? template.exports

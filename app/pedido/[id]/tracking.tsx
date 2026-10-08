@@ -6,6 +6,7 @@ import { StoreTransferDetails } from '@/components/store-transfer-details';
 import { ArrowLeft, Check, Clock, PackageCheck, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { storeApi, storeMoney } from '@/lib/store-client';
+import { fulfillmentStep } from '@/lib/store-order-status';
 import {
   StorePaymentTicket,
   useOrderPaymentUpdates,
@@ -13,8 +14,10 @@ import {
 
 const fulfillment: Record<string, string> = {
   pending: 'Pedido recibido',
+  unfulfilled: 'Pedido recibido',
   preparing: 'Preparando tu pedido',
   ready: 'Listo para retirar',
+  ready_pickup: 'Listo para retirar',
   shipped: 'Pedido despachado',
   delivered: 'Pedido entregado',
   cancelled: 'Pedido cancelado',
@@ -120,7 +123,7 @@ export default function OrderTracking({
                 className="store-tracking-steps"
                 style={
                   {
-                    '--tracking-progress': `${(Math.max(0, ['pending', 'preparing', 'shipped', 'delivered'].indexOf(order.fulfillmentStatus === 'ready' ? 'shipped' : order.fulfillmentStatus)) / 3) * 75}%`,
+                    '--tracking-progress': `${(fulfillmentStep(order.fulfillmentStatus) / 3) * 75}%`,
                   } as React.CSSProperties
                 }
               >
@@ -134,16 +137,7 @@ export default function OrderTracking({
                   },
                   { name: 'Entregado', icon: Clock },
                 ].map((step, index) => {
-                  const current = [
-                    'pending',
-                    'preparing',
-                    'shipped',
-                    'delivered',
-                  ].indexOf(
-                    order.fulfillmentStatus === 'ready'
-                      ? 'shipped'
-                      : order.fulfillmentStatus,
-                  );
+                  const current = fulfillmentStep(order.fulfillmentStatus);
                   const Icon = step.icon;
                   return (
                     <li
