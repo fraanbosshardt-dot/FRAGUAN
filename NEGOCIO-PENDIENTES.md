@@ -153,6 +153,12 @@ detallados en REVISION_SISTEMA.md. Mantener Meta Ads y Google Maps para después
 
 ## Reserva durante el pago — 07/10/2026
 
+Actualización 08/10/2026: las nuevas compras online por transferencia reservan
+stock durante 10 minutos; tarjeta mantiene 30 minutos. Pedidos anteriores conservan
+su vencimiento original. Los pedidos de invitado se muestran en Mi FRAGUAN al
+ingresar con una cuenta de email verificado que coincida, sin reasignar pedidos de
+otras cuentas. Los emails de estados se envían al email del pedido con o sin cuenta.
+
 El usuario pidió evaluar reserva temporal mientras completa la compra. Actualmente
 se reserva por 30 minutos al crear pedido, no al seleccionar/agregar al carrito.
 Implementado: contador visible en checkout y seguimiento, aviso al vencer y

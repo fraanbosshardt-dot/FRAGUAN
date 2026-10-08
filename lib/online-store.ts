@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { allocateDocumentNumber } from './document-numbers';
+import { ownsStoreOrder, onlineReservationMinutes } from './store-order-access';
 import { FREE_SHIPPING_MINIMUM_MINOR } from './store-shipping-policy';
 import { storeApiOrigin, publicStoreData } from './store-api';
 import { env } from 'cloudflare:workers';
@@ -277,6 +278,7 @@ type StoreCustomer = {
   accountId: string;
   customerId: string;
   email: string;
+  emailVerified: number;
   name: string;
   surname: string;
   phone: string;
@@ -287,7 +289,7 @@ export async function currentStoreCustomer(req: Request) {
   const token = cookieValue(req, SESSION_COOKIE);
   if (!token) return null;
   return one<StoreCustomer>(
-    `SELECT a.id AS accountId,a.customerId,a.email,a.marketingConsent,c.name,c.surname,c.phone,c.points
+    `SELECT a.id AS accountId,a.customerId,a.email,a.emailVerified,a.marketingConsent,c.name,c.surname,c.phone,c.points
        FROM customer_sessions s JOIN customer_accounts a ON a.id=s.accountId
        JOIN customers c ON c.id=a.customerId
       WHERE s.tokenHash=? AND s.expiresAt>? AND c.active=1`,
@@ -1013,8 +1015,12 @@ export async function storeAccount(req: Request) {
   const [orders, addresses, activity, config] = await Promise.all([
     rows(
       `SELECT id,orderNumber,status,paymentStatus,fulfillmentStatus,total,trackingNumber,createdAt
-         FROM online_orders WHERE customerId=? ORDER BY createdAt DESC LIMIT 50`,
+         FROM online_orders WHERE customerId=? OR
+           (customerId IS NULL AND LOWER(TRIM(email))=? AND ?=1)
+         ORDER BY createdAt DESC LIMIT 50`,
       customer.customerId,
+      customer.email.trim().toLowerCase(),
+      Number(customer.emailVerified),
     ),
     rows(
       'SELECT id,label,recipient,phone,postalCode,address,addressExtra,city,province,country,isDefault FROM customer_addresses WHERE customerId=? ORDER BY isDefault DESC,createdAt DESC',
@@ -1293,7 +1299,10 @@ export async function createOnlineOrder(req: Request, raw: unknown) {
   const effectivePhone = customer?.phone || input.phone;
   const orderId = input.idempotencyKey,
     createdAt = now();
-  const expiresAt = new Date(Date.now() + 30 * 60000).toISOString();
+  const reservationMinutes = onlineReservationMinutes(input.paymentMethod);
+  const expiresAt = new Date(
+    Date.now() + reservationMinutes * 60000,
+  ).toISOString();
   const transferSuffix = randomToken(3).toUpperCase();
   const commands = [
     allocateDocumentNumber('online_order'),
@@ -1596,14 +1605,15 @@ export async function publicOnlineOrder(
   const customer = await currentStoreCustomer(req);
   const order = await one<{
     customerId: string | null;
+    email: string;
     accessTokenHash: string;
   }>(
-    'SELECT customerId,accessTokenHash FROM online_orders WHERE id=?',
+    'SELECT customerId,email,accessTokenHash FROM online_orders WHERE id=?',
     orderId,
   );
   if (
     !order ||
-    (customer?.customerId !== order.customerId &&
+    (!ownsStoreOrder(customer, order) &&
       order.accessTokenHash !== (await sha256(accessToken)))
   )
     throw new AppError(403, 'Acceso denegado.');

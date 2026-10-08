@@ -176,7 +176,10 @@ export default function Account({
             </button>
             <button
               className={panel === 'pedidos' ? 'on' : ''}
-              onClick={() => setPanel('pedidos')}
+              onClick={() => {
+                setPanel('pedidos');
+                load().catch((e) => setError(e.message));
+              }}
             >
               MIS PEDIDOS ({data.orders.length})
             </button>
