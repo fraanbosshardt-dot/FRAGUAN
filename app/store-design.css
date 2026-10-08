@@ -3276,7 +3276,7 @@ body:has(.fraguan-design) .store-toast {
   gap: 10px;
   text-align: center;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--purchase-muted);
 }
 .fraguan-design .tracking-dot {
   display: grid;
@@ -3285,7 +3285,7 @@ body:has(.fraguan-design) .store-toast {
   height: 48px;
   border-radius: 50%;
   background: var(--bone);
-  color: var(--muted);
+  color: var(--purchase-muted);
 }
 .fraguan-design .tracking-dot svg {
   width: 22px;
@@ -3346,7 +3346,7 @@ body:has(.fraguan-design) .store-toast {
   gap: 16px;
   margin-top: 12px;
   font-size: 14px;
-  color: var(--muted);
+  color: var(--purchase-muted);
 }
 .fraguan-design .store-tracking:has(.store-payment-animation) > header,
 .fraguan-design
@@ -3397,7 +3397,7 @@ body:has(.fraguan-design) .store-toast {
 }
 .fraguan-design .store-tracking-grid article small {
   margin-top: 6px;
-  color: var(--muted);
+  color: var(--purchase-muted);
   font-size: 13px;
 }
 .fraguan-design .store-tracking-total {
@@ -3499,5 +3499,40 @@ body:has(.fraguan-design) .store-toast {
   .fraguan-design .store-tracking-progress .store-tracking-steps::after,
   .fraguan-design .store-tracking-steps .tracking-dot {
     animation: none;
+  }
+}
+
+/* Selectores nativos: altura explícita y texto centrado también en iOS. */
+.fraguan-design .collection-tools select {
+  height: 52px;
+  min-height: 52px;
+  padding: 0 34px 0 12px;
+  line-height: normal;
+  font-family: var(--fb);
+  font-size: 16px;
+  color: var(--ink);
+  background-color: var(--bone-2);
+  border: 1px solid var(--sand);
+  border-radius: var(--purchase-radius);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+    linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+.fraguan-design .collection-tools select option {
+  color: var(--ink);
+  background: var(--bone);
+}
+@media (max-width: 420px) {
+  .fraguan-design .collection-tools {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

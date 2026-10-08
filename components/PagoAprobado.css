@@ -3,7 +3,7 @@
   --pa-bg: transparent;
   --pa-line: var(--ink-2, #221e1b);
   --pa-text: var(--ink, #14110f);
-  --pa-muted: var(--muted, #6f675f);
+  --pa-muted: var(--purchase-muted, #67635c);
   --pa-accent: var(--ink, #14110f);
   --pa-paper: var(--bone, #f2eee6);
   --pa-ink: var(--ink, #14110f);
