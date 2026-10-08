@@ -1,7 +1,7 @@
 export const STORE_TRANSFER = {
   alias: 'fraguan.tienda.ar',
   holder: 'Cristian Jesus Bosshardt',
-  document: '23758108',
+  cuit: '20-23758108-4',
   receiptEmail: 'hola@fraguan.com',
 } as const;
 

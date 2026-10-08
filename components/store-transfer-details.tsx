@@ -61,8 +61,8 @@ export function StoreTransferDetails({
             <dd>{STORE_TRANSFER.holder}</dd>
           </div>
           <div>
-            <dt>DNI</dt>
-            <dd>{STORE_TRANSFER.document}</dd>
+            <dt>CUIT</dt>
+            <dd>{STORE_TRANSFER.cuit}</dd>
           </div>
           <div>
             <dt>Referencia única del pedido</dt>

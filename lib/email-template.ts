@@ -132,7 +132,7 @@ export function orderEmail(
     event === 'created' &&
     order.paymentMethod === 'transfer' &&
     order.transferReference
-      ? `<p>Transferí ${escapeHtml(money(order.total))} al alias <strong>${escapeHtml(STORE_TRANSFER.alias)}</strong>.<br>Titular: ${escapeHtml(STORE_TRANSFER.holder)} · DNI ${escapeHtml(STORE_TRANSFER.document)}.</p><p>Referencia única de tu pedido: <strong>${escapeHtml(order.transferReference)}</strong>.</p><p>Si ya transferiste, mandá el comprobante a <a href="mailto:${STORE_TRANSFER.receiptEmail}">${STORE_TRANSFER.receiptEmail}</a> con esta referencia. Vamos a confirmar tu pago después de verificar la transferencia.</p>`
+      ? `<p>Transferí ${escapeHtml(money(order.total))} al alias <strong>${escapeHtml(STORE_TRANSFER.alias)}</strong>.<br>Titular: ${escapeHtml(STORE_TRANSFER.holder)} · CUIT ${escapeHtml(STORE_TRANSFER.cuit)}.</p><p>Referencia única de tu pedido: <strong>${escapeHtml(order.transferReference)}</strong>.</p><p>Si ya transferiste, mandá el comprobante a <a href="mailto:${STORE_TRANSFER.receiptEmail}">${STORE_TRANSFER.receiptEmail}</a> con esta referencia. Vamos a confirmar tu pago después de verificar la transferencia.</p>`
       : '';
   const tracking =
     event === 'shipped' && order.trackingNumber
