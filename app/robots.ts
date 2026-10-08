@@ -32,6 +32,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://fraguan.com/sitemap.xml',
+    sitemap: 'https://www.fraguan.com/sitemap.xml',
   };
 }

@@ -316,36 +316,122 @@ export async function submitProductReview(req: Request, raw: unknown) {
 export async function storeGrowthDashboard(actor: Actor) {
   requirePermission(actor, 'marketing');
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
-  const [events, sources, products, carts, reviews, waits, automations] =
-    await Promise.all([
-      rows<{ event: string; total: number; sessions: number }>(
-        'SELECT event,COUNT(*) AS total,COUNT(DISTINCT sessionId) AS sessions FROM store_events WHERE createdAt>=? GROUP BY event',
-        since,
-      ),
-      rows(
-        "SELECT COALESCE(NULLIF(source,''),'Directo') AS source,COALESCE(NULLIF(campaign,''),'Sin campaña') AS campaign,COUNT(DISTINCT sessionId) AS sessions,SUM(CASE WHEN event='purchase' THEN value ELSE 0 END) AS revenue FROM store_events WHERE createdAt>=? GROUP BY source,campaign ORDER BY revenue DESC,sessions DESC LIMIT 20",
-        since,
-      ),
-      rows(
-        "SELECT p.name,SUM(CASE WHEN e.event='view_item' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN e.event='add_to_cart' THEN 1 ELSE 0 END) AS adds FROM store_events e JOIN products p ON p.id=e.productId WHERE e.createdAt>=? AND e.event IN ('view_item','add_to_cart') GROUP BY p.id ORDER BY views DESC LIMIT 15",
-        since,
-      ),
-      rows(
-        "SELECT id,email,subtotal,status,source,campaign,lastActivityAt,firstReminderAt,secondReminderAt FROM abandoned_carts WHERE status='active' ORDER BY lastActivityAt DESC LIMIT 100",
-      ),
-      rows(
-        'SELECT r.id,p.name AS product,r.displayName,r.rating,r.title,r.body,r.verified,r.status,r.createdAt FROM product_reviews r JOIN products p ON p.id=r.productId ORDER BY r.createdAt DESC LIMIT 100',
-      ),
-      rows(
-        'SELECT b.id,p.name AS product,v.color,v.size,b.email,b.status,b.createdAt FROM back_in_stock_requests b JOIN variants v ON v.id=b.variantId JOIN products p ON p.id=v.productId ORDER BY b.createdAt DESC LIMIT 100',
-      ),
-      rows(
-        'SELECT kind,recipient,status,detail,createdAt FROM marketing_automation_log ORDER BY createdAt DESC LIMIT 100',
-      ),
-    ]);
+  const [
+    events,
+    sources,
+    products,
+    carts,
+    reviews,
+    waits,
+    automations,
+    orders,
+  ] = await Promise.all([
+    rows<{ event: string; total: number; sessions: number }>(
+      'SELECT event,COUNT(*) AS total,COUNT(DISTINCT sessionId) AS sessions FROM store_events WHERE createdAt>=? GROUP BY event',
+      since,
+    ),
+    rows(
+      "SELECT COALESCE(NULLIF(source,''),'Directo') AS source,COALESCE(NULLIF(campaign,''),'Sin campaña') AS campaign,COUNT(DISTINCT sessionId) AS sessions,SUM(CASE WHEN event='purchase' THEN value ELSE 0 END) AS revenue FROM store_events WHERE createdAt>=? GROUP BY source,campaign ORDER BY revenue DESC,sessions DESC LIMIT 20",
+      since,
+    ),
+    rows(
+      "SELECT p.name,SUM(CASE WHEN e.event='view_item' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN e.event='add_to_cart' THEN 1 ELSE 0 END) AS adds FROM store_events e JOIN products p ON p.id=e.productId WHERE e.createdAt>=? AND e.event IN ('view_item','add_to_cart') GROUP BY p.id ORDER BY views DESC LIMIT 15",
+      since,
+    ),
+    rows(
+      "SELECT id,email,subtotal,status,source,campaign,lastActivityAt,firstReminderAt,secondReminderAt FROM abandoned_carts WHERE status='active' ORDER BY lastActivityAt DESC LIMIT 100",
+    ),
+    rows(
+      'SELECT r.id,p.name AS product,r.displayName,r.rating,r.title,r.body,r.verified,r.status,r.createdAt FROM product_reviews r JOIN products p ON p.id=r.productId ORDER BY r.createdAt DESC LIMIT 100',
+    ),
+    rows(
+      'SELECT b.id,p.name AS product,v.color,v.size,b.email,b.status,b.createdAt FROM back_in_stock_requests b JOIN variants v ON v.id=b.variantId JOIN products p ON p.id=v.productId ORDER BY b.createdAt DESC LIMIT 100',
+    ),
+    rows(
+      'SELECT kind,recipient,status,detail,createdAt FROM marketing_automation_log ORDER BY createdAt DESC LIMIT 100',
+    ),
+    rows<{
+      id: string;
+      paymentStatus: string;
+      status: string;
+      total: number;
+      attributionJson: string;
+      createdAt: string;
+      paidAt: string;
+    }>(
+      'SELECT id,paymentStatus,status,total,attributionJson,createdAt,paidAt FROM online_orders WHERE createdAt>=? OR paidAt>=?',
+      since,
+      since,
+    ),
+  ]);
   const counts = Object.fromEntries(
     events.map((row) => [row.event, Number(row.sessions)]),
   );
+  const createdOrders = orders.filter((order) => order.createdAt >= since);
+  const paidOrders = orders.filter(
+    (order) =>
+      order.paymentStatus === 'paid' &&
+      order.status !== 'cancelled' &&
+      order.paidAt >= since,
+  );
+  const channelSales = new Map<
+    string,
+    { orders: number; paidOrders: number; revenue: number }
+  >();
+  for (const order of orders) {
+    let attribution: {
+      source?: string;
+      campaign?: string;
+      sessionId?: string;
+    } = {};
+    try {
+      attribution = JSON.parse(order.attributionJson || '{}');
+    } catch {
+      /* Legacy order without attribution. */
+    }
+    const source = attribution.sessionId
+      ? attribution.source || 'Directo'
+      : 'Sin atribución';
+    const campaign = attribution.campaign || 'Sin campaña';
+    const key = JSON.stringify([source, campaign]);
+    const row = channelSales.get(key) || {
+      orders: 0,
+      paidOrders: 0,
+      revenue: 0,
+    };
+    if (order.createdAt >= since) row.orders++;
+    if (paidOrders.includes(order)) {
+      row.paidOrders++;
+      row.revenue += Number(order.total);
+    }
+    channelSales.set(key, row);
+  }
+  const channels: {
+    source: string;
+    campaign: string;
+    sessions: number;
+    orders: number;
+    paidOrders: number;
+    revenue: number;
+  }[] = sources.map((row) => ({
+    source: String(row.source),
+    campaign: String(row.campaign),
+    sessions: Number(row.sessions),
+    ...(channelSales.get(JSON.stringify([row.source, row.campaign])) || {
+      orders: 0,
+      paidOrders: 0,
+      revenue: 0,
+    }),
+  }));
+  for (const [key, sales] of channelSales) {
+    const [source, campaign] = JSON.parse(key);
+    if (
+      !channels.some(
+        (row) => row.source === source && row.campaign === campaign,
+      )
+    )
+      channels.push({ source, campaign, sessions: 0, ...sales });
+  }
   return {
     periodDays: 30,
     funnel: {
@@ -354,8 +440,21 @@ export async function storeGrowthDashboard(actor: Actor) {
       addToCart: counts.add_to_cart ?? 0,
       checkout: counts.begin_checkout ?? 0,
       purchases: counts.purchase ?? 0,
+      orders: counts.order_created ?? 0,
     },
-    sources,
+    commerce: {
+      createdOrders: createdOrders.length,
+      paidOrders: paidOrders.length,
+      pendingOrders: createdOrders.filter(
+        (order) =>
+          order.status !== 'cancelled' && order.paymentStatus !== 'paid',
+      ).length,
+      revenue: paidOrders.reduce(
+        (total, order) => total + Number(order.total),
+        0,
+      ),
+    },
+    sources: channels.sort((a, b) => Number(b.revenue) - Number(a.revenue)),
     products,
     carts,
     reviews,

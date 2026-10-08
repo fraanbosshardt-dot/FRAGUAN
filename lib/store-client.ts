@@ -85,10 +85,39 @@ export function storeAttribution() {
 export function captureStoreAttribution() {
   const query = new URLSearchParams(location.search);
   const current = storeAttribution();
+  let referrerSource = '';
+  let referrerMedium = '';
+  try {
+    const host = new URL(document.referrer).hostname.replace(/^www\./, '');
+    if (
+      host !== location.hostname.replace(/^www\./, '') &&
+      host !== 'fraguan.com'
+    ) {
+      if (/(^|\.)google\.[a-z.]+$/.test(host)) {
+        referrerSource = 'google';
+        referrerMedium = 'organic';
+      } else if (host === 'bing.com' || host === 'duckduckgo.com') {
+        referrerSource = host.split('.')[0];
+        referrerMedium = 'organic';
+      } else {
+        referrerSource = host;
+        referrerMedium = 'referral';
+      }
+    }
+  } catch {
+    /* Direct visit without a referrer. */
+  }
+  const tagged = ['utm_source', 'utm_medium', 'utm_campaign'].some((key) =>
+    query.has(key),
+  );
   const next = {
-    source: query.get('utm_source') || current.source || '',
-    medium: query.get('utm_medium') || current.medium || '',
-    campaign: query.get('utm_campaign') || current.campaign || '',
+    source: tagged
+      ? query.get('utm_source') || ''
+      : current.source || referrerSource,
+    medium: tagged
+      ? query.get('utm_medium') || ''
+      : current.medium || referrerMedium,
+    campaign: tagged ? query.get('utm_campaign') || '' : current.campaign || '',
   };
   sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(next));
   return next;
@@ -99,6 +128,7 @@ export function trackStore(
   detail: Record<string, unknown> = {},
 ) {
   if (typeof window === 'undefined') return;
+  if (localStorage.getItem('fraguan-exclude-analytics') === 'yes') return;
   const { consentGranted, ...safeDetail } = detail;
   if (
     localStorage.getItem('fraguan-cookie-consent') !== 'analytics' &&

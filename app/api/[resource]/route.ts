@@ -15,6 +15,7 @@ import {
   AppError,
 } from '@/lib/auth';
 import { forwardStoreApi } from '@/lib/store-api';
+import { storeSeo, adminSeo, saveStoreSeo } from '@/lib/store-seo';
 import {
   one,
   rows,
@@ -259,6 +260,8 @@ export async function GET(
     if (forwarded) return forwarded;
     const { resource } = await params;
     const url = new URL(req.url);
+    if (resource === 'store-seo')
+      return reply(await storeSeo(url.searchParams.get('path') || '/'));
     if (resource === 'store-health') {
       await one('SELECT 1 AS ok');
       return reply({ ok: true });
@@ -406,6 +409,8 @@ export async function GET(
       );
     if (resource === 'online-catalog') return reply(await listOnlineCatalog(a));
     if (resource === 'newsletter') return reply(await newsletterOverview(a));
+    if (resource === 'seo')
+      return reply(await adminSeo(a, url.searchParams.get('path') || '/'));
     if (resource === 'marketing') return reply(await storeGrowthDashboard(a));
     if (resource === 'communications')
       return reply(await communicationSuggestions(a));
@@ -1091,6 +1096,7 @@ export async function POST(
           ? await sendEmailTest(a, body)
           : await sendNewsletterCampaign(a, body),
       );
+    if (resource === 'seo') return reply(await saveStoreSeo(a, body));
     if (resource === 'marketing') {
       if (
         body &&

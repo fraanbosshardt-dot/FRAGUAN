@@ -2,6 +2,7 @@ import ProductPage from './product-page';
 import type { Metadata } from 'next';
 import { storeProduct } from '@/lib/online-store';
 import { publicProductReviews } from '@/lib/store-growth';
+import { seoOverride } from '@/lib/store-seo';
 
 export async function generateMetadata({
   params,
@@ -10,20 +11,23 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   try {
     const { product } = await storeProduct((await params).slug);
+    const seo = await seoOverride(`/producto/${product.slug}`);
+    const title = seo.title || `${product.name} | FRAGUAN`;
+    const description = seo.description || product.shortDescription;
     return {
-      title: `${product.name} | FRAGUAN`,
-      description: product.shortDescription,
+      title,
+      description,
       alternates: { canonical: `/producto/${product.slug}` },
       openGraph: {
-        title: `${product.name} | FRAGUAN`,
-        description: product.shortDescription,
+        title,
+        description,
         type: 'website',
         url: `/producto/${product.slug}`,
       },
       twitter: {
         card: 'summary',
-        title: `${product.name} | FRAGUAN`,
-        description: product.shortDescription,
+        title,
+        description,
       },
     };
   } catch {
@@ -73,7 +77,7 @@ export default async function Page({
               variant.stock > 0
                 ? 'https://schema.org/InStock'
                 : 'https://schema.org/OutOfStock',
-            url: `https://fraguan.com/producto/${product.slug}?variant=${encodeURIComponent(variant.sku)}`,
+            url: `https://www.fraguan.com/producto/${product.slug}?variant=${encodeURIComponent(variant.sku)}`,
           },
         }),
       ),
@@ -95,13 +99,13 @@ export default async function Page({
           '@type': 'ListItem',
           position: 1,
           name: 'Tienda',
-          item: 'https://fraguan.com',
+          item: 'https://www.fraguan.com',
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: product.category,
-          item: `https://fraguan.com/coleccion/${product.category
+          item: `https://www.fraguan.com/coleccion/${product.category
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase()

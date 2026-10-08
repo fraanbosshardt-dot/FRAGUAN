@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import './fraguan-anim.css';
+import { StoreHeroVideo } from '../store-hero-video';
 
 /**
  * Hero: entrada letra por letra; el título sigue el desplazamiento de la página.
@@ -47,6 +48,7 @@ export default function HeroForja({
   }, []);
   return (
     <header className="hero fa-hero" ref={heroRef}>
+      <StoreHeroVideo />
       <p className="tag k">{tag}</p>
       <h1 className="fa-hero-title" ref={titleRef} aria-label={titulo}>
         {titulo.split('').map((c, i) => (

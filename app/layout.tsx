@@ -6,12 +6,12 @@ import { StoreExperience } from '@/components/store-experience';
 export const metadata: Metadata = {
   title: 'FRAGUAN | Tienda oficial',
   description:
-    'Indumentaria FRAGUAN. Comprá online por talle y color, con envíos a todo el país y beneficios del Club.',
+    'Indumentaria FRAGUAN. Comprá online por talle y color, con envíos a todo el país y retiro en Isla Verde, Córdoba.',
   openGraph: {
     title: 'FRAGUAN | Tienda oficial',
     description: 'Indumentaria FRAGUAN con envíos a todo el país.',
   },
-  metadataBase: new URL('https://fraguan.com'),
+  metadataBase: new URL('https://www.fraguan.com'),
   alternates: { canonical: '/' },
   robots: { index: true, follow: true },
   twitter: { card: 'summary', title: 'FRAGUAN | Tienda oficial' },
@@ -23,11 +23,11 @@ export default function RootLayout({
   const organization = {
     '@context': 'https://schema.org',
     '@type': ['Organization', 'OnlineStore'],
-    '@id': 'https://fraguan.com/#organization',
+    '@id': 'https://www.fraguan.com/#organization',
     name: 'FRAGUAN',
-    url: 'https://fraguan.com',
-    logo: 'https://fraguan.com/fraguan-logo.jpg',
-    email: 'atencion@fraguan.com',
+    url: 'https://www.fraguan.com',
+    logo: 'https://www.fraguan.com/fraguan-logo.jpg',
+    email: 'hola@fraguan.com',
     areaServed: { '@type': 'Country', name: 'Argentina' },
     address: {
       '@type': 'PostalAddress',
@@ -52,13 +52,13 @@ export default function RootLayout({
   const website = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    '@id': 'https://fraguan.com/#website',
-    url: 'https://fraguan.com',
+    '@id': 'https://www.fraguan.com/#website',
+    url: 'https://www.fraguan.com',
     name: 'FRAGUAN',
-    publisher: { '@id': 'https://fraguan.com/#organization' },
+    publisher: { '@id': 'https://www.fraguan.com/#organization' },
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://fraguan.com/tienda?search={search_term_string}',
+      target: 'https://www.fraguan.com/tienda?search={search_term_string}',
       'query-input': 'required name=search_term_string',
     },
   };

@@ -1,4 +1,5 @@
 'use client';
+import { AdminSeoControls } from '@/components/admin-seo-controls';
 import { AdminGrowthControls } from '@/components/admin-growth-controls';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -2759,7 +2760,7 @@ export default function Admin({
             </div>
           )}
           {section === 'marketing' && data && (
-            <div className="growth-admin">
+            <div className="growth-admin"><AdminSeoControls /><p className="quiet">Las visitas requieren consentimiento. Los pedidos se cuentan por fecha de creación; los pagos e ingresos, por fecha de confirmación. Los ingresos incluyen el total cobrado del pedido, antes de comisiones. Sin atribución significa que no hay un origen medido; no equivale a una visita directa.</p>
               <AdminGrowthControls data={data} busy={busy} save={config=>mutate('marketing',{action:'configure-recovery',config})} />
               <section className="metric-grid">
                 {[
@@ -2767,7 +2768,10 @@ export default function Admin({
                   ['Vieron productos', data.funnel?.productViews ?? 0],
                   ['Agregaron', data.funnel?.addToCart ?? 0],
                   ['Iniciaron compra', data.funnel?.checkout ?? 0],
-                  ['Compraron', data.funnel?.purchases ?? 0],
+                  ['Pedidos creados', data.commerce?.createdOrders ?? 0],
+                  ['Pedidos pagados', data.commerce?.paidOrders ?? 0],
+                  ['Pendientes de pago', data.commerce?.pendingOrders ?? 0],
+                  ['Cobrado online', money(data.commerce?.revenue ?? 0)],
                 ].map(([label, value]) => (
                   <article className="metric" key={String(label)}>
                     <p>{label}</p>
@@ -2780,7 +2784,7 @@ export default function Admin({
                 <section className="panel">
                   <div className="panel-heading">
                     <h2>Embudo de compra</h2>
-                    <span>Sesiones únicas</span>
+                    <span>Sesiones únicas con consentimiento; los pedidos se cuentan aparte</span>
                   </div>
                   <div className="growth-funnel">
                     {[
@@ -2788,7 +2792,8 @@ export default function Admin({
                       ['Producto', data.funnel?.productViews],
                       ['Carrito', data.funnel?.addToCart],
                       ['Checkout', data.funnel?.checkout],
-                      ['Compra', data.funnel?.purchases],
+                      ['Pedido', data.funnel?.orders],
+                      ['Pago confirmado', data.funnel?.purchases],
                     ].map(([label, value], index) => {
                       const max = Math.max(1, data.funnel?.visitors || 1);
                       return (
@@ -2804,7 +2809,7 @@ export default function Admin({
                           <strong>
                             {value || 0}
                             {index
-                              ? ` · ${Math.round((Number(value || 0) / Math.max(1, Number(Object.values(data.funnel)[index - 1] || 1))) * 100)}%`
+                              ? ` · ${Math.round((Number(value || 0) / Math.max(1, Number([data.funnel.visitors, data.funnel.productViews, data.funnel.addToCart, data.funnel.checkout, data.funnel.orders, data.funnel.purchases][index - 1] || 1))) * 100)}%`
                               : ''}
                           </strong>
                         </div>
@@ -2815,7 +2820,7 @@ export default function Admin({
                 <section className="panel">
                   <div className="panel-heading">
                     <h2>Origen de ventas</h2>
-                    <span>Campañas y canales</span>
+                    <span>Campañas y canales · ingresos de pagos confirmados</span>
                   </div>
                   <div className="growth-list">
                     {(data.sources ?? []).map((row: Row, index: number) => (
@@ -2825,7 +2830,7 @@ export default function Admin({
                           <small>{row.campaign}</small>
                         </span>
                         <b>{row.sessions} sesiones</b>
-                        <em>{money(row.revenue)}</em>
+                        <em>{money(row.revenue)} · {row.paidOrders} pagados · {row.orders} pedidos</em>
                       </div>
                     ))}
                     {!data.sources?.length && (

@@ -2576,3 +2576,68 @@ body:has(.fraguan-design) .store-toast {
   height: 22px;
   fill: currentColor;
 }
+
+.fraguan-design .store-hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+.fraguan-design .store-hero-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 17, 15, 0.48),
+    rgba(20, 17, 15, 0.72)
+  );
+  pointer-events: none;
+}
+.fraguan-design .fa-hero .tag,
+.fraguan-design .fa-hero-sub,
+.fraguan-design .fa-hero .tiles {
+  position: relative;
+  z-index: 1;
+}
+.fraguan-design .fa-hero-title {
+  z-index: 1;
+}
+.fraguan-design .store-hero-play {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  z-index: 2;
+  padding: 8px 12px;
+  background: var(--ink);
+  color: var(--bone);
+  border: 0;
+  font: 12px var(--fb);
+}
+.fraguan-design .store-hero-play:hover,
+.fraguan-design .store-hero-play:focus-visible {
+  background: var(--bone-2);
+  color: var(--ink);
+}
+@media (max-width: 700px) {
+  .fraguan-design .store-hero-video,
+  .fraguan-design .store-hero-shade {
+    height: 320px;
+  }
+  .fraguan-design .store-hero-shade {
+    background: linear-gradient(
+      180deg,
+      rgba(20, 17, 15, 0.4),
+      rgba(20, 17, 15, 0.55) 65%,
+      var(--ink)
+    );
+  }
+  .fraguan-design .store-hero-play {
+    top: 6px;
+    right: 12px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+}
