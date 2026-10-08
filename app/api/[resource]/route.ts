@@ -839,7 +839,7 @@ export async function POST(
     if (forwarded) return forwarded;
     const { resource } = await params;
     const publicResource = resource.startsWith('store-');
-    const maxBytes = resource === 'product-image' ? 1_450_000 : publicResource ? 32768 : 100000;
+    const maxBytes = resource === 'product-image' ? 4_100_000 : publicResource ? 32768 : 100000;
     protectWrite(req, maxBytes);
     const body = await readJsonBody(req, maxBytes);
     if (publicResource) enforcePublicLimit(req, resource, body);

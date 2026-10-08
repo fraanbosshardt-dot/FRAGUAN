@@ -22,7 +22,7 @@ export async function saveProductImage(actor: Actor, raw: unknown) {
     .object({
       productId: z.string().min(1).max(100),
       mime: z.enum(['image/jpeg', 'image/png', 'image/webp']),
-      base64: z.string().min(1).max(1_400_000),
+      base64: z.string().min(1).max(4_000_000),
       alt: z.string().trim().min(1).max(180),
     })
     .strict()
@@ -42,8 +42,8 @@ export async function saveProductImage(actor: Actor, raw: unknown) {
         ? [137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => bytes[i] === v)
         : String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' &&
           String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP';
-  if (!matches || bytes.length > 1_000_000)
-    throw new AppError(400, 'Usá una foto JPG, PNG o WebP de hasta 1 MB.');
+  if (!matches || bytes.length > 3_000_000)
+    throw new AppError(400, 'Usá una foto JPG, PNG o WebP de hasta 3 MB.');
   if (!(await one(`SELECT id FROM products WHERE id=?`, input.productId)))
     throw new AppError(404, 'Producto no encontrado.');
   const imageId = id();

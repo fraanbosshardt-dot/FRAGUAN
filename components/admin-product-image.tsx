@@ -35,26 +35,36 @@ export function AdminProductImage({
         file.size > 20_000_000
       )
         throw new Error('Elegí una foto JPG, PNG o WebP de hasta 20 MB.');
-      const bitmap = await createImageBitmap(file);
       let base64 = '',
-        mime = 'image/webp';
-      try {
+        mime = file.type;
+      if (file.size <= 3_000_000) {
+        const data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error('No pudimos leer la foto.'));
+          reader.readAsDataURL(file);
+        });
+        base64 = data.split(',')[1];
+      } else {
+        const bitmap = await createImageBitmap(file);
+        try {
         const canvas = document.createElement('canvas'),
-          scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+          scale = Math.min(1, 3200 / Math.max(bitmap.width, bitmap.height));
         canvas.width = Math.round(bitmap.width * scale);
         canvas.height = Math.round(bitmap.height * scale);
         const context = canvas.getContext('2d');
         if (!context) throw new Error('No pudimos preparar la imagen.');
         context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        const data = canvas.toDataURL('image/webp', 0.82);
+        const data = canvas.toDataURL('image/webp', 0.98);
         mime = data.slice(5, data.indexOf(';'));
         base64 = data.split(',')[1];
-        if (base64.length > 1_333_332)
+        if (base64.length > 4_000_000)
           throw new Error(
             'La foto sigue siendo muy pesada. Elegí una imagen más chica.',
           );
-      } finally {
-        bitmap.close();
+        } finally {
+          bitmap.close();
+        }
       }
       const data = await api('product-image', {
         productId,
@@ -100,8 +110,9 @@ export function AdminProductImage({
         />
       </label>
       <small>
-        Se guarda al elegirla. La foto se optimiza para la web y se usa también
-        al compartir el producto.
+        Se guarda al elegirla. Conservamos el original hasta 3 MB. Las fotos
+        más pesadas se optimizan en alta calidad y hasta 3200 píxeles, sin
+        agrandarlas.
       </small>
       {notice && <p role="status">{notice}</p>}
     </div>

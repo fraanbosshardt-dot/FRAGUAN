@@ -175,7 +175,8 @@ export function PhotoReveal({ children }) {
       },
       { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
     );
-    observer.observe(node);
+    // Observe the unclipped card: a fully clipped image never intersects.
+    observer.observe(node.parentElement || node);
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => {
       if (media.matches) {

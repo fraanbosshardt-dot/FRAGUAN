@@ -179,6 +179,16 @@ const response = await images.publicProductImage(second.image.id);
 assert.equal(response.headers.get('Content-Type'), 'image/png');
 assert.match(response.headers.get('Cache-Control'), /immutable/);
 assert.equal((await response.arrayBuffer()).byteLength, 9);
+const originalBytes = Buffer.alloc(2_000_000, 71);
+Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(originalBytes);
+const fullQuality = await images.saveProductImage(actor, {
+  ...photo, base64: originalBytes.toString('base64'),
+});
+const fullQualityResponse = await images.publicProductImage(fullQuality.image.id);
+assert.deepEqual(Buffer.from(await fullQualityResponse.arrayBuffer()), originalBytes);
+await assert.rejects(images.saveProductImage(actor, {
+  ...photo, base64: Buffer.alloc(3_000_001).toString('base64'),
+}));
 const link = await links.orderEmailLink('o'),
   token = new URL(link).hash.slice('#email-token='.length);
 assert.equal(await links.verifyOrderEmailToken('o', token), true);
