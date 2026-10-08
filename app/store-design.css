@@ -3553,3 +3553,9 @@ body:has(.fraguan-design) .store-toast {
   color: var(--ink);
   cursor: not-allowed;
 }
+.fraguan-design .pd .chips button { flex-direction: column; }
+.fraguan-design .pd .chips button:disabled {
+  opacity: 1;
+  background: var(--bone-2);
+  color: var(--ink);
+}
