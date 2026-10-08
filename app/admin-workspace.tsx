@@ -84,8 +84,8 @@ const columns: Record<string, [string, string, string?][]> = {
   'online-catalog': [
     ['name', 'Producto'],
     ['section', 'Sección'],
-    ['localPrice', 'Precio local', 'money'],
-    ['onlinePrice', 'Precio online', 'money'],
+    ['localPrice', 'Precio local desde', 'money'],
+    ['onlinePrice', 'Precio web desde', 'money'],
     ['stock', 'Stock'],
     ['variants', 'Variantes'],
     ['featured', 'Destacado'],
@@ -98,8 +98,8 @@ const columns: Record<string, [string, string, string?][]> = {
     ['sku', 'SKU'],
     ['color', 'Color'],
     ['size', 'Talle'],
-    ['price', 'Precio', 'money'],
-    ['effectiveOnlinePrice', 'Precio online', 'money'],
+    ['price', 'Precio local', 'money'],
+    ['effectiveOnlinePrice', 'Precio web', 'money'],
     ['cost', 'Costo', 'money'],
     ['marginPercent', 'Margen bruto %'],
     ['markupPercent', 'Markup %'],
@@ -388,7 +388,7 @@ export default function Admin({
                   price: Number(row.price ?? 0) / 100,
                   onlinePrice:
                     row.onlinePrice == null
-                      ? ''
+                      ? Number(row.price ?? 0) / 100
                       : Number(row.onlinePrice) / 100,
                   cost: Number(row.cost ?? 0) / 100,
                 }
@@ -396,7 +396,6 @@ export default function Admin({
             ...(type === 'edit-online-product'
               ? {
                   onlinePrice: Number(row.onlinePrice ?? 0) / 100,
-                  useLocalPrice: Number(row.inheritedVariants ?? 0) > 0,
                 }
               : {}),
             ...(type === 'edit-supplier'
@@ -406,6 +405,7 @@ export default function Admin({
         : type === 'variant' && row
           ? {
               price: Number(row.price ?? 0) / 100,
+              onlinePrice: Number(row.onlinePrice ?? row.price ?? 0) / 100,
               cost: Number(row.cost ?? 0) / 100,
               stock: 0,
               minimum: row.minimum ?? 3,
@@ -851,10 +851,7 @@ export default function Admin({
           color: form.color,
           size: form.size,
           price: minor(form.price),
-          onlinePrice:
-            form.onlinePrice === '' || form.onlinePrice == null
-              ? null
-              : minor(form.onlinePrice),
+          onlinePrice: minor(form.onlinePrice),
           cost: minor(form.cost),
           minimum: Number(form.minimum || 0),
           ideal: Number(form.ideal || 0),
@@ -956,6 +953,7 @@ export default function Admin({
           color: form.color,
           size: form.size,
           price: minor(form.price),
+          onlinePrice: minor(form.onlinePrice),
           cost: minor(form.cost),
           stock: Number(form.stock),
           minimum: Number(form.minimum ?? 3),
@@ -1059,7 +1057,7 @@ export default function Admin({
           featured: Boolean(form.featured),
           published: Boolean(form.published),
           sortOrder: Number(form.sortOrder || 0),
-          onlinePrice: form.useLocalPrice ? null : minor(form.onlinePrice),
+          onlinePrice: minor(form.onlinePrice),
         });
         return;
       }
@@ -1080,6 +1078,7 @@ export default function Admin({
           sku: form.sku,
           barcode: form.barcode,
           price: minor(form.price),
+          onlinePrice: minor(form.onlinePrice),
           cost: minor(form.cost),
           stock: Number(form.stock),
           minimum: Number(form.minimum ?? 3),
@@ -4359,27 +4358,14 @@ export default function Admin({
                     </span>
                   </div>
                   <div className="online-price-editor">
-                    {field('onlinePrice', 'Precio online (pesos)', {
+                    {field('onlinePrice', 'Precio web (pesos)', {
                       type: 'number',
-                      optional: Boolean(form.useLocalPrice),
                     })}
-                    <label className="admin-check-line">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(form.useLocalPrice)}
-                        onChange={(event) =>
-                          setForm({
-                            ...form,
-                            useLocalPrice: event.target.checked,
-                          })
-                        }
-                      />
-                      Usar automáticamente el precio del local
-                    </label>
                     <small>
                       Precio local actual: {money(selected.localPrice)}. El
-                      precio online se aplica a todos los talles y colores de
-                      este producto.
+                      precio web se aplica a todos los talles y colores de
+                      este producto, sin cambiar el precio local. Para editar
+                      una variante, usá Productos y stock.
                     </small>
                   </div>
                   {field('slug', 'Enlace del producto')}
@@ -4456,14 +4442,13 @@ export default function Admin({
                   {field('size', 'Talle')}
                   {field('sku', 'SKU')}
                   {field('barcode', 'Código de barras')}
-                  {field('price', 'Precio (pesos)', { type: 'number' })}
-                  {field('onlinePrice', 'Precio online (pesos)', {
+                  {field('price', 'Precio local (pesos)', { type: 'number' })}
+                  {field('onlinePrice', 'Precio web (pesos)', {
                     type: 'number',
-                    optional: true,
                   })}
                   <small>
-                    Si queda vacío, la tienda online usa automáticamente el
-                    precio del local.
+                    Son independientes: POS y etiquetas usan el precio local;
+                    la tienda y el checkout usan el precio web. Stock compartido.
                   </small>
                   {field('cost', 'Costo (pesos)', { type: 'number' })}
                   {field('minimum', 'Stock mínimo', { type: 'number' })}
@@ -4570,7 +4555,9 @@ export default function Admin({
                     color. Después podés imprimir sus etiquetas desde Productos
                     y stock.
                   </p>
-                  {field('price', 'Precio (pesos)')}
+                  {field('price', 'Precio local (pesos)')}
+                  {field('onlinePrice', 'Precio web (pesos)')}
+                  <small>Dos precios independientes. Stock compartido.</small>
                   {field('cost', 'Costo (pesos)')}
                   {field('stock', 'Stock inicial', { type: 'number' })}
                   {field('minimum', 'Stock mínimo', {
@@ -4598,7 +4585,7 @@ export default function Admin({
                       selected?.action === 'close-cash'
                         ? 'Efectivo contado (pesos)'
                         : selected?.action === 'set-price'
-                          ? 'Nuevo precio al cliente (pesos)'
+                          ? 'Nuevo precio local (pesos)'
                           : 'Fondo inicial (pesos)',
                     )}
                   {selected?.action === 'set-price' &&
@@ -4853,7 +4840,9 @@ export default function Admin({
                         talle y color. Después podés imprimir sus etiquetas
                         desde Productos y stock.
                       </p>
-                      {field('price', 'Precio (pesos)')}
+                      {field('price', 'Precio local (pesos)')}
+                      {field('onlinePrice', 'Precio web (pesos)')}
+                      <small>POS y etiquetas: local. Tienda: web. Stock compartido.</small>
                       {field('cost', 'Costo (pesos)')}
                       {field('stock', 'Stock inicial', { type: 'number' })}
                       {field('minimum', 'Stock mínimo', {

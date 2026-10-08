@@ -102,6 +102,7 @@ export async function addVariant(a: Actor, raw: unknown) {
       color: text,
       size: text,
       price: positiveMoney,
+      onlinePrice: positiveMoney.optional(),
       cost: money,
       stock: z.number().int().min(0).max(100000),
       minimum: z.number().int().min(0).max(1000),
@@ -121,8 +122,8 @@ export async function addVariant(a: Actor, raw: unknown) {
   const codes = await resolveVariantCodes(x);
   await db().batch([
     statement(
-      `INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum,
-              ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO variants(id,productId,sku,barcode,color,size,price,onlinePrice,cost,minimum,
+              ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       key,
       x.productId,
       codes.sku,
@@ -130,6 +131,7 @@ export async function addVariant(a: Actor, raw: unknown) {
       x.color,
       x.size,
       x.price,
+      x.onlinePrice ?? x.price,
       x.cost,
       x.minimum,
       x.ideal,

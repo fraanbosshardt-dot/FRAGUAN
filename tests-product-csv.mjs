@@ -36,6 +36,10 @@ assert.equal(parsed[0].cost, 2_400_000);
 assert.equal(parsed[0].barcode, '07790000000011');
 assert.equal(parsed[0].brand, 'FRAGUAN');
 assert.equal(parsed[0].stock, 3);
+const separate = parseProductCsv(buildProductCsvTemplate([...columns, 'precio_web'], {...example, precio_web:'64.900,00'}));
+assert.equal(separate[0].price, 5_990_000);
+assert.equal(separate[0].onlinePrice, 6_490_000);
+assert.equal(parsed[0].onlinePrice, undefined);
 
 assert.throws(
   () =>

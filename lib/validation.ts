@@ -67,6 +67,7 @@ export const productInput = z
     sku: z.string().trim().max(200).default(''),
     barcode: z.string().trim().max(200).default(''),
     price: positiveMoney,
+    onlinePrice: positiveMoney.optional(),
     cost: money,
     stock: z.number().int().min(0).max(100000),
     minimum: z.number().int().min(0).max(1000),

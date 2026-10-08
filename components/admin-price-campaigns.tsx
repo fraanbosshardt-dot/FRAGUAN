@@ -113,9 +113,9 @@ export function AdminPriceCampaigns() {
             <tr>
               <th>Incluir</th>
               <th>Prenda / variante</th>
-              <th>Precio guardado</th>
+              <th>Precio web guardado</th>
               <th>Precio tachado ($)</th>
-              <th>Precio final</th>
+              <th>Precio web final</th>
             </tr>
           </thead>
           <tbody>

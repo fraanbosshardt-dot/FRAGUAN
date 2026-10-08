@@ -116,7 +116,7 @@ async function restoreCampaign(campaignId: string, actorId?: string) {
       campaignId,
     ),
     statement(
-      `UPDATE variants SET onlinePrice=(SELECT i.originalOnlinePrice FROM store_price_campaign_items i WHERE i.campaignId=? AND i.variantId=variants.id),updatedAt=? WHERE id IN (SELECT i.variantId FROM store_price_campaign_items i JOIN store_price_campaigns c ON c.id=i.campaignId WHERE c.id=? AND c.status='restoring' AND i.status='active' AND variants.onlinePrice=i.campaignPrice AND variants.updatedAt=i.appliedAt)`,
+      `UPDATE variants SET onlinePrice=(SELECT i.originalOnlinePrice FROM store_price_campaign_items i WHERE i.campaignId=? AND i.variantId=variants.id),updatedAt=? WHERE id IN (SELECT i.variantId FROM store_price_campaign_items i JOIN store_price_campaigns c ON c.id=i.campaignId WHERE c.id=? AND c.status='restoring' AND i.status='active' AND variants.onlinePrice=i.campaignPrice)`,
       campaignId,
       now(),
       campaignId,

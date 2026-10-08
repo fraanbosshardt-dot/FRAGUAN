@@ -331,7 +331,7 @@ export async function storeCatalog(
             profile.description,profile.material,profile.care,profile.fit,profile.section,
             profile.featured,profile.sortOrder,v.id AS variantId,v.sku,v.barcode,v.color,v.size,
             COALESCE(v.onlinePrice,v.price) AS price,
-            (SELECT i.referencePrice FROM store_price_campaign_items i JOIN store_price_campaigns campaign ON campaign.id=i.campaignId WHERE i.variantId=v.id AND i.status='active' AND campaign.status='active' AND campaign.endsAt>? AND v.onlinePrice=i.campaignPrice AND v.updatedAt=i.appliedAt LIMIT 1) AS compareAtPrice,
+            (SELECT i.referencePrice FROM store_price_campaign_items i JOIN store_price_campaigns campaign ON campaign.id=i.campaignId WHERE i.variantId=v.id AND i.status='active' AND campaign.status='active' AND campaign.endsAt>? AND v.onlinePrice=i.campaignPrice LIMIT 1) AS compareAtPrice,
             (SELECT image.id FROM product_images image WHERE image.productId=p.id AND image.active=1 LIMIT 1) AS imageId,
             MAX(0,v.stock-COALESCE((SELECT SUM(r.quantity) FROM stock_reservations r
               WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0)) AS available
@@ -1855,7 +1855,7 @@ export async function onlineCatalogWrite(actor: Actor, raw: unknown) {
       featured: z.boolean(),
       published: z.boolean(),
       sortOrder: z.number().int().min(0).max(100000),
-      onlinePrice: z.number().int().positive().nullable(),
+      onlinePrice: z.number().int().positive(),
     })
     .strict()
     .parse(raw);

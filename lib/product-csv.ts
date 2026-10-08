@@ -13,6 +13,7 @@ export type ProductImportClientRow = {
   color: string;
   size: string;
   price: number;
+  onlinePrice?: number;
   cost: number;
   stock: number;
   minimum: number;
@@ -34,7 +35,8 @@ const HEADER_ALIASES: Record<keyof ProductImportClientRow, string[]> = {
   barcode: ['codigo_barras', 'barcode', 'ean'],
   color: ['color'],
   size: ['talle', 'size'],
-  price: ['precio', 'precio_venta'],
+  price: ['precio', 'precio_venta', 'precio_local'],
+  onlinePrice: ['precio_web', 'precio_online'],
   cost: ['costo'],
   stock: ['stock', 'stock_inicial'],
   minimum: ['stock_minimo', 'minimo'],
@@ -211,6 +213,9 @@ export function parseProductCsv(source: string): ProductImportClientRow[] {
       color: required('color'),
       size: required('size'),
       price: moneyMinor(required('price'), rowNumber, 'precio'),
+      ...(valueFor(row, indexes, 'onlinePrice')
+        ? { onlinePrice: moneyMinor(valueFor(row, indexes, 'onlinePrice'), rowNumber, 'precio web') }
+        : {}),
       cost: moneyMinor(required('cost'), rowNumber, 'costo'),
       stock: integer(valueFor(row, indexes, 'stock'), 0, rowNumber, 'stock'),
       minimum: integer(

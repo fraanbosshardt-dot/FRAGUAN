@@ -9,6 +9,7 @@ database.exec(
   `CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);CREATE TABLE users(id TEXT PRIMARY KEY); INSERT INTO users VALUES('owner'); CREATE TABLE products(id TEXT PRIMARY KEY,name TEXT,active INTEGER); INSERT INTO products VALUES('p','Remera',1); CREATE TABLE variants(id TEXT PRIMARY KEY,productId TEXT,color TEXT,size TEXT,onlinePrice INTEGER,price INTEGER,updatedAt TEXT); INSERT INTO variants VALUES('v','p','Negro','M',NULL,10000,'original'); CREATE TABLE online_product_profiles(productId TEXT,published INTEGER); INSERT INTO online_product_profiles VALUES('p',1); CREATE TABLE online_orders(id TEXT PRIMARY KEY); INSERT INTO online_orders VALUES('o'); CREATE TABLE email_deliveries(id TEXT PRIMARY KEY,kind TEXT,recipient TEXT,orderId TEXT,providerId TEXT,status TEXT,createdAt TEXT);`,
 );
 database.exec(readFileSync('drizzle/0026_order_emails_campaigns.sql', 'utf8'));
+database.exec(readFileSync('drizzle/0027_independent_prices.sql', 'utf8'));
 const query = {
   id: () => crypto.randomUUID(),
   now: () => new Date().toISOString(),
@@ -108,7 +109,7 @@ assert.equal(
 await campaigns.campaignWrite(actor, { action: 'create', config });
 assert.equal(
   database.prepare('SELECT onlinePrice FROM variants').get().onlinePrice,
-  null,
+  10000,
 );
 await campaigns.runPriceCampaigns();
 assert.equal(
@@ -117,15 +118,17 @@ assert.equal(
 );
 assert.equal(database.prepare('SELECT price FROM variants').get().price, 10000);
 let c = database.prepare('SELECT id FROM store_price_campaigns').get().id;
+database.exec("UPDATE variants SET price=11000,updatedAt='local-only-change'");
 await campaigns.campaignWrite(actor, { action: 'restore', id: c });
+assert.equal(database.prepare('SELECT price FROM variants').get().price,11000);
 assert.equal(
   database.prepare('SELECT onlinePrice FROM variants').get().onlinePrice,
-  null,
+  10000,
 );
 await campaigns.campaignWrite(actor, { action: 'restore', id: c });
 assert.equal(
   database.prepare('SELECT onlinePrice FROM variants').get().onlinePrice,
-  null,
+  10000,
 );
 await campaigns.campaignWrite(actor, { action: 'create', config });
 await campaigns.runPriceCampaigns();

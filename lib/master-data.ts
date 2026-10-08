@@ -32,7 +32,7 @@ const variantUpdateInput = z
     color: text,
     size: text,
     price: positiveMoney,
-    onlinePrice: positiveMoney.nullable().optional(),
+    onlinePrice: positiveMoney.optional(),
     cost: money,
     minimum: z.number().int().min(0).max(100_000),
     ideal: z.number().int().min(0).max(100_000),

@@ -235,3 +235,13 @@ figure pagado. Mantener los emails iniciales de transferencia y sus instruccione
 El registro previo al pago permanece para reservar stock y vincular el webhook;
 no equivale a una compra aprobada. Los pagos pendientes o rechazados no confirman
 la compra. Conservar las claves de idempotencia de los emails.
+
+## Precios independientes — decisión vigente 08/10/2026
+
+El titular confirmó dos precios por variante: precio local para POS/etiquetas y
+precio web para catálogo/checkout. Cambiar uno no modifica el otro. Stock compartido.
+Quitar la vinculación automática. Para variantes que la usaban, materializar el
+precio web vigente una sola vez, conservando su importe. Altas desde Admin solicitan
+ambos precios; importaciones admiten precio_web. Si una importación antigua no lo
+incluye, preservar el web existente; en un alta antigua inicializarlo una vez con
+el local, sin vínculo futuro. CyberMonday afecta solo el web y restaura su valor.

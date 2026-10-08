@@ -28,6 +28,7 @@ const importRow = z
     color: text,
     size: text,
     price: positiveMoney,
+    onlinePrice: positiveMoney.optional(),
     cost: money,
     stock: z.number().int().min(0).max(100_000).default(0),
     minimum: z.number().int().min(0).max(100_000).default(3),
@@ -281,13 +282,14 @@ export async function importProducts(actor: Actor, raw: unknown) {
     if (existing) {
       commands.push(
         statement(
-          `UPDATE variants SET sku=?,barcode=?,color=?,size=?,price=?,cost=?,minimum=?,ideal=?,
+          `UPDATE variants SET sku=?,barcode=?,color=?,size=?,price=?,onlinePrice=COALESCE(?,onlinePrice),cost=?,minimum=?,ideal=?,
                   entryAt=?,updatedAt=? WHERE id=?`,
           row.sku,
           row.barcode,
           row.color,
           row.size,
           row.price,
+          row.onlinePrice ?? null,
           row.cost,
           row.minimum,
           row.ideal,
@@ -315,8 +317,8 @@ export async function importProducts(actor: Actor, raw: unknown) {
     } else {
       commands.push(
         statement(
-          `INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum,
-                  ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          `INSERT INTO variants(id,productId,sku,barcode,color,size,price,onlinePrice,cost,minimum,
+                  ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           variantId,
           productId,
           row.sku,
@@ -324,6 +326,7 @@ export async function importProducts(actor: Actor, raw: unknown) {
           row.color,
           row.size,
           row.price,
+          row.onlinePrice ?? row.price,
           row.cost,
           row.minimum,
           row.ideal,
@@ -381,6 +384,7 @@ export async function productImportTemplate(actor: Actor) {
       'color',
       'talle',
       'precio',
+      'precio_web',
       'costo',
       'stock',
       'stock_minimo',
@@ -402,6 +406,7 @@ export async function productImportTemplate(actor: Actor) {
       color: 'Celeste',
       talle: 'L',
       precio: '59900,00',
+      precio_web: '64900,00',
       costo: '24000,00',
       stock: '3',
       stock_minimo: '2',

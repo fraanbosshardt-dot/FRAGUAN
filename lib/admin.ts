@@ -87,8 +87,8 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
         date,
       ),
       statement(
-        `INSERT INTO variants(id,productId,sku,barcode,color,size,price,cost,minimum,
-                ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO variants(id,productId,sku,barcode,color,size,price,onlinePrice,cost,minimum,
+                ideal,entryAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         `${key}-v`,
         key,
         codes.sku,
@@ -96,6 +96,7 @@ export async function adminWrite(resource: string, a: Actor, raw: unknown) {
         x.color,
         x.size,
         x.price,
+        x.onlinePrice ?? x.price,
         x.cost,
         x.minimum,
         x.ideal,
