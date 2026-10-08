@@ -144,6 +144,10 @@ export async function sendOrderEmails(
     orderId,
   );
   if (!order) return;
+  // Tarjetas: avisar únicamente después de la aprobación del proveedor.
+  // El pedido previo al pago se conserva para referencia y reserva de stock.
+  if (event === 'created' && order.paymentMethod === 'card') return;
+  if (event === 'paid' && order.paymentStatus !== 'paid') return;
   const titles = orderEmailTitles;
   const items = await rows<{
     productName: string;
@@ -168,12 +172,16 @@ export async function sendOrderEmails(
     orderId,
     idempotencyKey: `order-${orderId}-${event}-customer`,
   });
-  if (event === 'created' && env.RESEND_ORDER_TO)
+  if (
+    env.RESEND_ORDER_TO &&
+    (event === 'created' ||
+      (event === 'paid' && order.paymentMethod === 'card'))
+  )
     await enqueueOrderEmail({
       to: env.RESEND_ORDER_TO,
-      subject: `Nuevo pedido FRAGUAN #${order.orderNumber}`,
+      subject: `${event === 'paid' ? 'Compra confirmada' : 'Nuevo pedido'} FRAGUAN #${order.orderNumber}`,
       html: emailFrame(
-        'NUEVO PEDIDO ONLINE.',
+        event === 'paid' ? 'COMPRA ONLINE CONFIRMADA.' : 'NUEVO PEDIDO ONLINE.',
         order.customerName,
         `<p><strong>${escapeHtml(order.customerName)}</strong> · ${escapeHtml(order.email)}</p><p>Total: <strong>$${(Number(order.total) / 100).toLocaleString('es-AR')}</strong></p><p>Referencia: <strong>${escapeHtml(order.transferReference)}</strong></p>`,
       ),

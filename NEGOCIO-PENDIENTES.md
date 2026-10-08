@@ -181,3 +181,57 @@ No agregar bordes azules decorativos ni barras laterales azules en tarjetas o av
 - Emails de pedidos: cola persistente, reintentos con la misma clave y seguimiento privado de lectura para invitados. Admin muestra aceptación, entrega y rebotes. El dueño confirmó el webhook en Resend; RESEND_WEBHOOK_SECRET quedó preparado en Railway y vinculado al servicio API. Falta comprobar un evento real de entrega desde Resend.
 - SEO: revisión de productos publicados desde Crecimiento online, fotos reales en metadatos y datos estructurados; productos/rutas inexistentes devuelven 404. Search Console sigue siendo el lugar para consultar indexación y rendimiento; no se implementó sincronización de sus informes privados.
 - No se agregó la leyenda ni un cálculo de precio sin impuestos nacionales, por indicación del titular. Revisar el criterio de exhibición con su contador antes de una eventual incorporación.
+
+## Decisión del 08/10/2026 — dos posnets y Payway online
+
+**Reemplazada por la decisión posterior del titular: cobrar con Mercado Pago,
+tanto en el local como en la web. El esquema Payway de esta sección queda
+cancelado y se conserva únicamente como historial.**
+
+Esta decisión reemplaza la elección anterior de Mercado Pago para tarjetas online
+y amplía el esquema de tarjetas del local. Es una definición aprobada del negocio;
+la selección de posnet y la integración Payway todavía no están implementadas.
+
+- Local físico: posnet Mercado Pago y posnet Payway. Conservar los cuatro medios
+  principales: Débito, Crédito, Efectivo y Transferencia. Para tarjetas, seleccionar
+  el posnet utilizado; conservar el tipo Prepaga y su tratamiento específico.
+- Mercado Pago Point: conservar las tarifas informadas por el titular para el
+  local (débito 2,88%/2 días; crédito 4,40%/10 días; prepaga 3,68%/3 días).
+- Payway del local: el titular enviará las comisiones y plazos. No copiar los de
+  Point, ni usar tarifas públicas como condiciones contratadas, ni interpretar
+  un dato pendiente como comisión cero. Falta confirmar su cuenta de destino.
+- Efectivo continúa en Caja; transferencias del local continúan en Mercado Pago.
+- Cada cobro debe conservar medio, posnet, destino, comisión y plazo aplicados
+  en ese momento, sin recalcular ventas anteriores al editar la configuración.
+- Administración debe permitir mantener las condiciones por posnet y tipo de
+  tarjeta. Los resúmenes deben distinguir ambos posnets y sus acreditaciones.
+- Web: usar Payway para tarjetas. Conservar transferencia bancaria y su flujo
+  actual. Falta alta/configuración de comercio online, credenciales, condiciones
+  online, destino de acreditación e integración y pruebas de notificaciones.
+  Las tarifas del posnet Payway no se presumen válidas para ventas online.
+- Conservar cuotas deshabilitadas y el criterio de no registrar IVA por separado.
+  El cambio de proveedor online todavía no se publicó ni se activó.
+
+## Decisión vigente del 08/10/2026 — Mercado Pago
+
+- El titular decidió cobrar con Mercado Pago en el local y en la web. Se cancela
+  la incorporación de Payway y del selector entre dos posnets.
+- Local físico: tarjetas con Point de Mercado Pago; transferencias a Mercado
+  Pago; efectivo en Caja. Conservar las condiciones Point ya informadas:
+  débito 2,88%/2 días; crédito 4,40%/10 días; prepaga 3,68%/3 días.
+- Web: integrar y validar Checkout de Mercado Pago para tarjetas; conservar el
+  flujo actual de transferencia bancaria. Las tarifas y plazos online deben
+  confirmarse en la cuenta del comercio y no copiarse de Point.
+- Conservar cuotas deshabilitadas y la decisión de no registrar IVA por separado.
+- Esta actualización documenta la elección del proveedor; no activa cobros
+  online ni modifica credenciales o condiciones contratadas.
+
+## Emails de compras con tarjeta — 08/10/2026
+
+No enviar el email de pedido recibido ni el aviso interno al crear una reserva
+de tarjeta antes de redirigir a Mercado Pago. Enviar COMPRA CONFIRMADA al cliente
+y el aviso interno de compra confirmada cuando el pago esté aprobado y el pedido
+figure pagado. Mantener los emails iniciales de transferencia y sus instrucciones.
+El registro previo al pago permanece para reservar stock y vincular el webhook;
+no equivale a una compra aprobada. Los pagos pendientes o rechazados no confirman
+la compra. Conservar las claves de idempotencia de los emails.

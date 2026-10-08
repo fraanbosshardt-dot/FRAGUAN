@@ -13,6 +13,8 @@ const env = {
 const sent = [],
   writes = [];
 let fail = false;
+let paymentMethod = 'transfer';
+let paymentStatus = 'pending';
 const query = {
   id: () => 'isolated-id',
   now: () => '2026-10-07T15:00:00Z',
@@ -24,7 +26,8 @@ const query = {
           subtotal: 10000,
           discount: 0,
           shipping: 0,
-          paymentMethod: 'transfer',
+          paymentMethod,
+          paymentStatus,
           customerName: 'Ana',
           email: 'test@example.invalid',
           transferReference: 'order-test',
@@ -102,6 +105,26 @@ new Function('require', 'module', 'exports', 'fetch', source)(
 const api = m.exports;
 await api.sendOrderEmails('order-test', 'created');
 assert.equal(sent.at(-1).from, env.RESEND_FROM);
+const beforeCard = sent.length;
+env.RESEND_ORDER_TO = 'owner@example.invalid';
+paymentMethod = 'card';
+await api.sendOrderEmails('order-test', 'created');
+assert.equal(sent.length, beforeCard, 'No emails de tarjeta antes del pago');
+await api.sendOrderEmails('order-test', 'paid');
+assert.equal(sent.length, beforeCard, 'No confirmar un pago pendiente');
+paymentStatus = 'paid';
+await api.sendOrderEmails('order-test', 'paid');
+assert.equal(sent.length, beforeCard + 2, 'Compra aprobada: cliente y negocio');
+assert.ok(sent.at(-2).subject.includes('COMPRA CONFIRMADA'));
+assert.ok(sent.at(-1).subject.includes('Compra confirmada'));
+assert.equal(sent.at(-1).to[0], env.RESEND_ORDER_TO);
+assert.ok(!sent.at(-2).html.includes('te avisaremos cuando el pago'));
+paymentMethod = 'transfer';
+paymentStatus = 'pending';
+const beforeTransfer = sent.length;
+await api.sendOrderEmails('order-test', 'created');
+assert.equal(sent.length, beforeTransfer + 2, 'Transferencia conserva aviso inicial');
+delete env.RESEND_ORDER_TO;
 await api.sendEmailVerificationCode('test@example.invalid', '123456', 'nonce');
 assert.equal(sent.at(-1).from, 'FRAGUAN <noreply@fraguan.com>');
 assert.ok(sent.at(-1).html.includes('123456'));
