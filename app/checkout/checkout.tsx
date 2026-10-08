@@ -73,6 +73,13 @@ export default function Checkout({
 }) {
   const { cart, subtotal, clear, update } = useStoreCart();
   const [step, setStep] = useState(1);
+  const stepScrollRequest = useRef(0);
+  useEffect(
+    () => () => {
+      stepScrollRequest.current += 1;
+    },
+    [],
+  );
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   const [createAccount, setCreateAccount] = useState(false);
@@ -458,17 +465,32 @@ export default function Checkout({
     }
   }
   function openStep(number: number) {
+    const request = ++stepScrollRequest.current;
     setStep(number);
     requestAnimationFrame(() => {
-      const panel = checkoutForm.current?.querySelector<HTMLElement>(
-        '[data-checkout-step="' + number + '"]',
-      );
-      panel?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
-      panel?.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          ? 'auto'
-          : 'smooth',
-        block: 'start',
+      requestAnimationFrame(async () => {
+        const bodies =
+          checkoutForm.current?.querySelectorAll<HTMLElement>('.cp-body');
+        // Wait for both panels to finish resizing before choosing the scroll target.
+        await Promise.all(
+          Array.from(bodies || []).flatMap((body) =>
+            body
+              .getAnimations()
+              .map((animation) => animation.finished.catch(() => undefined)),
+          ),
+        );
+        if (request !== stepScrollRequest.current) return;
+        const panel = checkoutForm.current?.querySelector<HTMLElement>(
+          '[data-checkout-step="' + number + '"]',
+        );
+        panel?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+        panel?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
+            .matches
+            ? 'auto'
+            : 'smooth',
+          block: 'start',
+        });
       });
     });
   }

@@ -1000,9 +1000,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0;
-  margin-top: 10px;
+  margin-top: 6px;
   padding: 0;
-  border: 1px solid var(--purchase-line);
+  border: 0;
   border-radius: var(--purchase-radius);
   background: transparent;
   vertical-align: middle;
@@ -1010,7 +1010,7 @@
 .fraguan-design .cp-summary-content .cp-quantity button {
   display: grid;
   place-items: center;
-  width: 40px;
+  width: 36px;
   height: 40px;
   min-height: 40px;
   padding: 0;
@@ -1028,7 +1028,7 @@
 .fraguan-design .cp-summary-content .cp-quantity > span {
   display: grid;
   place-items: center;
-  min-width: 28px;
+  min-width: 24px;
   height: 40px;
   padding: 0 4px;
   font: 14px var(--purchase-font);
