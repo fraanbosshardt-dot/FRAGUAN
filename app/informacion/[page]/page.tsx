@@ -15,23 +15,27 @@ const pages: Record<string, Page> = {
     eyebrow: 'ENTREGA',
     title: 'Tu pedido, donde estés.',
     intro:
-      'Elegí Correo Argentino a domicilio o retiro en FRAGUAN antes de pagar.',
+      'Recibí tu pedido en casa con Correo Argentino o retiralo sin cargo en la tienda FRAGUAN de Isla Verde, Córdoba. Elegí la modalidad de entrega antes de pagar.',
     sections: [
       {
-        title: 'Costo y plazo',
-        body: 'Ingresá tu código postal para ver costo y plazo estimado antes de confirmar. El plazo comienza cuando se acredita el pago.',
+        title: 'Preparación del pedido',
+        body: 'Preparamos tu pedido y lo dejamos listo para despachar o retirar dentro de las 24 a 48 horas hábiles posteriores a la confirmación del pago. Este tiempo de preparación es independiente del plazo del transporte.',
+      },
+      {
+        title: 'Costo y plazo del envío',
+        body: 'Ingresá tu código postal para conocer el costo y el plazo estimado del envío antes de confirmar la compra. El plazo del transporte comienza cuando despachamos tu pedido, después de la preparación. Los tiempos de Correo Argentino son estimados.',
       },
       {
         title: 'Seguimiento',
-        body: 'Al despachar enviamos el código por email y lo mostramos en Mi FRAGUAN. Los plazos del transportista son estimados.',
+        body: 'Cuando despachamos tu pedido, te enviamos el código de seguimiento por email. También podés consultarlo en Mi FRAGUAN y en la página de seguimiento de tu pedido.',
       },
       {
-        title: 'Retiro',
-        body: 'El retiro en tienda es gratuito. Esperá el aviso “Listo para retirar” y presentá el número de pedido y un documento.',
+        title: 'Retiro en tienda',
+        body: 'El retiro en FRAGUAN es gratuito. Esperá el aviso “Listo para retirar” antes de acercarte. Atendemos de lunes a sábado, de 10:00 a 14:30 y de 16:30 a 21:30. Para retirar, presentá el número de pedido y tu documento. También puede retirar otra persona: debe presentar el número de pedido y su propio documento.',
       },
       {
-        title: 'Recepción',
-        body: 'Revisá el paquete al recibirlo. Si llega abierto, dañado o con una prenda incorrecta, informalo desde Contacto con el número de pedido.',
+        title: 'Al recibir tu pedido',
+        body: 'Revisá el paquete al recibirlo. Si llega abierto, dañado o con una prenda incorrecta, escribinos desde Contacto con el número de pedido para que podamos ayudarte.',
       },
     ],
   },
