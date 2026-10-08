@@ -47,8 +47,10 @@ export const date = (value: string) =>
         year: 'numeric',
       })
     : '—';
-export const minor = (value: string) => {
-  const normalized = value.trim().replace(',', '.');
+export const minor = (value: string | number) => {
+  if (typeof value !== 'string' && typeof value !== 'number')
+    throw new Error('Ingresá un importe válido sin separador de miles.');
+  const normalized = String(value).trim().replace(',', '.');
   if (!/^\d+(\.\d{1,2})?$/.test(normalized))
     throw new Error('Ingresá un importe válido sin separador de miles.');
   const [whole, part = ''] = normalized.split('.');
