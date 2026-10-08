@@ -547,7 +547,7 @@ function Prod({ id }) {
         </details>
         <${SizeHelp} product=${p.original} />
         <details>
-          <summary>Métodos de pago</summary>
+          <summary>MÉTODOS DE PAGO</summary>
           <p>
             Aceptamos las siguientes opciones de pago: Tarjetas de Crédito,
             Tarjetas de Débito, Transferencia y Mercado Pago.
