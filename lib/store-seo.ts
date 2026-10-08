@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { one, statement, auditStatement, db } from '@/db/queries';
+import { one, rows, statement, auditStatement, db } from '@/db/queries';
 import { Actor, requirePermission } from './auth';
 import { publicOptionalLine } from './public-validation';
 import { storeApiOrigin, publicStoreData } from './store-api';
@@ -66,4 +66,14 @@ export async function seoOverride(path: string) {
     description: '',
     verification: '',
   }));
+}
+
+export async function seoAudit(actor: Actor) {
+  requirePermission(actor,'marketing');
+  const products=await rows<any>(`SELECT p.name,profile.slug,profile.shortDescription,(SELECT COUNT(*) FROM product_images im WHERE im.productId=p.id AND im.active=1) AS images FROM products p JOIN online_product_profiles profile ON profile.productId=p.id WHERE p.active=1 AND profile.published=1 ORDER BY p.name`);
+  const overrides=await rows<{key:string;value:string}>(`SELECT key,value FROM settings WHERE key LIKE 'store-seo:%'`);
+  const stored=new Map(overrides.map(r=>[r.key.slice(10),JSON.parse(r.value)]));
+  const pages=products.map(p=>{const path='/producto/'+p.slug,custom=stored.get(path);const title=custom?.title||p.name+' | FRAGUAN',description=custom?.description||p.shortDescription;return {path,title,description,issues:[...(!p.images?['Falta cargar la foto del producto']:[]),...(!description?['Falta una descripción']:[]),...(title.length>70?['Título extenso']:[])]};});
+  for(const page of pages)if(pages.filter(p=>p.title===page.title).length>1)page.issues.push('Título repetido');
+  return {pages,sitemap:STORE_ORIGIN+'/sitemap.xml',searchConsole:'https://search.google.com/search-console?resource_id=sc-domain%3Afraguan.com'};
 }

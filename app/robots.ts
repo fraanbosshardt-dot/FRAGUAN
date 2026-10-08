@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/producto/', '/coleccion/', '/informacion/'],
+        allow: ['/', '/producto/', '/coleccion/', '/informacion/', '/api/store-image'],
         disallow: [
           '/api/',
           '/staff-assets/',
@@ -20,7 +20,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: 'Claude-User',
-        allow: ['/', '/admin', '/staff-assets/'],
+        allow: ['/', '/admin', '/staff-assets/', '/api/store-image'],
         disallow: [
           '/api/',
           '/admin-access',

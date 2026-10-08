@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Storefront from '@/app/storefront';
 import ComingSoon from '@/app/coming-soon';
@@ -13,6 +14,9 @@ const names: Record<string, string> = {
   camperas: 'Camperas',
   abrigos: 'Camperas',
   accesorios: 'Accesorios',
+  jeans: 'Jeans',
+  buzos: 'Buzos',
+  chombas: 'Chombas',
 };
 export async function generateMetadata({
   params,
@@ -44,6 +48,7 @@ export default async function Page({
   const key = (await params).section.toLowerCase();
   const initialSection = names[key] || key.replaceAll('-', ' ');
   const catalog = await storeCatalog();
+  if (!names[key] && !catalog.sections.some(s=>s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g,"-")===key)) notFound();
   return (
     <Storefront initialSection={initialSection} initialCatalog={catalog} />
   );

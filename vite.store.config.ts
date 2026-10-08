@@ -54,13 +54,14 @@ export default defineConfig({
         ? {
             experimental: { tasks: true },
             tasks: {
+              'store-maintenance': { handler: fileURLToPath(new URL('./server/tasks/store-maintenance.ts', import.meta.url)) },
               'cart-recovery': {
                 handler: fileURLToPath(
                   new URL('./server/tasks/cart-recovery.ts', import.meta.url),
                 ),
               },
             },
-            scheduledTasks: { '*/5 * * * *': ['cart-recovery'] },
+            scheduledTasks: { '*/5 * * * *': ['cart-recovery', 'store-maintenance'] },
           }
         : {},
     ),

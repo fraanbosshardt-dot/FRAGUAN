@@ -55,7 +55,12 @@ export default function OrderTracking({
   const [error, setError] = useState('');
   useOrderPaymentUpdates(order, setOrder, true);
   useEffect(() => {
-    const token = sessionStorage.getItem(`fraguan-order-${orderId}`) || '';
+    const linkToken = new URLSearchParams(location.hash.slice(1)).get('email-token') || '';
+    if (linkToken) {
+      sessionStorage.setItem(`fraguan-tracking-${orderId}`, linkToken);
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    const token = sessionStorage.getItem(`fraguan-order-${orderId}`) || sessionStorage.getItem(`fraguan-tracking-${orderId}`) || '';
     storeApi(`store-order?id=${encodeURIComponent(orderId)}`, {
       headers: token ? { 'x-order-token': token } : undefined,
     })

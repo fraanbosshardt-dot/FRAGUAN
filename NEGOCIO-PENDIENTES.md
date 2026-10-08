@@ -172,3 +172,12 @@ con el dueño antes de modificarlo; no se cambió la vigencia existente.
 
 No agregar bordes azules decorativos ni barras laterales azules en tarjetas o avisos. Mantener el estilo existente; los bordes de los avisos de reserva son neutros.
 
+
+
+## Actualización 8 de octubre de 2026 — controles desde Admin
+- Fotos: editar producto o publicación online → cargar/reemplazar foto. Se guarda al elegirla, se optimiza a WebP y aparece en catálogo, ficha y metadatos de compartir. No se cargaron fotos de ejemplo en producción.
+- Cuotas sin interés: control en Catálogo online; desactivadas por defecto. Se puede elegir cantidad, productos y CFTEA. Habilitar solo tras confirmar la promoción y tarjetas participantes en Mercado Pago; el control no contrata financiación externa.
+- CyberMonday: precio de referencia tachado editable por variante, porcentaje y precio final calculado; programación, vista previa y restauración. Conserva los precios online anteriores y respeta modificaciones manuales posteriores. Solo precios online, POS conserva los precios del local. Revisión automática cada cinco minutos. No hay campaña activada por esta implementación.
+- Emails de pedidos: cola persistente, reintentos con la misma clave y seguimiento privado de lectura para invitados. Admin muestra aceptación, entrega y rebotes. El dueño confirmó el webhook en Resend; RESEND_WEBHOOK_SECRET quedó preparado en Railway y vinculado al servicio API. Falta comprobar un evento real de entrega desde Resend.
+- SEO: revisión de productos publicados desde Crecimiento online, fotos reales en metadatos y datos estructurados; productos/rutas inexistentes devuelven 404. Search Console sigue siendo el lugar para consultar indexación y rendimiento; no se implementó sincronización de sus informes privados.
+- No se agregó la leyenda ni un cálculo de precio sin impuestos nacionales, por indicación del titular. Revisar el criterio de exhibición con su contador antes de una eventual incorporación.

@@ -1,3 +1,7 @@
+import {readInstallments,saveInstallments} from '@/lib/store-installments';
+import { productImage, saveProductImage, publicProductImage } from '@/lib/product-images';
+import { campaignOverview, campaignWrite } from '@/lib/store-price-campaigns';
+import { orderEmailOverview, orderEmailWrite } from '@/lib/order-email-outbox';
 import {
   captureCartRecovery,
   stopCartRecovery,
@@ -15,7 +19,7 @@ import {
   AppError,
 } from '@/lib/auth';
 import { forwardStoreApi } from '@/lib/store-api';
-import { storeSeo, adminSeo, saveStoreSeo } from '@/lib/store-seo';
+import { storeSeo, adminSeo, saveStoreSeo, seoAudit } from '@/lib/store-seo';
 import {
   one,
   rows,
@@ -275,6 +279,7 @@ export async function GET(
           (url.searchParams.get('section') ?? '').slice(0, 80),
         ),
       );
+    if (resource === 'store-image') return await publicProductImage(url.searchParams.get('id') || '');
     if (resource === 'store-product')
       return reply(
         await storeProduct((url.searchParams.get('slug') ?? '').slice(0, 160)),
@@ -407,6 +412,11 @@ export async function GET(
       return reply(
         await listPosOnlineOrders(a, url.searchParams.get('id') ?? ''),
       );
+    if (resource === 'installments') return reply(await readInstallments(a));
+    if (resource === 'seo-audit') return reply(await seoAudit(a));
+    if (resource === 'product-image') return reply(await productImage(a, url.searchParams.get('productId') || ''));
+    if (resource === 'price-campaigns') return reply(await campaignOverview(a));
+    if (resource === 'order-email-queue') return reply(await orderEmailOverview(a));
     if (resource === 'online-catalog') return reply(await listOnlineCatalog(a));
     if (resource === 'newsletter') return reply(await newsletterOverview(a));
     if (resource === 'seo')
@@ -829,7 +839,7 @@ export async function POST(
     if (forwarded) return forwarded;
     const { resource } = await params;
     const publicResource = resource.startsWith('store-');
-    const maxBytes = publicResource ? 32768 : 100000;
+    const maxBytes = resource === 'product-image' ? 1_450_000 : publicResource ? 32768 : 100000;
     protectWrite(req, maxBytes);
     const body = await readJsonBody(req, maxBytes);
     if (publicResource) enforcePublicLimit(req, resource, body);
@@ -1085,6 +1095,10 @@ export async function POST(
       return reply(await onlineOrderWrite(a, body));
     if (resource === 'pos-online-orders')
       return reply(await posOnlineOrderWrite(a, body));
+    if (resource === 'installments') return reply(await saveInstallments(a,body));
+    if (resource === 'order-email-queue') return reply(await orderEmailWrite(a, body));
+    if (resource === 'product-image') return reply(await saveProductImage(a, body));
+    if (resource === 'price-campaigns') return reply(await campaignWrite(a, body));
     if (resource === 'online-catalog')
       return reply(await onlineCatalogWrite(a, body));
     if (resource === 'newsletter')

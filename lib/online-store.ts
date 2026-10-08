@@ -1,3 +1,5 @@
+import {storeInstallments} from './store-installments';
+import { verifyOrderEmailToken } from './order-email-link';
 import { z } from 'zod';
 import { allocateDocumentNumber } from './document-numbers';
 import { ownsStoreOrder, onlineReservationMinutes } from './store-order-access';
@@ -329,6 +331,8 @@ export async function storeCatalog(
             profile.description,profile.material,profile.care,profile.fit,profile.section,
             profile.featured,profile.sortOrder,v.id AS variantId,v.sku,v.barcode,v.color,v.size,
             COALESCE(v.onlinePrice,v.price) AS price,
+            (SELECT i.referencePrice FROM store_price_campaign_items i JOIN store_price_campaigns campaign ON campaign.id=i.campaignId WHERE i.variantId=v.id AND i.status='active' AND campaign.status='active' AND campaign.endsAt>? AND v.onlinePrice=i.campaignPrice AND v.updatedAt=i.appliedAt LIMIT 1) AS compareAtPrice,
+            (SELECT image.id FROM product_images image WHERE image.productId=p.id AND image.active=1 LIMIT 1) AS imageId,
             MAX(0,v.stock-COALESCE((SELECT SUM(r.quantity) FROM stock_reservations r
               WHERE r.variantId=v.id AND r.status='active' AND r.expiresAt>?),0)) AS available
        FROM online_product_profiles profile JOIN products p ON p.id=profile.productId
@@ -337,6 +341,7 @@ export async function storeCatalog(
         AND (?='' OR (?='Nuevos' AND profile.featured=1) OR profile.section=? OR p.category=?)
         AND (?='%%' OR p.name LIKE ? OR p.category LIKE ? OR p.brand LIKE ? OR v.color LIKE ? OR v.sku LIKE ?)
       ORDER BY profile.featured DESC,profile.sortOrder,p.name,v.color,v.size`,
+    now(),
     now(),
     section,
     section,
@@ -349,6 +354,7 @@ export async function storeCatalog(
     q,
     q,
   );
+  const installments=await storeInstallments();
   const grouped = new Map<string, StoreProduct>();
   for (const row of products) {
     if (!grouped.has(row.id))
@@ -365,10 +371,16 @@ export async function storeCatalog(
         fit: row.fit,
         section: row.section,
         featured: Boolean(row.featured),
+        interestFreeInstallments: installments.enabled && (!installments.productIds.length || installments.productIds.includes(row.id)) ? installments.installments : undefined,
+        financingCft: installments.cft,
+        imageUrl: row.imageId ? `/api/store-image?id=${row.imageId}` : undefined,
+        imageAlt: row.name,
+        compareAtPrice: row.compareAtPrice || undefined,
         price: row.price,
         variants: [],
       });
     const product = grouped.get(row.id)!;
+    if (row.price < product.price) product.compareAtPrice = row.compareAtPrice || undefined;
     product.price = Math.min(product.price, row.price);
     product.variants.push({
       id: row.variantId,
@@ -378,6 +390,7 @@ export async function storeCatalog(
       size: row.size,
       price: row.price,
       stock: row.available,
+      compareAtPrice: row.compareAtPrice || undefined,
     });
   }
   const sections = await rows<{ name: string; products: number }>(
@@ -1603,6 +1616,7 @@ export async function publicOnlineOrder(
   req: Request,
   orderId: string,
   accessToken: string,
+  allowEmailLink = true,
 ) {
   const customer = await currentStoreCustomer(req);
   const order = await one<{
@@ -1616,7 +1630,8 @@ export async function publicOnlineOrder(
   if (
     !order ||
     (!ownsStoreOrder(customer, order) &&
-      order.accessTokenHash !== (await sha256(accessToken)))
+      order.accessTokenHash !== (await sha256(accessToken)) &&
+      !(allowEmailLink && await verifyOrderEmailToken(orderId, accessToken)))
   )
     throw new AppError(403, 'Acceso denegado.');
   return onlineOrderDetail(orderId);
@@ -1631,7 +1646,7 @@ export async function reportTransfer(req: Request, raw: unknown) {
     })
     .strict()
     .parse(raw);
-  await publicOnlineOrder(req, input.orderId, input.accessToken);
+  await publicOnlineOrder(req, input.orderId, input.accessToken, false);
   const order = await one<{ paymentStatus: string }>(
     'SELECT paymentStatus FROM online_orders WHERE id=? AND paymentMethod=?',
     input.orderId,

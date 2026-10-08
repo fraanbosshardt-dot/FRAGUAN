@@ -139,6 +139,7 @@ export const designProduct = (p) => ({
       .map((s) => s[0])
       .join(''),
   p: p.price / 100,
+  previous: p.compareAtPrice ? p.compareAtPrice / 100 : null,
   cols: [...new Set(p.variants.map((v) => v.color))],
   col: [...new Set(p.variants.map((v) => v.color))].join(' · '),
   z: [...new Set(p.variants.map((v) => v.size))].sort((a, b) => {
@@ -259,7 +260,7 @@ function Card({ p, i = 0 }) {
     </div>
     <div class="nfo">
       <span>${p.n}<small>${p.col}</small></span
-      ><span>${$(p.p)}</span>
+      ><span>${p.previous && html`<del style=${{fontSize:12,display:"block",opacity:0.65}}>${$(p.previous)}</del>`}${$(p.p)}</span>
     </div>
     <a
       class="design-card-link"
@@ -505,8 +506,10 @@ function Prod({ id }) {
       <div>
         <h1 class="d">${p.n}</h1>
         <div class="pr">
+          ${variant?.compareAtPrice && html`<del style=${{fontSize:18,marginRight:12,opacity:0.65}}>${$(variant.compareAtPrice / 100)}</del>`}
           <${Odometer} value=${variant?.price / 100 || p.p} />
         </div>
+        ${p.original.interestFreeInstallments && html`<p class="product-financing">Hasta ${p.original.interestFreeInstallments} cuotas de ${$(Math.ceil((variant?.price || p.original.price) / p.original.interestFreeInstallments) / 100)} sin interés<small>Con tarjetas de crédito participantes a través de Mercado Pago. CFTEA ${p.original.financingCft || 0}%.</small></p>`}
         <p style=${{ fontSize: 14 }}>
           ${$(Math.max(0, (variant?.price / 100 || p.p) * 0.9))} pagando por
           transferencia · Envíos a todo el país
@@ -596,9 +599,10 @@ function Prod({ id }) {
           <p>
             7 días corridos desde la entrega para cambios de talle o color, con
             la prenda sin uso y con etiquetas, sujetos a stock. Si elegís una
-            prenda de mayor valor, abonás la diferencia. Consultá la política
-            completa de
-            <a href="/informacion/cambios">Cambios y devoluciones</a>.
+            prenda de mayor valor, abonás la diferencia.
+          </p>
+          <p>
+            <a href="/informacion/cambios">Consultá la política completa de cambios y devoluciones →</a>
           </p>
         </details>
       </div>

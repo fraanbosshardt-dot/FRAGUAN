@@ -9,6 +9,7 @@ export type StoreVariant = {
   size: string;
   price: number;
   stock: number;
+  compareAtPrice?: number;
 };
 export type StoreProduct = {
   id: string;
@@ -23,6 +24,11 @@ export type StoreProduct = {
   fit: string;
   section: string;
   featured: boolean;
+  interestFreeInstallments?: number;
+  financingCft?: number;
+  imageUrl?: string;
+  imageAlt?: string;
+  compareAtPrice?: number;
   price: number;
   variants: StoreVariant[];
 };

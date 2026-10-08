@@ -1,3 +1,4 @@
+import { resendWebhook } from '@/lib/order-email-outbox';
 import { env } from 'cloudflare:workers';
 import { forwardStoreApi } from '@/lib/store-api';
 import { z } from 'zod';
@@ -102,6 +103,7 @@ export async function POST(
     const provider = (await params).provider.slice(0, 30).toLowerCase();
     if (!/^[a-z0-9_-]{2,30}$/.test(provider))
       throw new AppError(404, 'Proveedor de pago inválido.');
+    if (provider === 'resend') return reply(await resendWebhook(req));
     const raw = await readJsonBody(req, 65536);
     if (provider === 'mercadopago')
       return reply(await mercadoPagoEvent(req, raw));

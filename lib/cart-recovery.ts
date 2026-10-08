@@ -67,7 +67,7 @@ export async function recoveryEmailUsage() {
     Number(
       (
         await one<{ total: number }>(
-          `SELECT COUNT(*) AS total FROM email_deliveries WHERE status='sent' AND createdAt>=?${reminders ? " AND (kind LIKE 'cart_reminder_1:%' OR kind LIKE 'cart_reminder_2:%')" : ''}`,
+          `SELECT COUNT(*) AS total FROM email_deliveries WHERE (status IN ('sent','delivered','delayed','bounced','complained') OR providerId<>'') AND createdAt>=?${reminders ? " AND (kind LIKE 'cart_reminder_1:%' OR kind LIKE 'cart_reminder_2:%')" : ''}`,
           since,
         )
       )?.total ?? 0,

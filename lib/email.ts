@@ -1,3 +1,5 @@
+import { orderEmailLink } from './order-email-link';
+import { enqueueOrderEmail, runOrderEmailQueue } from './order-email-outbox';
 import {
   emailFrame,
   escapeHtml,
@@ -154,11 +156,11 @@ export async function sendOrderEmails(
     orderId,
   );
   const html = orderEmail(
-    order as Parameters<typeof orderEmail>[0],
+    { ...order, trackingUrl: await orderEmailLink(orderId) } as Parameters<typeof orderEmail>[0],
     items,
     event,
   );
-  await deliver({
+  await enqueueOrderEmail({
     to: order.email,
     subject: `${titles[event]} Pedido #${order.orderNumber}`,
     html,
@@ -167,7 +169,7 @@ export async function sendOrderEmails(
     idempotencyKey: `order-${orderId}-${event}-customer`,
   });
   if (event === 'created' && env.RESEND_ORDER_TO)
-    await deliver({
+    await enqueueOrderEmail({
       to: env.RESEND_ORDER_TO,
       subject: `Nuevo pedido FRAGUAN #${order.orderNumber}`,
       html: emailFrame(
@@ -179,6 +181,7 @@ export async function sendOrderEmails(
       orderId,
       idempotencyKey: `order-${orderId}-internal`,
     });
+  await runOrderEmailQueue(2);
 }
 
 export async function sendReturnRequestEmails(requestId: string) {

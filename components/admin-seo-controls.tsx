@@ -4,6 +4,8 @@ import { api } from '@/lib/client';
 
 export function AdminSeoControls() {
   const [path, setPath] = useState('/');
+  const [audit,setAudit]=useState<any>(null);
+  useEffect(()=>{void api('seo-audit').then(setAudit).catch(()=>{});},[]);
   const [loaded, setLoaded] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -35,7 +37,7 @@ export function AdminSeoControls() {
     }
   };
   return (
-    <section className="panel">
+    <section className="panel admin-tool-panel">
       <label>
         <input
           type="checkbox"
@@ -62,6 +64,7 @@ export function AdminSeoControls() {
         Elegí la página y cargá su configuración. Si dejás los textos vacíos, se
         usan el nombre y la descripción actuales de la tienda.
       </p>
+      {audit && <div className="data-table admin-tool-table"><table><thead><tr><th>Producto / página</th><th>Revisión</th><th>Acción</th></tr></thead><tbody>{audit.pages.map((p:any)=><tr key={p.path}><td>{p.title}<small>{p.path}</small></td><td>{p.issues.length?p.issues.join(' · '):'Título, descripción y foto disponibles'}</td><td><button type="button" onClick={()=>{setPath(p.path);setLoaded('');setNotice('Cargá la configuración para editar esta página.');}}>Elegir</button> <a href={p.path} target="_blank" rel="noreferrer">Ver</a></td></tr>)}</tbody></table>{!audit.pages.length&&<p>No hay productos publicados para revisar.</p>}<p>Esta revisión es técnica. Las posiciones, impresiones e indexación se consultan en Search Console.</p></div>}
       <div className="admin-growth-form">
         <label>
           Ruta de la página

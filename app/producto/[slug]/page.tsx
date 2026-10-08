@@ -1,7 +1,8 @@
 import ProductPage from './product-page';
 import type { Metadata } from 'next';
 import { storeProduct } from '@/lib/online-store';
-import { publicProductReviews } from '@/lib/store-growth';
+import { notFound } from 'next/navigation';
+import { AppError } from '@/lib/auth';
 import { seoOverride } from '@/lib/store-seo';
 
 export async function generateMetadata({
@@ -23,9 +24,11 @@ export async function generateMetadata({
         description,
         type: 'website',
         url: `/producto/${product.slug}`,
+        ...(product.imageUrl ? {images:[{url:product.imageUrl,alt:product.name}]} : {}),
       },
       twitter: {
-        card: 'summary',
+        card: product.imageUrl ? 'summary_large_image' : 'summary',
+        ...(product.imageUrl ? {images:[product.imageUrl]} : {}),
         title,
         description,
       },
@@ -42,11 +45,13 @@ export default async function Page({
   const slug = (await params).slug;
   try {
     const { product, related } = await storeProduct(slug);
-    const reviews = await publicProductReviews(product.id);
+
     const jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'ProductGroup',
       name: product.name,
+      url: `https://www.fraguan.com/producto/${product.slug}`,
+      ...(product.imageUrl ? {image: new URL(product.imageUrl,'https://www.fraguan.com').href} : {}),
       description: product.description,
       brand: { '@type': 'Brand', name: product.brand },
       productGroupID: product.id,
@@ -62,6 +67,7 @@ export default async function Page({
           '@type': 'Product',
           name: `${product.name} · ${variant.color} · ${variant.size}`,
           sku: variant.sku,
+          ...(product.imageUrl ? {image: new URL(product.imageUrl,'https://www.fraguan.com').href} : {}),
           color: variant.color,
           size: variant.size,
           isVariantOf: {
@@ -81,15 +87,7 @@ export default async function Page({
           },
         }),
       ),
-      ...(reviews.total
-        ? {
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: reviews.average,
-              reviewCount: reviews.total,
-            },
-          }
-        : {}),
+
     };
     const breadcrumb = {
       '@context': 'https://schema.org',
@@ -136,7 +134,8 @@ export default async function Page({
         />
       </>
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof AppError && error.status === 404) notFound();
     return <ProductPage slug={slug} />;
   }
 }

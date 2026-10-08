@@ -99,7 +99,7 @@ export function useOrderPaymentUpdates(
       if (!active) return;
       if (document.visibilityState !== 'hidden') {
         try {
-          const token = sessionStorage.getItem(`fraguan-order-${id}`) || '';
+          const token = sessionStorage.getItem(`fraguan-order-${id}`) || sessionStorage.getItem(`fraguan-tracking-${id}`) || '';
           const updated = await storeApi<Record<string, any>>(
             `store-order?id=${encodeURIComponent(id)}`,
             { headers: token ? { 'x-order-token': token } : undefined },

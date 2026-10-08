@@ -3559,3 +3559,5 @@ body:has(.fraguan-design) .store-toast {
   background: var(--bone-2);
   color: var(--ink);
 }
+
+.fg .product-financing{margin:12px 0;font-size:16px;line-height:1.5}.fg .product-financing small{display:block;margin-top:4px;font-size:12px;color:var(--text-muted,#666)}

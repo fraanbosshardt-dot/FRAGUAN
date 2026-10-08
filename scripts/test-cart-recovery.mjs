@@ -6,7 +6,7 @@ import ts from 'typescript';
 const realRequire = createRequire(import.meta.url),
   database = new DatabaseSync(':memory:');
 database.exec(
-  `CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);CREATE TABLE abandoned_carts(id TEXT PRIMARY KEY,sessionId TEXT UNIQUE,customerId TEXT,email TEXT,cartJson TEXT,subtotal INTEGER,status TEXT,recoveryToken TEXT,source TEXT,campaign TEXT,lastActivityAt TEXT,createdAt TEXT,updatedAt TEXT,firstReminderAt TEXT,secondReminderAt TEXT);CREATE TABLE online_orders(id TEXT,email TEXT,createdAt TEXT);CREATE TABLE email_deliveries(id TEXT,kind TEXT,recipient TEXT,status TEXT,createdAt TEXT);CREATE TABLE marketing_automation_log(id TEXT,kind TEXT,entityId TEXT,recipient TEXT,status TEXT,detail TEXT,createdAt TEXT);CREATE TABLE variants(id TEXT,productId TEXT,color TEXT,size TEXT,price INTEGER,onlinePrice INTEGER);CREATE TABLE products(id TEXT,name TEXT,active INTEGER);CREATE TABLE online_product_profiles(productId TEXT,slug TEXT,published INTEGER);INSERT INTO products VALUES ('p','Remera real',1);INSERT INTO variants VALUES ('v','p','Negro','M',10000,12000);INSERT INTO online_product_profiles VALUES ('p','remera',1);`,
+  `CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);CREATE TABLE abandoned_carts(id TEXT PRIMARY KEY,sessionId TEXT UNIQUE,customerId TEXT,email TEXT,cartJson TEXT,subtotal INTEGER,status TEXT,recoveryToken TEXT,source TEXT,campaign TEXT,lastActivityAt TEXT,createdAt TEXT,updatedAt TEXT,firstReminderAt TEXT,secondReminderAt TEXT);CREATE TABLE online_orders(id TEXT,email TEXT,createdAt TEXT);CREATE TABLE email_deliveries(id TEXT,kind TEXT,recipient TEXT,status TEXT,createdAt TEXT,providerId TEXT NOT NULL DEFAULT '');CREATE TABLE marketing_automation_log(id TEXT,kind TEXT,entityId TEXT,recipient TEXT,status TEXT,detail TEXT,createdAt TEXT);CREATE TABLE variants(id TEXT,productId TEXT,color TEXT,size TEXT,price INTEGER,onlinePrice INTEGER);CREATE TABLE products(id TEXT,name TEXT,active INTEGER);CREATE TABLE online_product_profiles(productId TEXT,slug TEXT,published INTEGER);INSERT INTO products VALUES ('p','Remera real',1);INSERT INTO variants VALUES ('v','p','Negro','M',10000,12000);INSERT INTO online_product_profiles VALUES ('p','remera',1);`,
 );
 const sent = [];
 let fail = false;
@@ -68,7 +68,7 @@ const require = (p) =>
                     sent.push(input);
                     database
                       .prepare(
-                        'INSERT INTO email_deliveries VALUES (?,?,?,?,?)',
+                        'INSERT INTO email_deliveries(id,kind,recipient,status,createdAt) VALUES (?,?,?,?,?)',
                       )
                       .run(
                         crypto.randomUUID(),
@@ -186,7 +186,7 @@ await api.saveRecoveryConfiguration(
 );
 for (let i = 0; i < 80; i++)
   database
-    .prepare('INSERT INTO email_deliveries VALUES (?,?,?,?,?)')
+    .prepare('INSERT INTO email_deliveries(id,kind,recipient,status,createdAt) VALUES (?,?,?,?,?)')
     .run(
       crypto.randomUUID(),
       'order_paid',

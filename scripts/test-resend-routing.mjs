@@ -70,8 +70,9 @@ new Function(
   if (name === './store-transfer-details') return { STORE_TRANSFER };
   throw new Error('Unexpected fixture import: ' + name);
 });
+const queued=[];
 const require = (p) =>
-  p === './email-template'
+  p === './order-email-link' ? {orderEmailLink:async()=> 'https://www.fraguan.com/pedido/test#email-token=isolated'} : p === './order-email-outbox' ? {enqueueOrderEmail:async input=>queued.push(input),runOrderEmailQueue:async()=>{for(const input of queued.splice(0))await fetch('https://api.resend.com/emails',{body:JSON.stringify({from:env.RESEND_FROM,to:[input.to],subject:input.subject,html:input.html})});}} : p === './email-template'
     ? template.exports
     : p === 'cloudflare:workers'
       ? { env }

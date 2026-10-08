@@ -81,6 +81,7 @@ type OrderEmailItem = {
 
 export function orderEmail(
   order: {
+    trackingUrl?: string;
     orderNumber: number;
     customerName: string;
     paymentMethod: string;
@@ -147,7 +148,9 @@ export function orderEmail(
     orderEmailTitles[event],
     `Pedido #${order.orderNumber} · ${orderEmailTitles[event]}`,
     `<p>Hola ${escapeHtml(order.customerName)},</p><p>${message}</p>${reference}${tracking}${carrierUrl ? '<p>Ingresá ese código en el seguimiento de Correo Argentino.</p>' : ''}${summary}`,
-    carrierUrl
+    order.trackingUrl
+      ? { label: 'Ver mi pedido', url: order.trackingUrl }
+      : carrierUrl
       ? { label: 'Seguir mi envío', url: carrierUrl }
       : { label: 'Volver a la tienda', url: 'https://www.fraguan.com' },
   );

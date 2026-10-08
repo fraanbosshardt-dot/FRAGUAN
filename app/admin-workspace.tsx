@@ -1,4 +1,8 @@
 'use client';
+import { AdminProductImage } from '@/components/admin-product-image';
+import { AdminInstallments } from '@/components/admin-installments';
+import { AdminOrderEmails } from '@/components/admin-order-emails';
+import { AdminPriceCampaigns } from '@/components/admin-price-campaigns';
 import { AdminSeoControls } from '@/components/admin-seo-controls';
 import { AdminGrowthControls } from '@/components/admin-growth-controls';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
@@ -2548,6 +2552,8 @@ export default function Admin({
               )}
             </>
           )}
+          {section === 'newsletter' && <AdminOrderEmails />}
+          {section === 'online-catalog' && <><AdminPriceCampaigns /><AdminInstallments /></>}
           {section === 'newsletter' && data && (
             <div className="newsletter-admin-grid">
               <section className="panel">
@@ -4326,6 +4332,7 @@ export default function Admin({
               )}
               {modal === 'edit-product' && (
                 <>
+                  {selected?.productId && <AdminProductImage productId={selected.productId} name={selected.productName || selected.name || 'Producto'} />}
                   {field('name', 'Nombre')}
                   {field('internalCode', 'Código interno', { optional: true })}
                   {field('category', 'Categoría')}
@@ -4344,6 +4351,7 @@ export default function Admin({
               )}
               {modal === 'edit-online-product' && selected && (
                 <>
+                  <AdminProductImage productId={selected.id} name={selected.name} />
                   <div className="stock-adjust-summary">
                     <strong>{selected.name}</strong>
                     <span>

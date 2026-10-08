@@ -1,3 +1,4 @@
+import { AppError } from './auth';
 export function storeApiOrigin() {
   const configured = process.env.FRAGUAN_API_ORIGIN?.trim();
   if (!configured) return null;
@@ -21,7 +22,7 @@ export async function publicStoreData<T>(
     redirect: 'error',
     signal: AbortSignal.timeout(15_000),
   });
-  if (!response.ok) throw new Error('No se pudo cargar la información de la tienda.');
+  if (!response.ok) throw new AppError(response.status, 'No se pudo cargar la información de la tienda.');
   return response.json() as Promise<T>;
 }
 
