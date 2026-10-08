@@ -31,7 +31,7 @@ const pages: Record<string, Page> = {
       },
       {
         title: 'Retiro en tienda',
-        body: 'El retiro en FRAGUAN es gratuito. Esperá el aviso “Listo para retirar” antes de acercarte. Atendemos de lunes a sábado, de 10:00 a 14:30 y de 16:30 a 21:30. Para retirar, presentá el número de pedido y tu documento. También puede retirar otra persona: debe presentar el número de pedido y su propio documento.',
+        body: 'El retiro en FRAGUAN es gratuito. Esperá el aviso “Listo para retirar” antes de acercarte. Encontranos en Sarmiento 785, Isla Verde, Córdoba. Atendemos de lunes a sábado, de 10:00 a 12:30 y de 16:00 a 21:30. Para retirar, presentá el número de pedido y tu documento. También puede retirar otra persona: debe presentar el número de pedido y su propio documento.',
       },
       {
         title: 'Al recibir tu pedido',
