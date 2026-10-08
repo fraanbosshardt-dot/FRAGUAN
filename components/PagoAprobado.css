@@ -1,10 +1,10 @@
 /* Tokens: cambialos por los de tu tema (mismo tono de marca) */
 .pa {
-  --pa-bg: var(--ink, #14110f);
+  --pa-bg: transparent;
   --pa-line: var(--ink-2, #221e1b);
-  --pa-text: var(--bone, #f2eee6);
-  --pa-muted: var(--acc-l, #93a3ff);
-  --pa-accent: var(--acc-l, #93a3ff);
+  --pa-text: var(--ink, #14110f);
+  --pa-muted: var(--muted, #6f675f);
+  --pa-accent: var(--ink, #14110f);
   --pa-paper: var(--bone, #f2eee6);
   --pa-ink: var(--ink, #14110f);
   --pa-body-top: #2a2a27;
@@ -99,7 +99,7 @@
   border: 1px solid var(--pa-body-line);
   border-radius: 14px 14px 6px 6px;
   padding: 14px 16px 12px;
-  box-shadow: 0 10px 30px #0008;
+  box-shadow: 0 5px 14px #0002;
 }
 .pa-body.work {
   animation: pa-vib 0.09s linear infinite;
@@ -115,7 +115,7 @@
   gap: 8px;
   font-size: 10px;
   letter-spacing: 0.16em;
-  color: var(--pa-muted);
+  color: var(--bone, #f2eee6);
   margin-bottom: 12px;
 }
 .pa-led {
@@ -281,4 +281,20 @@
   .pa-ticket {
     padding-inline: 12px;
   }
+}
+
+/* El ticket conserva su altura real, sin panel de fondo ni textos duplicados. */
+.store-payment-animation .pa-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.store-payment-animation .pa-printer {
+  margin-top: 0;
+}
+.store-payment-animation .pa {
+  overflow: visible;
 }

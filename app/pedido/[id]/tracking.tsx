@@ -27,6 +27,18 @@ const payment: Record<string, string> = {
   refunded: 'Pago reintegrado',
 };
 
+function trackingLink(value: string, method: string) {
+  try {
+    const url = new URL(value);
+    if (['https:', 'http:'].includes(url.protocol)) return url.href;
+  } catch {
+    /* Un código no es una URL. */
+  }
+  return method === 'correo-argentino-home'
+    ? 'https://www.correoargentino.com.ar/formularios/e-commerce'
+    : undefined;
+}
+
 export default function OrderTracking({
   orderId,
   thankYou = false,
@@ -36,8 +48,9 @@ export default function OrderTracking({
 }) {
   const [order, setOrder] = useState<any>(null);
   const { expired: reservationExpired } = useReservationExpired(order);
+  const [copyMessage, setCopyMessage] = useState('');
   const [error, setError] = useState('');
-  useOrderPaymentUpdates(order, setOrder);
+  useOrderPaymentUpdates(order, setOrder, true);
   useEffect(() => {
     const token = sessionStorage.getItem(`fraguan-order-${orderId}`) || '';
     storeApi(`store-order?id=${encodeURIComponent(orderId)}`, {
@@ -95,48 +108,101 @@ export default function OrderTracking({
                   reference={order.transferReference}
                 />
               )}
-            <section className="store-tracking-steps">
-              <article className="done">
-                <Check />
-                <span>Recibido</span>
-              </article>
-              <article
-                className={
-                  ['preparing', 'ready', 'shipped', 'delivered'].includes(
-                    order.fulfillmentStatus,
-                  )
-                    ? 'done'
-                    : ''
+            <section
+              className="store-tracking-progress"
+              aria-label="Estado del pedido"
+            >
+              <ol
+                className="store-tracking-steps"
+                style={
+                  {
+                    '--tracking-progress': `${(Math.max(0, ['pending', 'preparing', 'shipped', 'delivered'].indexOf(order.fulfillmentStatus === 'ready' ? 'shipped' : order.fulfillmentStatus)) / 3) * 75}%`,
+                  } as React.CSSProperties
                 }
               >
-                <PackageCheck />
-                <span>Preparación</span>
-              </article>
-              <article
-                className={
-                  ['shipped', 'delivered'].includes(order.fulfillmentStatus)
-                    ? 'done'
-                    : ''
-                }
-              >
-                <Truck />
-                <span>
-                  {order.shippingMethod === 'pickup' ? 'Retiro' : 'Envío'}
-                </span>
-              </article>
-              <article
-                className={
-                  order.fulfillmentStatus === 'delivered' ? 'done' : ''
-                }
-              >
-                <Clock />
-                <span>Entregado</span>
-              </article>
+                {[
+                  { name: 'Recibido', icon: Check },
+                  { name: 'Preparación', icon: PackageCheck },
+                  {
+                    name:
+                      order.shippingMethod === 'pickup' ? 'Retiro' : 'Envío',
+                    icon: Truck,
+                  },
+                  { name: 'Entregado', icon: Clock },
+                ].map((step, index) => {
+                  const current = [
+                    'pending',
+                    'preparing',
+                    'shipped',
+                    'delivered',
+                  ].indexOf(
+                    order.fulfillmentStatus === 'ready'
+                      ? 'shipped'
+                      : order.fulfillmentStatus,
+                  );
+                  const Icon = step.icon;
+                  return (
+                    <li
+                      key={step.name}
+                      className={
+                        index < current
+                          ? 'done'
+                          : index === current
+                            ? 'current'
+                            : ''
+                      }
+                      aria-current={index === current ? 'step' : undefined}
+                    >
+                      <span className="tracking-dot">
+                        <Icon />
+                      </span>
+                      <span>{step.name}</span>
+                    </li>
+                  );
+                })}
+              </ol>
             </section>
             {order.trackingNumber && (
-              <p className="store-tracking-number">
-                Código de seguimiento <strong>{order.trackingNumber}</strong>
-              </p>
+              <section className="store-tracking-number">
+                <span>
+                  {/^https?:\/\//i.test(order.trackingNumber)
+                    ? 'Seguimiento del envío'
+                    : 'Código de seguimiento'}
+                </span>
+                <strong>{order.trackingNumber}</strong>
+                <div className="tracking-actions">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(
+                          order.trackingNumber,
+                        );
+                        setCopyMessage('Seguimiento copiado.');
+                      } catch {
+                        setCopyMessage(
+                          'Podés seleccionar y copiar el seguimiento manualmente.',
+                        );
+                      }
+                    }}
+                  >
+                    Copiar
+                  </button>
+                  {trackingLink(order.trackingNumber, order.shippingMethod) && (
+                    <a
+                      href={trackingLink(
+                        order.trackingNumber,
+                        order.shippingMethod,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Seguir envío →
+                    </a>
+                  )}
+                </div>
+                <output aria-live="polite">{copyMessage}</output>
+              </section>
             )}
             <section className="store-tracking-grid">
               <div>
@@ -152,6 +218,22 @@ export default function OrderTracking({
                     <b>{storeMoney(item.lineTotal)}</b>
                   </article>
                 ))}
+                <div className="tracking-breakdown">
+                  <span>Subtotal</span>
+                  <span>{storeMoney(order.subtotal)}</span>
+                </div>
+                {order.discount > 0 && (
+                  <div className="tracking-breakdown">
+                    <span>Descuentos</span>
+                    <span>−{storeMoney(order.discount)}</span>
+                  </div>
+                )}
+                <div className="tracking-breakdown">
+                  <span>Envío</span>
+                  <span>
+                    {order.shipping ? storeMoney(order.shipping) : 'Sin cargo'}
+                  </span>
+                </div>
                 <div className="store-tracking-total">
                   <span>Total</span>
                   <strong>{storeMoney(order.total)}</strong>

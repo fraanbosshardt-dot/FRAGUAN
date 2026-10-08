@@ -3,9 +3,16 @@ import { useEffect, useState, useRef, type CSSProperties } from 'react';
 import './PagoAprobado.css';
 
 const money = (n: number) =>
-  '$ ' + Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  '$ ' +
+  Number(n).toLocaleString('es-AR', {
+    minimumFractionDigits: Number(n) % 1 ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
 const num = (n: number) =>
-  Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  Number(n).toLocaleString('es-AR', {
+    minimumFractionDigits: Number(n) % 1 ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
 export type PagoAprobadoProps = {
   status: 'processing' | 'approved';
   pedido?: string | number;
@@ -78,7 +85,7 @@ export default function PagoAprobado({
     const t2 = setTimeout(() => {
       setPhase('done');
       printed.current?.();
-    }, 1800 + 4400);
+    }, 1800 + 6200);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);

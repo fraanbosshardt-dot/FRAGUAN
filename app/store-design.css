@@ -3238,3 +3238,178 @@ body:has(.fraguan-design) .store-toast {
 .fraguan-design .transfer-copy-status {
   display: block;
 }
+/* Seguimiento: progreso real y animación ligera sobre el fondo de la tienda. */
+.fraguan-design .store-tracking-progress {
+  background: var(--bone-2);
+  padding: 28px 12px;
+  margin: 24px 0;
+}
+.fraguan-design .store-tracking-progress .store-tracking-steps {
+  position: relative;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0;
+  margin: 0;
+}
+.fraguan-design .store-tracking-progress .store-tracking-steps::before,
+.fraguan-design .store-tracking-progress .store-tracking-steps::after {
+  content: '';
+  position: absolute;
+  top: 23px;
+  left: 12.5%;
+  height: 2px;
+  width: 75%;
+  background: var(--sand);
+}
+.fraguan-design .store-tracking-progress .store-tracking-steps::after {
+  width: var(--tracking-progress);
+  background: var(--ink);
+  transition: width 0.6s ease;
+}
+.fraguan-design .store-tracking-steps li {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.fraguan-design .tracking-dot {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bone);
+  color: var(--muted);
+}
+.fraguan-design .tracking-dot svg {
+  width: 22px;
+  height: 22px;
+}
+.fraguan-design .store-tracking-steps li.done .tracking-dot {
+  background: var(--ink);
+  color: var(--bone);
+}
+.fraguan-design .store-tracking-steps li.current .tracking-dot {
+  background: var(--sand);
+  color: var(--ink);
+}
+.fraguan-design .store-tracking-steps li.current {
+  color: var(--ink);
+  font-weight: 700;
+}
+.fraguan-design .store-tracking-number {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 20px;
+  background: var(--sand);
+}
+.fraguan-design .store-tracking-number strong {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.fraguan-design .tracking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.fraguan-design .tracking-actions button,
+.fraguan-design .tracking-actions a {
+  background: var(--ink);
+  color: var(--bone);
+  border: 0;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.fraguan-design .store-tracking-number output:empty {
+  display: none;
+}
+.fraguan-design .store-tracking-number output {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.fraguan-design .tracking-breakdown {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.fraguan-design .store-tracking:has(.store-payment-animation) > header,
+.fraguan-design
+  .store-tracking:has(.store-payment-animation)
+  > .store-tracking-progress,
+.fraguan-design
+  .store-tracking:has(.store-payment-animation)
+  > .store-tracking-number,
+.fraguan-design
+  .store-tracking:has(.store-payment-animation)
+  > .store-tracking-grid,
+.fraguan-design
+  .store-tracking:has(.store-payment-animation)
+  > .store-tracking-help {
+  display: none;
+}
+@media (max-width: 600px) {
+  .fraguan-design .store-tracking-number {
+    align-items: flex-start;
+  }
+  .fraguan-design .store-tracking-number > span,
+  .fraguan-design .store-tracking-number strong {
+    flex-basis: 100%;
+  }
+  .fraguan-design .store-tracking-steps li {
+    font-size: 11px;
+  }
+  .fraguan-design .store-tracking-progress {
+    padding: 24px 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fraguan-design .store-tracking-steps::after {
+    transition: none;
+  }
+}
+.fraguan-design .store-shell .store-tracking-grid {
+  display: grid;
+}
+.fraguan-design .store-tracking-grid article {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--sand);
+}
+.fraguan-design .store-tracking-grid article strong,
+.fraguan-design .store-tracking-grid article small {
+  display: block;
+}
+.fraguan-design .store-tracking-grid article small {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.fraguan-design .store-tracking-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--sand);
+  padding-top: 18px;
+  margin-top: 16px;
+}
+@media (max-width: 768px) {
+  .fraguan-design .store-shell .store-tracking-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,5 +1,11 @@
 'use client';
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import PagoAprobado from './PagoAprobado';
 import {
   paymentReceiptProps,
@@ -17,16 +23,30 @@ export function StorePaymentTicket({
   const props = paymentReceiptProps(order, showPending);
   const [visible, setVisible] = useState(false);
   const key = `fraguan-payment-animation-${order.id}`;
+  const previous = useRef({ id: order.id, status: order.paymentStatus });
   useEffect(() => {
+    const justConfirmed =
+      previous.current.id === order.id &&
+      ['pending', 'reported'].includes(previous.current.status) &&
+      order.paymentStatus === 'paid';
+    const paidTime = order.paidAt ? Date.parse(order.paidAt) : NaN;
+    const recentlyPaid =
+      Number.isFinite(paidTime) &&
+      Date.now() - paidTime >= 0 &&
+      Date.now() - paidTime < 5 * 60 * 1000;
+    previous.current = { id: order.id, status: order.paymentStatus };
+    const eligible =
+      order.paymentStatus === 'paid' && (justConfirmed || recentlyPaid);
     try {
       setVisible(
-        order.paymentStatus === 'paid' &&
+        eligible &&
+          localStorage.getItem(key) !== 'done' &&
           sessionStorage.getItem(key) !== 'done',
       );
     } catch {
-      setVisible(order.paymentStatus === 'paid');
+      setVisible(eligible);
     }
-  }, [key, order.paymentStatus]);
+  }, [key, order.id, order.paymentStatus, order.paidAt]);
   if (!props) return null;
   if (props.status === 'processing')
     return (
@@ -43,6 +63,7 @@ export function StorePaymentTicket({
         onPrinted={() => {
           try {
             sessionStorage.setItem(key, 'done');
+            localStorage.setItem(key, 'done');
           } catch {
             /* El resumen sigue disponible si el navegador bloquea el almacenamiento. */
           }
@@ -57,12 +78,20 @@ export function StorePaymentTicket({
 export function useOrderPaymentUpdates(
   order: Record<string, any> | null,
   setOrder: Dispatch<SetStateAction<any>>,
+  trackFulfillment = false,
 ) {
   const id = order?.id;
   const status = order?.paymentStatus;
   const cancelled = order?.status === 'cancelled';
+  const fulfillment = order?.fulfillmentStatus;
+  const keepTracking = trackFulfillment && fulfillment !== 'delivered';
   useEffect(() => {
-    if (!id || cancelled || !['pending', 'reported'].includes(status)) return;
+    if (
+      !id ||
+      cancelled ||
+      (!keepTracking && !['pending', 'reported'].includes(status))
+    )
+      return;
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
     let attempts = 0;
@@ -80,7 +109,9 @@ export function useOrderPaymentUpdates(
             current?.id === id ? { ...current, ...updated } : current,
           );
           if (
-            !['pending', 'reported'].includes(updated.paymentStatus) ||
+            (!['pending', 'reported'].includes(updated.paymentStatus) &&
+              (!trackFulfillment ||
+                updated.fulfillmentStatus === 'delivered')) ||
             updated.status === 'cancelled'
           )
             return;
@@ -95,5 +126,13 @@ export function useOrderPaymentUpdates(
       active = false;
       clearTimeout(timer);
     };
-  }, [id, status, cancelled, setOrder]);
+  }, [
+    id,
+    status,
+    cancelled,
+    fulfillment,
+    keepTracking,
+    trackFulfillment,
+    setOrder,
+  ]);
 }
