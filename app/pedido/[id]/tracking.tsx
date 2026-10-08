@@ -80,10 +80,14 @@ export default function OrderTracking({
             <header>
               <span>PEDIDO #{order.orderNumber}</span>
               <h1>
-                {thankYou
-                  ? '¡Gracias por tu compra!'
-                  : fulfillment[order.fulfillmentStatus] ||
-                    'Estamos con tu pedido'}
+                <span
+                  key={`${order.id}-${order.fulfillmentStatus}-${thankYou}`}
+                >
+                  {thankYou
+                    ? '¡Gracias por tu compra!'
+                    : fulfillment[order.fulfillmentStatus] ||
+                      'Estamos con tu pedido'}
+                </span>
               </h1>
               <p>
                 Creado el{' '}
