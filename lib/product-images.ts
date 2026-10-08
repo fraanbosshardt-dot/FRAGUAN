@@ -49,8 +49,9 @@ export async function saveProductImage(actor: Actor, raw: unknown) {
   const imageId = id();
   await db().batch([
     statement(
-      `UPDATE products SET image=? WHERE id=?`,
-      `/api/store-image?id=${imageId}`,
+      // Lock the product row so concurrent replacements keep one active photo.
+      // The photo itself belongs to product_images, not a products.image field.
+      `UPDATE products SET id=id WHERE id=?`,
       input.productId,
     ),
     statement(

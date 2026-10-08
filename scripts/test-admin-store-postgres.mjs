@@ -36,7 +36,7 @@ new Function(
 );
 const sql = queries.exports.postgresSql;
 await database.exec(
-  `CREATE TABLE users(id TEXT PRIMARY KEY);INSERT INTO users VALUES('owner');CREATE TABLE products(id TEXT PRIMARY KEY,name TEXT,active INTEGER,image TEXT);INSERT INTO products VALUES('p','Remera',1,'');CREATE TABLE variants(id TEXT PRIMARY KEY,"productId" TEXT,color TEXT,size TEXT,"onlinePrice" INTEGER,price INTEGER,"updatedAt" TEXT);INSERT INTO variants VALUES('v','p','Negro','L',NULL,10000,'original');CREATE TABLE online_product_profiles("productId" TEXT,published INTEGER);INSERT INTO online_product_profiles VALUES('p',1);CREATE TABLE online_orders(id TEXT PRIMARY KEY);CREATE TABLE email_deliveries(id TEXT PRIMARY KEY,kind TEXT,recipient TEXT,"orderId" TEXT,"providerId" TEXT,status TEXT,"createdAt" TEXT);`,
+  `CREATE TABLE users(id TEXT PRIMARY KEY);INSERT INTO users VALUES('owner');CREATE TABLE products(id TEXT PRIMARY KEY,name TEXT,active INTEGER);INSERT INTO products VALUES('p','Remera',1);CREATE TABLE variants(id TEXT PRIMARY KEY,"productId" TEXT,color TEXT,size TEXT,"onlinePrice" INTEGER,price INTEGER,"updatedAt" TEXT);INSERT INTO variants VALUES('v','p','Negro','L',NULL,10000,'original');CREATE TABLE online_product_profiles("productId" TEXT,published INTEGER);INSERT INTO online_product_profiles VALUES('p',1);CREATE TABLE online_orders(id TEXT PRIMARY KEY);CREATE TABLE email_deliveries(id TEXT PRIMARY KEY,kind TEXT,recipient TEXT,"orderId" TEXT,"providerId" TEXT,status TEXT,"createdAt" TEXT);`,
 );
 await database.exec(
   readFileSync('drizzle-postgres/0007_order_emails_campaigns.sql', 'utf8'),
