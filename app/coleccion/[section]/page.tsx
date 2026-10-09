@@ -5,37 +5,35 @@ import ComingSoon from '@/app/coming-soon';
 import { isProductionComingSoon } from '@/lib/release-mode';
 import { storeCatalog } from '@/lib/online-store';
 import { seoOverride } from '@/lib/store-seo';
+import {
+  COLLECTION_NAMES,
+  collectionSeo,
+  collectionSlug,
+} from '@/lib/store-seo-data';
 
-const names: Record<string, string> = {
-  nuevos: 'Nuevos',
-  camisas: 'Camisas',
-  remeras: 'Remeras',
-  pantalones: 'Pantalones',
-  camperas: 'Camperas',
-  abrigos: 'Camperas',
-  accesorios: 'Accesorios',
-  jeans: 'Jeans',
-  buzos: 'Buzos',
-  chombas: 'Chombas',
-};
+const names = COLLECTION_NAMES;
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ section: string }>;
 }): Promise<Metadata> {
   const key = (await params).section.toLowerCase();
-  const name = names[key] || key.replaceAll('-', ' ');
-  const canonicalKey = key === 'abrigos' ? 'camperas' : key;
-  const seo = await seoOverride(`/coleccion/${canonicalKey}`);
-  const title = seo.title || `${name} para hombre | FRAGUAN`;
-  const description =
-    seo.description ||
-    `Comprá ${name.toLowerCase()} FRAGUAN por talle y color, con retiro y envíos a todo el país.`;
+  const defaults = collectionSeo(key);
+  const seo = await seoOverride(defaults.path);
+  const title = seo.title || defaults.title;
+  const description = seo.description || defaults.description;
   return {
     title,
     description,
-    alternates: { canonical: `/coleccion/${canonicalKey}` },
-    openGraph: { title, description, url: `/coleccion/${canonicalKey}` },
+    alternates: { canonical: defaults.path },
+    openGraph: {
+      title,
+      description,
+      url: defaults.path,
+      siteName: 'FRAGUAN',
+      locale: 'es_AR',
+      images: [{ url: '/fraguan-logo.jpg', alt: 'FRAGUAN' }],
+    },
     twitter: { title, description },
   };
 }
@@ -48,7 +46,11 @@ export default async function Page({
   const key = (await params).section.toLowerCase();
   const initialSection = names[key] || key.replaceAll('-', ' ');
   const catalog = await storeCatalog();
-  if (!names[key] && !catalog.sections.some(s=>s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g,"-")===key)) notFound();
+  if (
+    !names[key] &&
+    !catalog.sections.some((s) => collectionSlug(s.name) === key)
+  )
+    notFound();
   return (
     <Storefront initialSection={initialSection} initialCatalog={catalog} />
   );

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { storeCatalog } from '@/lib/online-store';
+import { collectionSeo, collectionSlug } from '@/lib/store-seo-data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = 'https://www.fraguan.com';
@@ -22,19 +23,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
   try {
     const catalog = await storeCatalog();
-    const slug = (value: string) =>
-      value
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
     return [
       ...staticPages,
-      ...['Nuevos', ...catalog.sections.map((section) => section.name)]
-        .filter((name, index, all) => all.indexOf(name) === index)
-        .map((name) => ({
-          url: `${origin}/coleccion/${slug(name)}`,
+      ...[
+        'Nuevos',
+        ...catalog.sections.map((section) => section.name),
+        ...catalog.products.map((product) => product.category),
+      ]
+        .map((name) => collectionSeo(collectionSlug(name)).path)
+        .filter((path, index, all) => all.indexOf(path) === index)
+        .map((path) => ({
+          url: `${origin}${path}`,
           changeFrequency: 'daily' as const,
           priority: 0.8,
         })),

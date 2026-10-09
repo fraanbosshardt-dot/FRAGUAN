@@ -1,6 +1,6 @@
 # Pendientes vigentes de FRAGUAN
 
-Actualizado: 8 de octubre de 2026. Este listado reemplaza los estados históricos
+Actualizado: 9 de octubre de 2026. Este listado reemplaza los estados históricos
 contradictorios. Las decisiones anteriores se conservan en el historial Git.
 
 ## Pendientes externos y comerciales
@@ -8,32 +8,22 @@ contradictorios. Las decisiones anteriores se conservan en el historial Git.
 1. Correo Argentino: cuenta/API, código postal de origen, embalaje, peso y medidas;
    cotización real, etiquetas y seguimiento automático. Andreani pospuesto y fuera
    de las modalidades que se muestran hoy. Preparación: 24 a 48 horas hábiles.
-2. Conciliación: obtener movimientos reales de Mercado Pago y contrastar importe,
-   comisión, neto y disponibilidad con los registros de Bancos. Las fechas del
-   sistema son previstas; no certifican disponibilidad real.
-3. Backups PostgreSQL: Railway muestra que crear backups/PITR requiere Pro.
-   Elegir y habilitar una solución de copia con retención, y restaurar una copia
-   en una base separada. No se comprobó una restauración productiva ni se contrató
-   un plan. No restaurar sobre la base que usa el negocio.
-4. Club FRAGUAN: definir beneficios, requisitos, niveles, vigencia, canjes y
+2. Club FRAGUAN: definir beneficios, requisitos, niveles, vigencia, canjes y
    condiciones. Crear cuenta no concede beneficios. Sin beneficios se muestra
    «Todavía no tenemos beneficios disponibles para vos».
-5. Marketing: definir campañas con ropa e importes reales; cupones, umbral de
+3. Marketing: definir campañas con ropa e importes reales; cupones, umbral de
    envío gratis y porcentaje de transferencia definitivo. Hoy se conserva 10%.
-6. Cuotas: evaluar costos y condiciones del proveedor antes de habilitar cuotas
+4. Cuotas: evaluar costos y condiciones del proveedor antes de habilitar cuotas
    con o sin interés. El control de comunicación ya existe; no contrata financiación.
-7. Facturas de proveedores/gastos: definir documentación e imputación con las
+5. Facturas de proveedores/gastos: definir documentación e imputación con las
    categorías reales del negocio. No hay integración contable certificada.
-8. Rendimiento: medir en celulares reales y conexiones lentas; las comprobaciones
-   responsive de navegador no sustituyen esa medición.
-9. SEO: seguimiento de indexación y rendimiento en Search Console. Los títulos,
-   descripciones, sitemap, fotos y revisión técnica se administran desde el sistema;
-   los informes privados de Google no están sincronizados con Admin.
-10. Perfil de Empresa Google/Maps: para el final. Meta Ads: más adelante, sin activar
+6. SEO: seguimiento continuo de nuevos rastreos, indexación y rendimiento en
+   Search Console. Revisión técnica y controles ampliados a portada, colecciones,
+   información y productos el 9/10; completar descripciones y fotos reales que
+   marque Admin. Los informes privados de Google se consultan en Search Console;
+   no se presentan como sincronizados con Admin. Solo se indexa la tienda pública.
+7. Perfil de Empresa Google/Maps: para el final. Meta Ads: más adelante, sin activar
     publicidad ni presupuestos por esta revisión.
-11. Revisar con el cliente el uso real de todos los formularios y su manual. La guía
-    de áreas está en Admin → Configuración. Las integraciones externas y backups
-    requieren configurar servicios externos; no se presentan como ya completados.
 
 ## Implementado y comprobado
 
@@ -71,6 +61,20 @@ contradictorios. Las decisiones anteriores se conservan en el historial Git.
 - Auditoría de 33 áreas: alcance y límites en docs/AUDITORIA_ADMIN_2026-10-08.md.
 
 ## Decisiones vigentes
+
+Velocidad: el dueño da por terminado este punto tras las optimizaciones publicadas.
+La última mejora evita descargas repetidas del catálogo; no se atribuyen mediciones
+en teléfonos físicos que no se realizaron. Entrega al cliente: retirado de los
+pendientes por indicación del dueño; manual y guía disponibles se conservan.
+
+Backups: retirado de los pendientes por indicación del dueño; no se modificó
+ninguna configuración de copias existente.
+
+Conciliación Mercado Pago: el dueño da por cerrado este pendiente e informa un
+cobro web con débito de $10 y liquidación de $9,57. Deducción observada: $0,43
+(4,30% de ese cobro). No se cambió la tarifa configurada de 3,39%/18 días ni se
+atribuyó la diferencia a IVA, retenciones u otro concepto sin su desglose.
+Este caso informado no certifica las liquidaciones de todos los medios de pago.
 
 Retiro de compras web: pago online y retiro en tienda. Se cancela el pendiente
 anterior de habilitar pago en efectivo al retirar; no implementar esa opción.

@@ -3,17 +3,23 @@ import Storefront from './storefront';
 import { isProductionComingSoon } from '@/lib/release-mode';
 import { storeCatalog } from '@/lib/online-store';
 import { seoOverride } from '@/lib/store-seo';
+import { HOME_SEO } from '@/lib/store-seo-data';
 export async function generateMetadata() {
   const seo = await seoOverride('/');
-  const title = seo.title || 'FRAGUAN | Tienda oficial';
-  const description =
-    seo.description ||
-    'Indumentaria FRAGUAN. Comprá online por talle y color, con retiro en Isla Verde, Córdoba, y envíos a todo el país.';
+  const title = seo.title || HOME_SEO.title;
+  const description = seo.description || HOME_SEO.description;
   return {
     title,
     description,
     alternates: { canonical: '/' },
-    openGraph: { title, description, url: '/' },
+    openGraph: {
+      title,
+      description,
+      url: '/',
+      siteName: 'FRAGUAN',
+      locale: 'es_AR',
+      images: [{ url: '/fraguan-logo.jpg', alt: 'FRAGUAN · Ropa para hombre' }],
+    },
     twitter: { title, description },
     ...(seo.verification ? { verification: { google: seo.verification } } : {}),
   };

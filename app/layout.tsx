@@ -10,11 +10,18 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'FRAGUAN | Tienda oficial',
     description: 'Indumentaria FRAGUAN con envíos a todo el país.',
+    locale: 'es_AR',
+    siteName: 'FRAGUAN',
+    images: [{ url: '/fraguan-logo.jpg', alt: 'FRAGUAN · Tienda oficial' }],
   },
   metadataBase: new URL('https://www.fraguan.com'),
   alternates: { canonical: '/' },
   robots: { index: true, follow: true },
-  twitter: { card: 'summary', title: 'FRAGUAN | Tienda oficial' },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FRAGUAN | Tienda oficial',
+    images: ['/fraguan-logo.jpg'],
+  },
   icons: { icon: '/fraguan-icon.png' },
 };
 export default function RootLayout({
@@ -31,22 +38,14 @@ export default function RootLayout({
     areaServed: { '@type': 'Country', name: 'Argentina' },
     address: {
       '@type': 'PostalAddress',
+      streetAddress: 'Sarmiento 785',
       addressLocality: 'Isla Verde',
       addressRegion: 'Córdoba',
-      postalCode: '2661',
       addressCountry: 'AR',
     },
     hasMerchantReturnPolicy: {
       '@type': 'MerchantReturnPolicy',
-      applicableCountry: 'AR',
-      returnPolicyCategory:
-        'https://schema.org/MerchantReturnFiniteReturnWindow',
-      merchantReturnDays: 10,
-      returnMethod: [
-        'https://schema.org/ReturnByMail',
-        'https://schema.org/ReturnInStore',
-      ],
-      returnFees: 'https://schema.org/FreeReturn',
+      merchantReturnLink: 'https://www.fraguan.com/informacion/cambios',
     },
   };
   const website = {

@@ -2,6 +2,8 @@ import { env } from 'cloudflare:workers';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { STORE_TRANSFER } from '@/lib/store-transfer-details';
+import { seoOverride } from '@/lib/store-seo';
+import { INFORMATION_SEO } from '@/lib/store-seo-data';
 
 type Section = { title: string; body: string };
 type Page = {
@@ -243,10 +245,23 @@ export async function generateMetadata({
   const content = pages[page];
   if (!content)
     return { title: 'Información | FRAGUAN', robots: { index: false } };
+  const path = `/informacion/${page}`;
+  const seo = await seoOverride(path);
+  const title = seo.title || INFORMATION_SEO[page].title;
+  const description = seo.description || INFORMATION_SEO[page].description;
   return {
-    title: `${content.eyebrow.charAt(0)}${content.eyebrow.slice(1).toLowerCase()} | FRAGUAN`,
-    description: content.intro,
-    alternates: { canonical: `/informacion/${page}` },
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      title,
+      description,
+      url: path,
+      siteName: 'FRAGUAN',
+      locale: 'es_AR',
+      images: [{ url: '/fraguan-logo.jpg', alt: 'FRAGUAN' }],
+    },
+    twitter: { title, description },
   };
 }
 
