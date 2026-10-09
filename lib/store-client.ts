@@ -58,6 +58,17 @@ export async function storeApi<T = any>(
     throw new Error(data.error || 'No pudimos completar la operación.');
   return data as T;
 }
+
+let pendingCatalog: Promise<StoreCatalog> | undefined;
+// Share concurrent reads only. A later visit still receives current prices and stock.
+export function loadStoreCatalog(): Promise<StoreCatalog> {
+  if (!pendingCatalog) {
+    pendingCatalog = storeApi<StoreCatalog>('store-catalog').finally(() => {
+      pendingCatalog = undefined;
+    });
+  }
+  return pendingCatalog;
+}
 export const storeMoney = (value: number) =>
   new Intl.NumberFormat('es-AR', {
     style: 'currency',

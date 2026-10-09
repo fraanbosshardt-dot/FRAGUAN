@@ -6,6 +6,7 @@ import React, {
   useContext,
   createContext,
   useMemo,
+  useCallback,
 } from 'react';
 import htm from 'htm';
 import {
@@ -26,6 +27,7 @@ import {
 import { usePathname } from 'next/navigation';
 import {
   storeApi,
+  loadStoreCatalog,
   storeMoney,
   useStoreCart,
   useStoreFavorites,
@@ -260,7 +262,9 @@ function Card({ p, i = 0 }) {
     </div>
     <div class="nfo">
       <span>${p.n}<small>${p.col}</small></span
-      ><span>${p.previous && html`<del style=${{fontSize:12,display:"block",opacity:0.65}}>${$(p.previous)}</del>`}${$(p.p)}</span>
+      ><span
+        >${p.previous && html`<del style=${{ fontSize: 12, display: 'block', opacity: 0.65 }}>${$(p.previous)}</del>`}${$(p.p)}</span
+      >
     </div>
     <a
       class="design-card-link"
@@ -506,7 +510,7 @@ function Prod({ id }) {
       <div>
         <h1 class="d">${p.n}</h1>
         <div class="pr">
-          ${variant?.compareAtPrice && html`<del style=${{fontSize:18,marginRight:12,opacity:0.65}}>${$(variant.compareAtPrice / 100)}</del>`}
+          ${variant?.compareAtPrice && html`<del style=${{ fontSize: 18, marginRight: 12, opacity: 0.65 }}>${$(variant.compareAtPrice / 100)}</del>`}
           <${Odometer} value=${variant?.price / 100 || p.p} />
         </div>
         ${p.original.interestFreeInstallments && html`<p class="product-financing">Hasta ${p.original.interestFreeInstallments} cuotas de ${$(Math.ceil((variant?.price || p.original.price) / p.original.interestFreeInstallments) / 100)} sin interés<small>Con tarjetas de crédito participantes a través de Mercado Pago. CFTEA ${p.original.financingCft || 0}%.</small></p>`}
@@ -602,7 +606,9 @@ function Prod({ id }) {
             prenda de mayor valor, abonás la diferencia.
           </p>
           <p>
-            <a href="/informacion/cambios">Consultá la política completa de cambios y devoluciones →</a>
+            <a href="/informacion/cambios"
+              >Consultá la política completa de cambios y devoluciones →</a
+            >
           </p>
         </details>
       </div>
@@ -855,6 +861,13 @@ function PublicStore({ children }) {
     [newsDone, setNewsDone] = useState(false),
     [newsError, setNewsError] = useState('');
   const normalizedQuery = matchText(searchQuery.trim());
+  const catalogVersion = useRef(0);
+  const seedCatalog = useCallback((catalogProducts) => {
+    catalogVersion.current += 1;
+    setProducts(catalogProducts);
+    setCatalogError('');
+    setCatalogLoaded(true);
+  }, []);
   const searchMatches = normalizedQuery
     ? products.filter((p) =>
         matchText(p.n + ' ' + p.c + ' ' + p.col).includes(normalizedQuery),
@@ -885,20 +898,26 @@ function PublicStore({ children }) {
       if (parts[0] !== 'p') location.replace(route(location.hash));
     }
     let active = true;
-    storeApi('store-catalog')
-      .then((r) => {
-        if (active) setProducts(designProducts(r.products));
-      })
-      .catch((e) => {
-        if (active) setCatalogError(e.message);
-      })
-      .finally(() => {
-        if (active) setCatalogLoaded(true);
-      });
+    // Let a catalog page supply its server-rendered data before requesting it again.
+    const timer = setTimeout(() => {
+      if (catalogVersion.current) return;
+      loadStoreCatalog()
+        .then((r) => {
+          if (active && !catalogVersion.current)
+            seedCatalog(designProducts(r.products));
+        })
+        .catch((e) => {
+          if (active && !catalogVersion.current) setCatalogError(e.message);
+        })
+        .finally(() => {
+          if (active) setCatalogLoaded(true);
+        });
+    }, 0);
     return () => {
       active = false;
+      clearTimeout(timer);
     };
-  }, []);
+  }, [seedCatalog]);
   useEffect(() => {
     let active = true;
     storeApi('store-account?summary=1')
@@ -999,6 +1018,7 @@ function PublicStore({ children }) {
   const value = {
     ready,
     products,
+    seedCatalog,
     categories,
     cart,
     add,
@@ -1330,19 +1350,33 @@ export function StoreDesignBoundary({ children }) {
 }
 export function DesignCatalog({ initialCatalog, section }) {
   const context = useC();
+  const seedCatalog = context.seedCatalog;
   const [data, setData] = useState(
       initialCatalog?.products ? designProducts(initialCatalog.products) : null,
     ),
     [error, setError] = useState('');
   useEffect(() => {
     if (initialCatalog) {
-      setData(designProducts(initialCatalog.products));
+      const products = designProducts(initialCatalog.products);
+      setData(products);
+      seedCatalog(products);
       return;
     }
-    storeApi('store-catalog')
-      .then((r) => setData(designProducts(r.products)))
-      .catch((e) => setError(e.message));
-  }, [initialCatalog]);
+    let active = true;
+    loadStoreCatalog()
+      .then((r) => {
+        if (!active) return;
+        const products = designProducts(r.products);
+        setData(products);
+        seedCatalog(products);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [initialCatalog, seedCatalog]);
   const value = { ...context, products: data || context.products };
   return (
     <C.Provider value={value}>
