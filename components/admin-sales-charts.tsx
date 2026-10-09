@@ -8,7 +8,7 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { money, type Row } from '@/lib/client';
+import { money, chartDate, type Row } from '@/lib/client';
 
 export function AdminSalesChart({ data }: { data: Row }) {
   return (
@@ -28,7 +28,7 @@ export function AdminSalesChart({ data }: { data: Row }) {
         <CartesianGrid vertical={false} strokeDasharray="4 5" />
         <XAxis
           dataKey="date"
-          tickFormatter={(v) => v.slice(5)}
+          tickFormatter={chartDate}
           tickLine={false}
           axisLine={false}
         />
@@ -37,7 +37,10 @@ export function AdminSalesChart({ data }: { data: Row }) {
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip formatter={(v: any) => money(Number(v))} />
+        <Tooltip
+          labelFormatter={chartDate}
+          formatter={(v: any) => money(Number(v))}
+        />
         <Area
           type="monotone"
           dataKey="total"
@@ -71,7 +74,7 @@ export function AdminRevenueChart({ data }: { data: Row }) {
         <CartesianGrid vertical={false} strokeDasharray="4 5" />
         <XAxis
           dataKey="date"
-          tickFormatter={(value) => value.slice(5)}
+          tickFormatter={chartDate}
           tickLine={false}
           axisLine={false}
         />
@@ -80,7 +83,10 @@ export function AdminRevenueChart({ data }: { data: Row }) {
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip formatter={(value: any) => money(Number(value))} />
+        <Tooltip
+          labelFormatter={chartDate}
+          formatter={(value: any) => money(Number(value))}
+        />
         <Area
           type="monotone"
           dataKey="revenueMinor"
@@ -108,7 +114,7 @@ export function AdminFundsChart({ data }: { data: Row }) {
         <CartesianGrid vertical={false} strokeDasharray="4 5" />
         <XAxis
           dataKey="date"
-          tickFormatter={(value) => value.slice(5)}
+          tickFormatter={chartDate}
           tickLine={false}
           axisLine={false}
         />
@@ -117,7 +123,10 @@ export function AdminFundsChart({ data }: { data: Row }) {
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip formatter={(value: any) => money(Number(value))} />
+        <Tooltip
+          labelFormatter={chartDate}
+          formatter={(value: any) => money(Number(value))}
+        />
         <Area
           type="monotone"
           dataKey="projectedKnownFundsMinor"

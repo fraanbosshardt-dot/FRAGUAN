@@ -67,8 +67,10 @@ export function AdminOrderEmails() {
             {data?.jobs?.map((job: Row) => (
               <tr key={job.id}>
                 <td>
-                  {job.orderId}
-                  <small>{job.kind}</small>
+                  {job.orderNumber
+                    ? `Pedido #${job.orderNumber}`
+                    : 'Aviso de pedido'}
+                  <small>{job.subject || 'Notificación del pedido'}</small>
                 </td>
                 <td>{job.recipient}</td>
                 <td>

@@ -146,6 +146,8 @@ export function fixture(t, { rate = 100, expiry = 30, timestamp } = {}) {
       },
     }),
   );
+  // This isolated suite tests an explicitly enabled Club; production remains unchanged.
+  database.exec("UPDATE payment_methods SET active=1 WHERE id='cashback'");
   const sales = load(resolve(root, 'lib/sales.ts'));
   const returns = load(resolve(root, 'lib/returns.ts'));
   return {

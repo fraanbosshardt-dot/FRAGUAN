@@ -28,6 +28,7 @@ try {
   await database.exec(
     readFileSync('drizzle-postgres/0005_shared_reserved_stock.sql', 'utf8'),
   );
+  await database.exec(readFileSync('drizzle-postgres/0010_reported_transfer_reservations.sql', 'utf8'));
   await database.exec(`CREATE TRIGGER sale_item_guard BEFORE INSERT ON sale_items FOR EACH ROW EXECUTE FUNCTION fraguan_sale_item_guard();
     CREATE FUNCTION test_stock_apply() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN UPDATE variants SET stock=stock-NEW.quantity WHERE id=NEW."variantId"; RETURN NEW; END $$;
     CREATE TRIGGER test_stock_apply AFTER INSERT ON sale_items FOR EACH ROW EXECUTE FUNCTION test_stock_apply();
@@ -62,6 +63,7 @@ try {
     /insufficient_stock/,
   );
   await database.transaction(async (tx) => {
+    await tx.query("UPDATE online_orders SET \"paymentStatus\"='reported' WHERE id='a'");
     await tx.query(
       "INSERT INTO sale_items VALUES ('online-a','a','v',2,9000,4000)",
     );

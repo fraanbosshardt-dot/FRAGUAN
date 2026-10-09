@@ -82,6 +82,8 @@ function load(file) {
     (p) =>
       p === '@/db/queries'
         ? query
+        : p === 'cloudflare:workers'
+          ? { env: {} }
         : p === './auth'
           ? { requirePermission() {}, can: () => true, AppError: Error }
           : realRequire(p),
@@ -133,6 +135,15 @@ await images.saveProductImage(actor, {
   base64: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]).toString('base64'),
 });
 assert.ok((await images.productImage(actor, 'p')).image.url);
+await database.exec('ALTER TABLE online_orders ADD COLUMN "orderNumber" INTEGER; INSERT INTO online_orders VALUES (\'email-order\',9999)');
+const emails = load('lib/order-email-outbox.ts');
+await emails.enqueueOrderEmail({
+  to: 'test@example.invalid', subject: 'Pedido de prueba', html: '<p>Prueba</p>',
+  kind: 'order_paid', orderId: 'email-order', idempotencyKey: 'postgres-email-overview',
+});
+const overview = await emails.orderEmailOverview(actor);
+assert.equal(overview.jobs[0].orderNumber, 9999);
+assert.equal(overview.jobs[0].subject, 'Pedido de prueba');
 await database.close();
 console.log(
   'PASS: production PostgreSQL migration and real query conversion; campaign activation/restoration/manual protection and image storage. Isolated WASM database.',

@@ -123,12 +123,14 @@ export function requireJsonRequest(req: Request, maxBytes = 100000) {
 }
 export function protectWrite(req: Request, maxBytes = 100000) {
   const origin = req.headers.get('origin');
-  const publicStoreOrigin = process.env.SITE_ORIGIN?.trim();
+  const runtime: Record<string, string | undefined> =
+    typeof process === 'undefined' ? {} : process.env;
+  const publicStoreOrigin = runtime.SITE_ORIGIN?.trim();
   if (
     !origin ||
     (origin !== new URL(req.url).origin &&
       !(
-        ['store', 'business'].includes(process.env.FRAGUAN_SURFACE ?? '') &&
+        ['store', 'business'].includes(runtime.FRAGUAN_SURFACE ?? '') &&
         origin === publicStoreOrigin
       ))
   )

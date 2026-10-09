@@ -16,8 +16,8 @@ Configuración acordada el 07/10/2026:
 - Una API key de Resend con permiso de envío para `fraguan.com`:
   `RESEND_API_KEY`, en los entornos de servidor de Railway (`fraguan-store-api`,
   proyecto `accomplished-adaptation`) y Vercel (`fraguan-store`). Los pedidos y
-  cuentas de la tienda se procesan en Railway; campañas y pruebas de Admin en
-  Vercel. Configurar ambos remitentes y destinatario interno en ambos servicios.
+  cuentas, campañas y pruebas de Admin se procesan en Railway. Mantener los
+  remitentes y destinatario interno en el servidor que procesa los envíos.
   Nunca exponer la clave en variables NEXT_PUBLIC ni en código del navegador.
 - `RESEND_ORDER_TO`: `hola@fraguan.com`, para avisos de pedidos/solicitudes y pruebas.
 
@@ -41,7 +41,7 @@ Los emails de newsletter incluyen enlace para dejar de recibir novedades.
 Si falta el remitente de marketing, no se usa el de pedidos como reemplazo.
 Los envíos aceptados y errores del proveedor se registran en `email_deliveries`.
 El estado `sent` indica aceptación por Resend, no certifica entrega a la bandeja.
-No se añadió seguimiento de entrega por webhook en esta etapa.
+Webhook de Resend habilitado: entrega, rebote, reclamo, demora y fallo. El 08/10/2026 se verificaron entregas reales en Resend y Admin (pedido #1009, HTTP 200). Rebotes y fallos se probaron de forma aislada sin enviar emails artificiales a clientes. La cola conserva reintentos e identificadores para evitar duplicados.
 
 ## Validación
 

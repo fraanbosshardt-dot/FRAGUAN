@@ -5,6 +5,7 @@ import { AdminOrderEmails } from '@/components/admin-order-emails';
 import { AdminPriceCampaigns } from '@/components/admin-price-campaigns';
 import { AdminSeoControls } from '@/components/admin-seo-controls';
 import { AdminGrowthControls } from '@/components/admin-growth-controls';
+import { AdminAreaGuide } from '@/components/admin-area-guide';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ShoppingBag,
@@ -2466,6 +2467,7 @@ export default function Admin({
               </p>
             </section>
           )}
+          {section === 'settings' && data && <AdminAreaGuide />}
           {section === 'storage' && data && (
             <>
               {!!data.salonShortages?.length && (

@@ -31,3 +31,18 @@ for (const value of [
 ]) assert.throws(() => minor(value), /importe válido/i);
 assert.throws(() => minor('9007199254740991'), /fuera de rango/i);
 console.log('PASS: importes precargados y editados conservan los centavos; entradas inválidas devuelven un mensaje claro.');
+const presentation = (
+  source.slice(source.indexOf('export const money ='), source.indexOf('export const date =')) +
+  source.slice(source.indexOf('export const chartDate ='), source.indexOf('export const minor ='))
+).replaceAll('export const', 'const');
+const presentationJs = ts.transpileModule(presentation, {
+  compilerOptions: { target: ts.ScriptTarget.ES2022 },
+}).outputText;
+// oxlint-disable-next-line typescript/no-implied-eval
+const { money, chartDate } = new Function(presentationJs + '; return { money, chartDate };')();
+assert.match(money(3724910), /37\.249,10/);
+assert.match(money(3149900), /31\.499$/);
+assert.equal(chartDate('2026-10-07T00:00:00.000Z'), '07/10');
+assert.equal(chartDate('2026-10-07'), '07/10');
+assert.equal(chartDate(null), '—');
+console.log('PASS: centavos legibles y fechas de gráfico compatibles con fechas SQL e ISO.');

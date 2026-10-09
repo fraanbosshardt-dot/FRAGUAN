@@ -6,7 +6,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url),
   database = new DatabaseSync(':memory:');
 database.exec(
-  `CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);CREATE TABLE users(id TEXT PRIMARY KEY); INSERT INTO users VALUES('owner'); CREATE TABLE products(id TEXT PRIMARY KEY,name TEXT,active INTEGER); INSERT INTO products VALUES('p','Remera',1); CREATE TABLE variants(id TEXT PRIMARY KEY,productId TEXT,color TEXT,size TEXT,onlinePrice INTEGER,price INTEGER,updatedAt TEXT); INSERT INTO variants VALUES('v','p','Negro','M',NULL,10000,'original'); CREATE TABLE online_product_profiles(productId TEXT,published INTEGER); INSERT INTO online_product_profiles VALUES('p',1); CREATE TABLE online_orders(id TEXT PRIMARY KEY); INSERT INTO online_orders VALUES('o'); CREATE TABLE email_deliveries(id TEXT PRIMARY KEY,kind TEXT,recipient TEXT,orderId TEXT,providerId TEXT,status TEXT,createdAt TEXT);`,
+  `CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT);CREATE TABLE users(id TEXT PRIMARY KEY); INSERT INTO users VALUES('owner'); CREATE TABLE products(id TEXT PRIMARY KEY,name TEXT,active INTEGER); INSERT INTO products VALUES('p','Remera',1); CREATE TABLE variants(id TEXT PRIMARY KEY,productId TEXT,color TEXT,size TEXT,onlinePrice INTEGER,price INTEGER,updatedAt TEXT); INSERT INTO variants VALUES('v','p','Negro','M',NULL,10000,'original'); CREATE TABLE online_product_profiles(productId TEXT,published INTEGER); INSERT INTO online_product_profiles VALUES('p',1); CREATE TABLE online_orders(id TEXT PRIMARY KEY,orderNumber INTEGER); INSERT INTO online_orders VALUES('o',9999); CREATE TABLE email_deliveries(id TEXT PRIMARY KEY,kind TEXT,recipient TEXT,orderId TEXT,providerId TEXT,status TEXT,createdAt TEXT);`,
 );
 database.exec(readFileSync('drizzle/0026_order_emails_campaigns.sql', 'utf8'));
 database.exec(readFileSync('drizzle/0027_independent_prices.sql', 'utf8'));
@@ -60,6 +60,8 @@ const fakeFetch = async (url, options) => {
 };
 function load(path) {
   const m = { exports: {} };
+  // Compile the real module into this isolated database/dependency harness.
+  // oxlint-disable-next-line typescript/no-implied-eval
   new Function(
     'require',
     'module',
@@ -211,6 +213,9 @@ const input = {
 };
 await emails.enqueueOrderEmail(input);
 await emails.enqueueOrderEmail(input);
+const emailOverview = await emails.orderEmailOverview(actor);
+assert.equal(emailOverview.jobs[0].orderNumber, 9999);
+assert.equal(emailOverview.jobs[0].subject, 'Prueba');
 assert.equal(
   database.prepare('SELECT COUNT(*) AS n FROM order_email_outbox').get().n,
   1,

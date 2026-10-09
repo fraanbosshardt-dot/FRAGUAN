@@ -33,7 +33,7 @@ export const money = (n: number = 0) =>
   new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
-    minimumFractionDigits: 0,
+    minimumFractionDigits: Number.isInteger(n / 100) ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(n / 100);
 export const date = (value: string) =>
@@ -47,6 +47,12 @@ export const date = (value: string) =>
         year: 'numeric',
       })
     : '—';
+// Chart groups are calendar dates; PostgreSQL may serialize them as midnight ISO.
+export const chartDate = (value: unknown) => {
+  const match =
+    typeof value === 'string' ? value.match(/^\d{4}-(\d{2})-(\d{2})/) : null;
+  return match ? `${match[2]}/${match[1]}` : '—';
+};
 export const minor = (value: string | number) => {
   if (typeof value !== 'string' && typeof value !== 'number')
     throw new Error('Ingresá un importe válido sin separador de miles.');

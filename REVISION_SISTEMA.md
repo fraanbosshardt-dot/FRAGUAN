@@ -1,5 +1,10 @@
 # Revisión de FRAGUAN — 07/10/2026
 
+Este documento conserva la revisión anterior. La auditoría vigente de Admin,
+correcciones y límites comprobados del 08/10/2026 están en
+[AUDITORIA_ADMIN_2026-10-08.md](docs/AUDITORIA_ADMIN_2026-10-08.md).
+El listado actual de pendientes está en NEGOCIO-PENDIENTES.md.
+
 ## Alcance y límites
 
 Lectura de tienda, checkout, cuenta, pedidos, catálogo, marketing, caja, ventas,

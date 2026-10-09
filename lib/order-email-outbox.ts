@@ -158,7 +158,7 @@ export async function orderEmailOverview(actor: Actor) {
   return {
     webhookConfigured: Boolean(env.RESEND_WEBHOOK_SECRET),
     jobs: await rows(
-      `SELECT id,orderId,kind,recipient,status,attempts,error,createdAt,updatedAt FROM order_email_outbox ORDER BY createdAt DESC LIMIT 100`,
+      `SELECT e.id,e.orderId,o.orderNumber,e.kind,e.subject,e.recipient,e.status,e.attempts,e.error,e.createdAt,e.updatedAt FROM order_email_outbox e LEFT JOIN online_orders o ON o.id=e.orderId ORDER BY e.createdAt DESC LIMIT 100`,
     ),
   };
 }

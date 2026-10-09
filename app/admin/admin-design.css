@@ -47,6 +47,18 @@ body:has(.admin-theme) {
 .admin-theme {
   min-height: 100dvh;
 }
+.admin-theme .admin-area-guide {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.admin-theme .admin-area-guide summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.admin-theme .admin-area-guide p {
+  margin: 10px 0;
+}
 .admin-theme :is(h1, h2, h3, h4, button, input, select, textarea, .wordmark),
 body:has(.admin-theme) [data-slot='dialog-content'] {
   font-family: var(--font-sans);
@@ -818,7 +830,7 @@ body:has(.admin-theme)
   box-shadow: none;
   background: var(--muted);
 }
-.admin-theme :is(button, a):focus-visible,
+.admin-theme :is(button, a, summary):focus-visible,
 body:has(.admin-theme)
   [data-slot='dialog-content']
   :is(button, a):focus-visible {
