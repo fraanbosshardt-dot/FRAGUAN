@@ -103,6 +103,7 @@ export function productStructuredData(product: StoreProduct) {
   const image = product.imageUrl
     ? new URL(product.imageUrl, STORE_ORIGIN).href
     : undefined;
+  const ownDescription = product.description?.trim();
   return {
     '@context': 'https://schema.org',
     '@type': 'ProductGroup',
@@ -110,11 +111,18 @@ export function productStructuredData(product: StoreProduct) {
     name: product.name,
     url,
     ...(image ? { image } : {}),
-    description: product.description?.trim() || productSeo(product).description,
+    description:
+      (ownDescription !==
+      'Diseñada para combinar fácil, sentirse cómoda y acompañarte durante todo el día.'
+        ? ownDescription
+        : '') || productSeo(product).description,
     ...(product.brand
       ? { brand: { '@type': 'Brand', name: product.brand } }
       : {}),
-    ...(product.material ? { material: product.material } : {}),
+    ...(product.material &&
+    product.material !== 'Consultar composición en la etiqueta.'
+      ? { material: product.material }
+      : {}),
     productGroupID: product.id,
     variesBy: ['https://schema.org/color', 'https://schema.org/size'],
     hasVariant: product.variants.map((variant) => ({

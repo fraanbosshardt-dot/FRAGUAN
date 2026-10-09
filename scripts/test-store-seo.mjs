@@ -30,7 +30,9 @@ test('product markup uses online prices and retains unavailable sizes without in
     slug: 'remera',
     category: 'Remeras',
     shortDescription: '',
-    description: '',
+    description:
+      'Diseñada para combinar fácil, sentirse cómoda y acompañarte durante todo el día.',
+    material: 'Consultar composición en la etiqueta.',
     brand: '',
     imageUrl: '/api/store-image?id=foto',
     variants: [
@@ -59,6 +61,8 @@ test('product markup uses online prices and retains unavailable sizes without in
   assert.equal(schema.brand, undefined);
   assert.equal(schema.hasVariant[0].gtin13, undefined);
   assert.ok(schema.description.length > 0);
+  assert.match(schema.description, /Remera/);
+  assert.equal(schema.material, undefined);
 });
 test('public SEO defaults stay distinct and category aliases share the canonical URL', () => {
   assert.match(

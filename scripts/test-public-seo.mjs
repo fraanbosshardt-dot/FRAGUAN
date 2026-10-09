@@ -65,7 +65,7 @@ for (const path of [
   console.log(`OK fuera de Google: ${path}`);
 }
 const { html: robots } = await fetchPage(origin + '/robots.txt');
-const general = robots.split('User-agent: *')[1].split('User-agent:')[0];
+const general = robots.split(/User-Agent:\s*\*/i)[1].split(/User-Agent:/i)[0];
 assert.match(general, /Disallow: \/admin/);
 assert.match(general, /Disallow: \/pos/);
 for (const path of [
