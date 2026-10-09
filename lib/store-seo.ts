@@ -126,7 +126,10 @@ export async function seoAudit(actor: Actor) {
       description,
       issues: [
         ...(!p.images ? ['Falta cargar la foto del producto'] : []),
-        ...(!p.shortDescription?.trim() && !custom?.description
+        ...((!p.shortDescription?.trim() ||
+          p.shortDescription.trim() ===
+            'Una prenda versátil para usar todos los días.') &&
+        !custom?.description
           ? [
               'Completá la descripción propia del producto; ahora usa un texto automático',
             ]
@@ -141,6 +144,11 @@ export async function seoAudit(actor: Actor) {
   for (const page of pages)
     if (pages.filter((p) => p.title === page.title).length > 1)
       page.issues.push('Título repetido');
+  for (const page of pages)
+    if (
+      pages.filter((other) => other.description === page.description).length > 1
+    )
+      page.issues.push('Descripción repetida');
   return {
     pages,
     sitemap: STORE_ORIGIN + '/sitemap.xml',

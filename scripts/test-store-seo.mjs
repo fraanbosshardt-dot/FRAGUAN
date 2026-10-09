@@ -61,6 +61,14 @@ test('product markup uses online prices and retains unavailable sizes without in
   assert.ok(schema.description.length > 0);
 });
 test('public SEO defaults stay distinct and category aliases share the canonical URL', () => {
+  assert.match(
+    seo.productSeo({
+      name: 'Camisa Oxford',
+      category: 'Camisas',
+      shortDescription: 'Una prenda versátil para usar todos los días.',
+    }).description,
+    /Camisa Oxford/,
+  );
   assert.equal(
     seo.collectionSeo('abrigos').path,
     seo.collectionSeo('camperas').path,
@@ -151,14 +159,12 @@ test('admin audit covers home, collections, information and published products o
     '/pedido/123',
   ]) {
     await assert.rejects(
-      f
-        .load('lib/store-seo.ts')
-        .saveStoreSeo(actor, {
-          path,
-          title: 'No publicar',
-          description: '',
-          verification: '',
-        }),
+      f.load('lib/store-seo.ts').saveStoreSeo(actor, {
+        path,
+        title: 'No publicar',
+        description: '',
+        verification: '',
+      }),
     );
   }
 });

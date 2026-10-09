@@ -88,10 +88,13 @@ export function collectionSeo(key: string) {
 export function productSeo(
   product: Pick<StoreProduct, 'name' | 'shortDescription' | 'category'>,
 ) {
+  const ownDescription = product.shortDescription?.trim();
   return {
     title: `${product.name} | FRAGUAN`,
     description:
-      product.shortDescription?.trim() ||
+      (ownDescription !== 'Una prenda versátil para usar todos los días.'
+        ? ownDescription
+        : '') ||
       `${product.name} en FRAGUAN. Consultá talles, colores y stock disponible. Comprá online con envío o retiro en Isla Verde, Córdoba.`,
   };
 }
