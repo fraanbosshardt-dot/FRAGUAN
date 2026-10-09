@@ -2376,9 +2376,14 @@ export default function Admin({
                 Medios de pago y planes de cuotas
               </h2>
               <p className="settings-copy">
-                Point de Mercado Pago: las tasas cargadas no incluyen IVA ni
+                Point y Checkout de Mercado Pago: las tasas cargadas no incluyen IVA ni
                 retenciones. El neto con estas tasas es estimado. Los planes con
                 interés quedan pendientes de analizar y no se habilitan.
+                {' '}Mercado Pago · Web tiene condiciones independientes para todos
+                los medios cobrados dentro del checkout: tarjetas, efectivo,
+                transferencia, depósito, Mercado Crédito y dinero en Mercado Pago.
+                No modifica los medios ofrecidos
+                por Mercado Pago. Transferencias directas no usan esta comisión.
               </p>
               <Button
                 variant="outline"
@@ -2406,7 +2411,7 @@ export default function Admin({
                       <th>Destino del cobro</th>
                       <th>Acreditación</th>
                       <th>Cuotas</th>
-                      <th>Disponible</th>
+                      <th>Uso</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
@@ -2421,7 +2426,7 @@ export default function Admin({
                           {m.days === 0 ? 'Al instante' : `${m.days} días`}
                         </td>
                         <td>{m.installments}</td>
-                        <td>{m.active ? 'Sí' : 'No'}</td>
+                        <td>{m.id === 'online-mp' ? 'Solo web' : m.active ? 'POS' : 'Pausado en POS'}</td>
                         <td>
                           <Button
                             variant="ghost"
@@ -2433,7 +2438,7 @@ export default function Admin({
                           >
                             Editar
                           </Button>
-                          {!['cash', 'store_credit', 'cashback'].includes(
+                          {!['cash', 'store_credit', 'cashback', 'online-mp'].includes(
                             m.id,
                           ) && (
                             <Button
@@ -4519,7 +4524,16 @@ export default function Admin({
                     El destino identifica dónde se recibe el dinero; no confirma
                     acreditaciones ni calcula IVA o retenciones.
                   </p>
-                  {field('surcharge', 'Recargo al cliente (%)', {
+                  {selected?.id === 'online-mp' && (
+                    <p>
+                      Solo Checkout web. Alternativas informadas: 6,29% al instante;
+                      4,39% a 10 días; 3,39% a 18 días; 1,49% a 35 días. Todas más
+                      IVA. Cambiar estos valores registra tus condiciones en FRAGUAN;
+                      el plazo contratado se cambia también en Mercado Pago. Los
+                      cobros anteriores conservan sus importes y fechas.
+                    </p>
+                  )}
+                  {selected?.id !== 'online-mp' && field('surcharge', 'Recargo al cliente (%)', {
                     type: 'number',
                     value: selected?.surchargeBps / 100,
                   })}
@@ -4531,7 +4545,7 @@ export default function Admin({
                     type: 'number',
                     value: selected?.days,
                   })}
-                  {field('installments', 'Cantidad de cuotas', {
+                  {selected?.id !== 'online-mp' && field('installments', 'Cantidad de cuotas', {
                     type: 'number',
                     value: selected?.installments,
                   })}

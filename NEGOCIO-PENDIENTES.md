@@ -1,5 +1,24 @@
 # Decisiones de FRAGUAN pendientes
 
+## Checkout Mercado Pago — condiciones confirmadas 08/10/2026
+
+El titular confirmó el circuito real: cobro, pedido pagado en Admin y email de
+compra confirmada recibido. Tarifas web para todos los medios dentro de Checkout:
+crédito, débito, prepaga, efectivo, transferencia, depósito, Mercado Crédito y
+dinero en Mercado Pago. Opción elegida: 3,39% y
+18 días de acreditación. Tarifa más IVA; no incluye retenciones. No sumar IVA automáticamente, según la decisión vigente.
+Configuración independiente «Mercado Pago · Web» en Admin → Configuración.
+Aplica a nuevos cobros del checkout y al total efectivamente cobrado, incluido envío.
+No modifica tarifas Point, compras anteriores, ni habilita nuevos medios/cuotas.
+Las transferencias bancarias directas a alias continúan sin esta comisión y se
+registran recibidas al confirmar el pago. Neto y fecha son estimaciones según
+estas condiciones; falta conciliación con los movimientos reales del proveedor.
+
+Alternativas informadas por el titular (todas más IVA): al instante 6,29%;
+10 días 4,39%; 18 días 3,39%; 35 días 1,49%. La selección de 18 días reemplaza
+la primera información de 35 días/1,56%. Editar la configuración en FRAGUAN
+no cambia el contrato ni el plazo seleccionado en la cuenta de Mercado Pago.
+
 Actualizado: 7 de octubre de 2026.
 
 ## Políticas comerciales confirmadas — 07/10/2026

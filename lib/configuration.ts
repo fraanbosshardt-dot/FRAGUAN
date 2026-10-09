@@ -37,6 +37,8 @@ export async function createMethod(a: Actor, raw: unknown) {
 export async function setMethodActive(a: Actor, raw: unknown) {
   requirePermission(a, 'settings');
   const x = z.object({ id: text, active: z.boolean() }).strict().parse(raw);
+  if (x.id === 'online-mp')
+    throw new AppError(400, 'Mercado Pago Web se usa exclusivamente en la tienda online.');
   if (['cash', 'store_credit', 'cashback'].includes(x.id))
     throw new AppError(
       400,
@@ -61,6 +63,8 @@ export async function setMethodActive(a: Actor, raw: unknown) {
 export async function configureMethod(a: Actor, raw: unknown) {
   requirePermission(a, 'settings');
   const x = methodFields.extend({ id: text }).parse(raw);
+  if (x.id === 'online-mp' && (x.surchargeBps !== 0 || x.installments !== 1))
+    throw new AppError(400, 'Las condiciones del checkout no agregan recargos ni habilitan cuotas.');
   const before = await one(
     'SELECT id,name,surchargeBps,commissionBps,days,installments,destination FROM payment_methods WHERE id=?',
     x.id,

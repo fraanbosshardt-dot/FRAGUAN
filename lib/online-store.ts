@@ -1,4 +1,5 @@
 import {storeInstallments} from './store-installments';
+import { onlinePaymentAmounts } from './online-payment-terms';
 import { verifyOrderEmailToken } from './order-email-link';
 import { z } from 'zod';
 import { allocateDocumentNumber } from './document-numbers';
@@ -1942,6 +1943,13 @@ export async function confirmOnlinePayment(
     );
   const saleId = id(),
     timestamp = now();
+  const paymentMethodId = order.paymentMethod === 'transfer' ? 'transfer' : 'online-mp';
+  const terms = await one<{ commissionBps: number; days: number; destination: string }>(
+    'SELECT commissionBps,days,destination FROM payment_methods WHERE id=?',
+    paymentMethodId,
+  );
+  if (!terms) throw new AppError(503, 'Falta configurar el medio de cobro online.');
+  const amounts = onlinePaymentAmounts(Number(order.total), terms, timestamp);
   const commands = [
     allocateDocumentNumber('sale'),
     statement(
@@ -1963,25 +1971,20 @@ export async function confirmOnlinePayment(
       'INSERT INTO payments(id,saleId,methodId,amount,commission,net,dueAt,reference,destination) VALUES (?,?,?,?,?,?,?,?,?)',
       id(),
       saleId,
-      order.paymentMethod === 'transfer' ? 'transfer' : 'credit',
+      paymentMethodId,
       order.total,
-      0,
-      order.total,
-      timestamp,
+      amounts.commission,
+      amounts.net,
+      amounts.dueAt,
       paymentReference,
-      (
-        await one<{ destination: string }>(
-          'SELECT destination FROM payment_methods WHERE id=?',
-          order.paymentMethod === 'transfer' ? 'transfer' : 'credit',
-        )
-      )?.destination ?? '',
+      terms.destination,
     ),
     statement(
       'INSERT INTO cash_movements(id,sessionId,kind,amount,methodId,reference,actorId,createdAt) VALUES (?,NULL,?,?,?,?,?,?)',
       id(),
       'Venta online',
       order.total,
-      order.paymentMethod === 'transfer' ? 'transfer' : 'credit',
+      paymentMethodId,
       saleId,
       actor.id,
       timestamp,
